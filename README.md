@@ -75,7 +75,7 @@ pnpm dev         # http://127.0.0.1:5173
 发布方式是把构建产物推到 `gh-pages` 分支，由 GitHub Pages 直接托管——不依赖 CI：
 
 ```bash
-pnpm deploy     # 构建并发布到 gh-pages
+pnpm deploy:pages     # 构建并发布到 gh-pages
 ```
 
 细节与切换到 GitHub Actions 的方法见 [docs/DEPLOY.md](docs/DEPLOY.md)。
