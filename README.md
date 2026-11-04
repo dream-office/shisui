@@ -71,8 +71,14 @@ pnpm dev         # http://127.0.0.1:5173
 
 **https://dream-office.github.io/kedaibiao/**
 
-由 `.github/workflows/pages.yml` 自动部署：推送 `main` 即在 GitHub Pages 发布一份可用版本。
 纯前端、无后端，页面加载完就能用（数据仍只存在你自己浏览器里）。
+发布方式是把构建产物推到 `gh-pages` 分支，由 GitHub Pages 直接托管——不依赖 CI：
+
+```bash
+pnpm deploy     # 构建并发布到 gh-pages
+```
+
+细节与切换到 GitHub Actions 的方法见 [docs/DEPLOY.md](docs/DEPLOY.md)。
 
 <!-- 截图放这里（截好后删掉本行注释）：
 ![收件页](docs/images/inbox.png)
