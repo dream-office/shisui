@@ -37,7 +37,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "pnpm typecheck && pnpm test",
-    "deploy": "pnpm build && node scripts/publish-pages.mjs"
+    "deploy:pages": "pnpm build && node scripts/publish-pages.mjs"
   },
   "dependencies": {
     "dexie": "^4.0.11",

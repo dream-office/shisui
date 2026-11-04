@@ -5,7 +5,8 @@
  * 为什么要这个脚本：本仓库的 Pages 采用分支发布，不走 GitHub Actions ——
  * 新账号的 Actions 队列会被风控长时间排队，而静态站点完全可以由 GitHub 服务端直接发布。
  *
- * 用法：pnpm deploy   （= pnpm build && node scripts/publish-pages.mjs）
+ * 用法：pnpm deploy:pages   （= pnpm build && node scripts/publish-pages.mjs）
+ * 注意不要命名为 deploy / publish：两者都是 pnpm 的内置命令，会盖掉同名脚本。
  *
  * 行为：
  *  1. 在系统临时目录里建一个独立仓库，把 dist 拷进去并加 .nojekyll；
