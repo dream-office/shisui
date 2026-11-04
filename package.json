@@ -1,15 +1,33 @@
 {
   "name": "kedaibiao",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "description": "课代表 · 把班级群通知变成不会错过的日程（纯前端，本地优先）",
+  "description": "把班级群 / 教务通知粘贴进来，解析成带绝对时间的待办清单，并自动体检冲突。纯前端、本地优先。",
+  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "schedule",
+    "todo",
+    "time-parser",
+    "chinese-nlp",
+    "local-first",
+    "offline-first",
+    "react",
+    "typescript",
+    "vite",
+    "dexie"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "dexie": "^4.0.11",
