@@ -1,0 +1,40 @@
+# 在干净的 Ubuntu 环境里跑一遍「读者复现」的完整流程：
+# 装依赖 → 类型检查 → 单测 → 生产构建。
+# 目的不是「有个 CI」，而是让可复现性从文档里的承诺变成每次推送都被机器验证的事实。
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 准备 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: 安装依赖（锁定版本）
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm typecheck
+
+      - name: 单元测试（48 条，确定性）
+        run: pnpm test
+
+      - name: 生产构建
+        run: pnpm build

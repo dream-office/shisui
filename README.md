@@ -179,6 +179,9 @@ pnpm typecheck   # TypeScript strict，无 any 逃逸
 pnpm build       # 生产构建：JS 95.8 kB gzip / CSS 4.2 kB gzip
 ```
 
+仓库带 GitHub Actions 工作流（`.github/workflows/ci.yml`）：每次推送都在**干净的 Ubuntu 环境**里
+重跑「装依赖 → 类型检查 → 单测 → 生产构建」。可复现性不靠自觉，靠机器每次替你证明。
+
 测试覆盖的是「最容易被写错、且错了代价最大」的部分，不是凑数：
 
 | 测试文件 | 条数 | 覆盖 |
