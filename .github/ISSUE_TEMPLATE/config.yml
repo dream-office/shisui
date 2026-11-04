@@ -1,0 +1,2 @@
+# 强制走模板：解析类问题没有原文和时间点就无法定位
+blank_issues_enabled: false
