@@ -17,8 +17,11 @@ pnpm dev        # http://127.0.0.1:5173
 pnpm test       # 48 条单测
 ```
 
-Node ≥ 18，pnpm ≥ 9。仓库使用 `pnpm-workspace.yaml` 放开 esbuild 的安装脚本（pnpm 11 默认拦截），
-如果你换用 pnpm 的其他版本遇到 `ERR_PNPM_IGNORED_BUILDS`，先看 [docs/DEVLOG.md](docs/DEVLOG.md) 的踩坑记录。
+Node ≥ 22.13，pnpm 11（`package.json` 的 `packageManager` 已锁定版本）。
+**Node 20 会因为 pnpm 11 依赖 `node:sqlite` 而直接报错**，详见 [docs/DEVLOG.md](docs/DEVLOG.md) 的踩坑记录。
+
+仓库使用 `pnpm-workspace.yaml` 放开 esbuild 的安装脚本（pnpm 11 默认拦截），
+如果你换用 pnpm 的其他版本遇到 `ERR_PNPM_IGNORED_BUILDS`，同样看 DEVLOG。
 
 ## 代码结构约定（硬性）
 
