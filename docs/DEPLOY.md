@@ -9,10 +9,12 @@
 推送 `gh-pages` 分支即发布，由 GitHub 服务端直接托管，**不消耗 Actions 运行**。
 
 ```bash
-pnpm deploy:pages      # = pnpm build + node scripts/publish-pages.mjs
+pnpm deploy:pages      # = tsc -b && vite build + node scripts/publish-pages.mjs
 ```
 
 > 脚本特意不叫 `deploy` 或 `publish`：这两个都是 pnpm 的内置命令，会盖掉同名脚本。
+> 脚本内部也不递归调用包管理器，直接调 `node_modules/.bin` 里的 `tsc` / `vite`，
+> 这样 npm、pnpm、yarn 下都能跑。
 
 脚本做的事：把 `dist/` 拷到临时目录 → 加 `.nojekyll` → 提交 → 强制推送到 `gh-pages`。
 `gh-pages` 是每次覆盖的产物分支，不进 `main` 的历史。
