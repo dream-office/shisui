@@ -1,0 +1,46 @@
+name: 功能建议
+description: 提出新能力、新的时间表达写法、界面改进
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提之前请先看一眼 [docs/ROADMAP.md](docs/ROADMAP.md)（含「明确不做」清单），
+        避免我们讨论一轮后又回到原点。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么实际问题
+      description: 描述场景，不要直接描述实现方案
+      placeholder: 我们辅导员的通知总是写成「下个月初」，现在解析不出来
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你设想的做法（可选）
+      description: 如果涉及新的时间表达写法，请给出至少 3 个真实例子
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及范围
+      options:
+        - 时间解析（core/time.ts）
+        - 待办抽取（core/ruleParser.ts）
+        - 冲突体检（core/conflict.ts）
+        - AI 引擎与 Prompt
+        - 界面与交互
+        - 数据、导入导出
+        - 工程与文档
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: 参与意愿
+      options:
+        - label: 我愿意自己提 PR 实现

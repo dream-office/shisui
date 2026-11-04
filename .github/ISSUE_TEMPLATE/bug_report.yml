@@ -1,0 +1,72 @@
+name: Bug 报告
+description: 解析结果不对、界面异常、构建或测试失败
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。解析类问题**请务必贴原文**（可替换姓名/学号为占位符），
+        否则无法判断是规则漏了还是时间换算错了。
+
+  - type: textarea
+    id: notice
+    attributes:
+      label: 触发问题的通知原文
+      description: 一段能复现的最小文本
+      placeholder: |
+        【教务处】本周五23:59前在学习通提交实验报告三。
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 解析出了什么？时间、类型、渠道、置信度哪里不对？
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+      placeholder: 期望解析为「截止 2026-11-06 23:59，类型：作业，渠道：学习通」
+    validations:
+      required: true
+
+  - type: input
+    id: now
+    attributes:
+      label: 解析时的本地日期时间
+      description: 时间解析依赖「现在」，这是关键信息
+      placeholder: 2026-11-04 22:07
+    validations:
+      required: true
+
+  - type: dropdown
+    id: engine
+    attributes:
+      label: 使用的引擎
+      options:
+        - 仅规则引擎（未配置 API Key）
+        - 双引擎（已配置 AI）
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      placeholder: Node 24.21 / pnpm 11.28 / Chrome 143 on Windows 11
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 已搜索过已有 Issue，没有重复
+          required: true
+        - label: 原文中已移除真实姓名、学号、手机号等个人信息
+          required: true
