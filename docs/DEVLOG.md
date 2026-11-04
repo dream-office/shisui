@@ -91,6 +91,23 @@
 
 ## 踩坑记录
 
+### pnpm 版本写了两处，CI 直接拒绝运行
+
+**现象**：把 `packageManager: pnpm@11.28.5` 加进 `package.json` 之后，两个工作流都改在
+「准备 pnpm」这一步失败：
+
+```
+Error: Multiple versions of pnpm specified:
+  - version 11 in the GitHub Action config with the key "version"
+  - version pnpm@11.28.5 in the package.json with the key "packageManager"
+```
+
+**原因**：`pnpm/action-setup` 既会读 action 的 `with.version`，也会读 `package.json` 的
+`packageManager`；两处都写时它无法判断该听谁的，直接报错退出。
+
+**解决**：删掉 workflow 里的 `with.version`，只保留 `packageManager` 作为唯一来源。
+这也更合理——本地 `pnpm install` 与 CI 用的是同一个版本约束。
+
 ### CI 上 pnpm 11 + Node 20 直接崩（`node:sqlite`）
 
 **现象**：GitHub Actions 里 `ci` 和 `pages` 两个工作流都在「准备 Node.js」这一步失败，
