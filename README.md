@@ -42,8 +42,8 @@
 
 | 项目 | 要求 |
 | --- | --- |
-| Node.js | ≥ 18（开发使用 24.x） |
-| 包管理器 | pnpm ≥ 9（开发使用 11.x）；npm 亦可 |
+| Node.js | ≥ 22.13（pnpm 11 依赖 `node:sqlite`；开发使用 24.x） |
+| 包管理器 | pnpm 11（`packageManager` 已锁定）；npm 亦可 |
 | 浏览器 | 需要 IndexedDB 的现代浏览器 |
 
 ```bash

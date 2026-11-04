@@ -91,6 +91,26 @@
 
 ## 踩坑记录
 
+### CI 上 pnpm 11 + Node 20 直接崩（`node:sqlite`）
+
+**现象**：GitHub Actions 里 `ci` 和 `pages` 两个工作流都在「准备 Node.js」这一步失败，
+`pnpm install` 之前就挂了。报错关键两行：
+
+```
+warn: This version of pnpm requires at least Node.js v22.13
+Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
+```
+
+**原因**：pnpm 11 用 `node:sqlite`（Node 22.5 起才有的内建模块）做存储索引，
+而工作流把 `node-version` 钉在了 20。pnpm 一启动就崩，于是 `setup-node` 的 `cache: pnpm`
+（内部要跑 `pnpm store path`）跟着失败，看起来像「Node 安装失败」，其实 Node 装得好好的。
+
+**解决**：工作流改用 Node 22，`package.json` 的 `engines` 从 `>=18` 提到 `>=22.13`，
+并加 `packageManager: pnpm@11.28.5` 锁版本。
+
+**教训**：报错位置（这里显示「准备 Node.js」失败）和真实原因（pnpm 版本与 Node 不兼容）可以离得很远。
+看到「某步骤失败」先别改那一步，先读它打印的完整输出。
+
 ### pnpm 11 拦截构建脚本，依赖装不完
 
 **现象**：`pnpm install` 报 `ERR_PNPM_IGNORED_BUILDS: esbuild` 并以退出码 1 结束，

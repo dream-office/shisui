@@ -26,8 +26,9 @@
     "url": "https://github.com/dream-office/kedaibiao/issues"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13"
   },
+  "packageManager": "pnpm@11.28.5",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
