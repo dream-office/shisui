@@ -18,8 +18,8 @@ jobs:
 
       - name: 准备 pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
+        # 不写 version：版本以 package.json 的 packageManager 为唯一来源，
+        # 两处都写会直接报 "Multiple versions of pnpm specified"
 
       - name: 准备 Node.js
         uses: actions/setup-node@v5
