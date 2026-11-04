@@ -1,5 +1,8 @@
 # 课代表 · kedaibiao
 
+[![ci](https://github.com/dream-office/kedaibiao/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-office/kedaibiao/actions/workflows/ci.yml)
+[![license: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+
 > 把班级群、教务通知、辅导员私聊里的截止时间，一次性变成不会错过的日程。
 
 纯前端 · 本地优先 · 无需账号 · 无后端 · [AGPL-3.0](LICENSE)
@@ -66,8 +69,10 @@ pnpm dev         # http://127.0.0.1:5173
 
 ### 在线 Demo
 
-仓库带 GitHub Pages 部署工作流（`.github/workflows/pages.yml`）。在仓库 Settings → Pages
-把 Source 设为 **GitHub Actions**，之后每次推送 main 都会自动发布一份可用的在线版本。
+**https://dream-office.github.io/kedaibiao/**
+
+由 `.github/workflows/pages.yml` 自动部署：推送 `main` 即在 GitHub Pages 发布一份可用版本。
+纯前端、无后端，页面加载完就能用（数据仍只存在你自己浏览器里）。
 
 <!-- 截图放这里（截好后删掉本行注释）：
 ![收件页](docs/images/inbox.png)
