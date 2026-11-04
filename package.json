@@ -36,7 +36,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "pnpm typecheck && pnpm test"
+    "check": "pnpm typecheck && pnpm test",
+    "deploy": "pnpm build && node scripts/publish-pages.mjs"
   },
   "dependencies": {
     "dexie": "^4.0.11",
