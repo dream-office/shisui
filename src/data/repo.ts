@@ -61,7 +61,7 @@ export interface Snapshot {
   batches: ImportBatch[]
 }
 
-/** 导出成 JSON：既是用户的数据备份，也是评审复现「我当时的真实数据」的证据 */
+/** 导出成 JSON：既是用户的数据备份，也是排查问题时能还原现场的证据 */
 export async function exportSnapshot(): Promise<Snapshot> {
   return {
     version: 1,
