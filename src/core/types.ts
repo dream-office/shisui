@@ -37,7 +37,7 @@ export interface ParsedTask {
   /** 可解释性：为什么给出这个判定，直接展示给用户 */
   reasons: string[]
   /** 谁解析出来的 */
-  engine: 'rule' | 'llm'
+  engine: 'rule' | 'llm' | 'hybrid'
 }
 
 /** 已确认、落地到日程的事项 */
