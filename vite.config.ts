@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// '@' → '/src' 用 Vite 的根路径别名，避免为一行 alias 引入 @types/node
 export default defineConfig({
   plugins: [react()],
+  // 相对路径：构建产物可直接放到任意子路径下（GitHub Pages 项目页、对象存储子目录都能用）
+  base: './',
   resolve: {
     alias: { '@': '/src' },
   },
