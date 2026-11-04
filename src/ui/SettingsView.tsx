@@ -97,7 +97,7 @@ export default function SettingsView() {
 
       <section className="card">
         <h3>数据</h3>
-        <p className="muted">所有数据都在本机浏览器。导出成 JSON 等于一份完整备份，也是评审时「我当时真实数据」的证据。</p>
+        <p className="muted">所有数据都在本机浏览器。导出成 JSON 等于一份完整备份，换浏览器或换设备时导入即可恢复。</p>
         <div className="settings-actions">
           <button type="button" className="btn" onClick={handleExport}>
             导出备份 JSON
