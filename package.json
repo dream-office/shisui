@@ -17,6 +17,14 @@
     "vite",
     "dexie"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dream-office/kedaibiao.git"
+  },
+  "homepage": "https://dream-office.github.io/kedaibiao/",
+  "bugs": {
+    "url": "https://github.com/dream-office/kedaibiao/issues"
+  },
   "engines": {
     "node": ">=18"
   },
