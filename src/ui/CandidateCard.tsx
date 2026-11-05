@@ -2,12 +2,14 @@ import type { ParsedTask, TaskKind } from '@/core/types'
 import { countdown, formatWhen, fromLocalInput, toLocalInput } from '@/core/format'
 
 const KIND_LABEL: Record<TaskKind, string> = {
-  homework: '作业',
-  exam: '考试/答辩',
+  task: '任务',
   meeting: '会议',
+  review: '评审',
   signup: '报名',
-  payment: '缴费',
+  payment: '报销/缴费',
+  approval: '审批',
   survey: '问卷',
+  exam: '考试',
   other: '其他',
 }
 

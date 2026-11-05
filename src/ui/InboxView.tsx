@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '@/state/store'
-import { SAMPLE_NOTICE, SAMPLE_NOTICE_2 } from '@/core/samples'
+import { SAMPLE_NOTICE, SAMPLE_WORK } from '@/core/samples'
 import CandidateCard from './CandidateCard'
 import { useNow } from './useNow'
 
@@ -33,11 +33,11 @@ export default function InboxView() {
     <div className="inbox">
       <section className="hero">
         <h2>
-          把通知<em>粘进来</em>，剩下的交给课代表
+          把群里的消息<em>粘进来</em>，剩下的它替你记着
         </h2>
         <p>
-          「本周五23:59前在学习通交实验报告」「下周三下午2点教学楼A301开会」—— 这些不用你手动记，
-          解析完还能告诉你<strong>哪两件事会撞车</strong>。
+          「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——
+          项目群、部门群、班级群、家长群，说的是同一件事：<strong>有个截止时间，别错过</strong>。
         </p>
       </section>
 
@@ -51,7 +51,7 @@ export default function InboxView() {
           className="composer-input"
           value={raw}
           onChange={(event) => setRaw(event.target.value)}
-          placeholder={'例如：\n【教务处】各位同学请注意：\n1. 本周五23:59前在学习通提交《数据结构》实验报告三。\n2. 下周三下午2点在 教学楼A301 开班会。'}
+          placeholder={'例如：\n【项目群】张经理：\n1. 本周五18:00前把预算表发到财务邮箱。\n2. 下周一上午10点在 3楼会议室 开复盘会。\n\n或者学校通知：\n本周五23:59前在学习通提交实验报告三。'}
           rows={7}
           spellCheck={false}
         />
@@ -59,11 +59,11 @@ export default function InboxView() {
           <button type="button" className="btn btn-primary" onClick={handleParse} disabled={parsing || !raw.trim()}>
             {parsing ? '解析中…' : '开始解析'}
           </button>
-          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_NOTICE)} disabled={parsing}>
-            填入示例一
+          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_WORK)} disabled={parsing}>
+            工作群示例
           </button>
-          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_NOTICE_2)} disabled={parsing}>
-            示例二
+          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_NOTICE)} disabled={parsing}>
+            学校通知示例
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setRaw('')} disabled={parsing || !raw}>
             清空
@@ -133,6 +133,9 @@ export default function InboxView() {
       {candidates.length === 0 && !parsing && (
         <section className="capabilities card">
           <h3>它能认出什么</h3>
+          <p className="muted" style={{ marginBottom: 14 }}>
+            不区分场景：公司群、项目群、班级群、家长群、学校教务，同一套规则。
+          </p>
           <div className="cap-grid">
             <div>
               <h4>时间</h4>
@@ -140,11 +143,11 @@ export default function InboxView() {
             </div>
             <div>
               <h4>事项</h4>
-              <p>作业与实验报告、考试与答辩、班会与讲座、报名选课、缴费报销、问卷打卡</p>
+              <p>任务与交付物、会议与培训、评审与验收、审批签字、报销缴费、报名、问卷打卡、考试</p>
             </div>
             <div>
               <h4>提交渠道</h4>
-              <p>学习通、雨课堂、智慧树、教务系统、邮箱、腾讯会议、钉钉、纸质线下</p>
+              <p>飞书、钉钉、企业微信、OA、Jira、在线文档、邮箱、学习通、腾讯会议、纸质线下</p>
             </div>
             <div>
               <h4>不止于此</h4>

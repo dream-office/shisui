@@ -10,42 +10,68 @@
 import type { Confidence, ParsedTask, TaskKind } from './types'
 import { extractTime } from './time'
 
+/**
+ * 类型判定：从「最具体」排到「最宽泛」，先命中先得。
+ * 顺序很关键——「答辩」必须排在「PPT」前面，「评审」必须排在「文档」前面，
+ * 否则一条「评审文档」会被识别成普通任务而不是评审。
+ */
 const KIND_RULES: Array<{ kind: TaskKind; label: string; re: RegExp }> = [
-  { kind: 'exam', label: '考试/答辩', re: /(考试|测验|小测|期中|期末|补考|随堂测|答辩)/ },
-  { kind: 'homework', label: '作业/报告', re: /(作业|实验报告|课程报告|课设|课程设计|大作业|论文|习题|练习|实习报告|PPT)/i },
-  { kind: 'meeting', label: '会议/活动', re: /(班会|开会|会议|讲座|宣讲|例会|座谈|动员|分享会|沙龙)/ },
-  { kind: 'signup', label: '报名/选课', re: /(报名|抢课|选课|登记|预约|招募|招新|报名表)/ },
-  { kind: 'payment', label: '缴费/报销', re: /(缴费|交费|缴纳|报销|费用|学费|住宿费)/ },
-  { kind: 'survey', label: '问卷/填表', re: /(问卷|填表|打卡|调查|收集表|问卷星|腾讯问卷|接龙)/ },
+  { kind: 'exam', label: '考试/测验', re: /(考试|测验|小测|期中|期末|补考|随堂测)/ },
+  { kind: 'review', label: '评审/验收', re: /(评审|验收|答辩|复核|code review|\breview\b)/i },
+  { kind: 'approval', label: '审批/确认', re: /(审批|签批|签字|确认单|走流程|待批)/ },
+  { kind: 'meeting', label: '会议/活动', re: /(班会|开会|会议|例会|周会|晨会|复盘会|讲座|宣讲|座谈|动员|分享会|沙龙|培训|面试)/ },
+  {
+    kind: 'task',
+    label: '任务/交付',
+    // 故意不含「文档」：它太泛，「链接在飞书文档」会把问卷抢成任务
+    re: /(作业|实验报告|课程报告|课设|课程设计|大作业|论文|习题|练习|实习报告|周报|日报|月报|方案|初稿|总结|材料|报表|预算|清单|表格|PPT)/i,
+  },
+  { kind: 'signup', label: '报名/登记', re: /(报名|抢课|选课|登记|预约|招募|招新|报名表|接龙)/ },
+  { kind: 'payment', label: '缴费/报销', re: /(缴费|交费|缴纳|报销|费用|学费|住宿费|发票|对账|打款)/ },
+  { kind: 'survey', label: '问卷/填表', re: /(问卷|填表|打卡|调查|收集表|问卷星|腾讯问卷|投票)/ },
 ]
 
+/**
+ * 提交渠道：办公与校园并重。
+ * 「群里说一声」不算渠道，能被指名的系统才算——否则「交给谁」在日程页上毫无信息量。
+ */
 const CHANNEL_RULES: Array<{ name: string; re: RegExp }> = [
+  { name: '飞书', re: /(飞书|Feishu|Lark)/i },
+  { name: '钉钉', re: /钉钉/ },
+  { name: '企业微信', re: /企业微信/ },
+  { name: 'OA/审批系统', re: /(\bOA\b|审批系统|财务系统|\bERP\b|用友|金蝶)/i },
+  { name: 'Jira/Confluence', re: /(Jira|Confluence)/i },
+  { name: '在线文档', re: /(腾讯文档|石墨|语雀|Notion|飞书文档|金山文档)/i },
   { name: '学习通', re: /(学习通|超星)/ },
   { name: '雨课堂', re: /雨课堂/ },
   { name: '智慧树', re: /(智慧树|知到)/ },
   { name: '教务系统', re: /(教务系统|教务处|正方)/ },
   { name: '邮箱', re: /(邮箱|邮件|email|E-mail|@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/i },
-  { name: '腾讯会议', re: /(腾讯会议|会议号)/ },
-  { name: '钉钉', re: /钉钉/ },
-  { name: '企业微信', re: /企业微信/ },
-  { name: '微信群', re: /(微信群|群里|群公告|接龙)/ },
-  { name: '纸质/线下', re: /(纸质|手写|打印|交到|办公室|实验室)/ },
+  { name: '线上会议', re: /(腾讯会议|会议号|Zoom|Teams|飞书会议)/i },
+  { name: '聊天群', re: /(微信群|群里|群公告|QQ群)/i },
+  { name: '纸质/线下', re: /(纸质|手写|打印|交到|办公室|前台|实验室)/ },
 ]
 
 const LOCATION_RE =
-  /((?:[东西南中北]?[一二三四五六七八九十\d]*教(?:学楼)?|[A-Za-z]?\d{1,3}\s*号楼|实验楼|图书馆|体育馆)\s*[A-Za-z]?\s*\d{2,4}|[A-Za-z]?\d{1,2}\s*[-－]\s*\d{2,4})/
+  /((?:[东西南中北]?[一二三四五六七八九十\d]*教(?:学楼)?|[A-Za-z]?\d{1,3}\s*号楼|实验楼|图书馆|体育馆|报告厅|会议室)\s*[A-Za-z]?\s*\d{0,4}|\d{1,2}\s*楼\s*(?:会议室|报告厅|\d{2,4})|[A-Za-z]?\d{1,2}\s*[-－]\s*\d{2,4})/
 
 /** 标题前面那些没有信息量的连接语，逐轮剥掉 */
 const LEADING_NOISE = [
-  /^(?:请|请注意|注意|大家|同学们?|各位|各位同学|记得|务必|要求|通知|提醒|另外|还有|以及|并且|同时|如|如果|如下|友情提示|特别提醒|紧急|重要)+/,
+  /^(?:请|请注意|注意|大家|同学们?|各位|各位同学|各位同事|同事们|各部门|亲们|记得|务必|要求|通知|提醒|麻烦|另外|还有|以及|并且|同时|如|如果|如下|友情提示|特别提醒|紧急|重要)+/,
   /^【[^】]{0,20}】/,
   /^\[[^\]]{0,20}\]/,
+  /^\d{1,2}\s*[、.．)）]\s*/,
   /^关于/,
   /^[：:，,\s、-]+/,
   /^[①-⑳]/,
 ]
 
-const NEGATIVE_RE = /(已经截止|已结束|不再|取消|作废)/
+/**
+ * 「整条通知作废」的措辞。
+ * 注意不要写成光秃秃的「不再」——「逾期本季度不再受理」是催你按时交，
+ * 不是取消这件事；把它当取消处理会直接吞掉一条真待办。
+ */
+const NEGATIVE_RE = /(已取消|已经截止|已结束|作废|不再举行|不再进行|通知取消)/
 
 function cleanTitle(text: string): string {
   let out = text
@@ -55,7 +81,13 @@ function cleanTitle(text: string): string {
     out = out.replace(/^[：:，,\s、-]+/, '')
     if (out === before) break
   }
-  return out.replace(/[，,、；;\s]+$/, '').replace(/\s{2,}/g, ' ').trim()
+  return out
+    .replace(/[，,、；;\s]+$/, '')
+    .replace(/\s{2,}/g, ' ')
+    // 中文之间不该留空格：时间短语被裁掉后中间会剩一个空格，
+    // 「报销单请在 提交到 OA」删掉空格才像人话。中英文之间的空格保留。
+    .replace(/(?<=[\u4e00-\u9fa5，。；：、])\s+(?=[\u4e00-\u9fa5])/g, '')
+    .trim()
 }
 
 /** 把整段通知切成候选句：按换行 → 句号分号 → 编号列表 */
@@ -108,8 +140,13 @@ export function parseSegment(segment: string, ref: Date, index: number): ParsedT
 
   let title = segment
   if (hit) {
-    title = segment.slice(0, hit.start) + ' ' + segment.slice(hit.end)
-    reasons.push(`时间短语「${hit.matched}」`)
+    // 时间短语后面常跟着「前 / 之前 / 以前」这类截止词，一并吃掉，
+    // 否则标题里会留下一个孤零零的「前」
+    const tail = segment.slice(hit.end)
+    const tailDeadline = /^(之前|以前|前)/.exec(tail)
+    const cutEnd = hit.end + (tailDeadline ? tailDeadline[0].length : 0)
+    title = segment.slice(0, hit.start) + ' ' + segment.slice(cutEnd)
+    reasons.push(`时间短语「${hit.matched}${tailDeadline ? tailDeadline[0] : ''}」`)
   }
   title = cleanTitle(title)
   if (!title) title = cleanTitle(segment).slice(0, 28)
