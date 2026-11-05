@@ -14,7 +14,7 @@
 ```bash
 pnpm install
 pnpm dev        # http://127.0.0.1:5173
-pnpm test       # 48 条单测
+pnpm test       # 全部单测
 ```
 
 Node ≥ 22.13，pnpm 11（`package.json` 的 `packageManager` 已锁定版本）。

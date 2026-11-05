@@ -103,7 +103,8 @@ describe('extractTime 相对时间归一化', () => {
   it('覆盖区间可用于从标题里裁掉时间短语', () => {
     const text = '请于本周五23:59前提交'
     const hit = extractTime(text, REF)!
-    expect(text.slice(hit.start, hit.end)).toContain('本周五')
+    expect(text.slice(hit.dateStart, hit.dateEnd)).toContain('本周五')
+    expect(text.slice(hit.clockStart!, hit.clockEnd!)).toContain('23:59')
   })
 
   it('完全没有时间线索时返回 null', () => {

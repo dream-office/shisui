@@ -138,7 +138,7 @@ export default function SettingsView() {
             <strong>双引擎</strong>：规则引擎负责可解释、可离线；AI 引擎负责覆盖刁钻写法。两条路都能出结果，谁更可信取谁。
           </li>
           <li>
-            <strong>可复现</strong>：时间解析是注入 ref 的纯函数，48 条单测全部确定性通过，换机器换时区结果一致。
+            <strong>可复现</strong>：时间解析是注入 ref 的纯函数，全部单测确定性通过，换机器换时区结果一致。
           </li>
         </ul>
       </section>
