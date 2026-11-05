@@ -118,8 +118,8 @@
 
 ### pnpm 版本写了两处，CI 直接拒绝运行
 
-> 注：当时有两个工作流（`ci` 和 `pages`）。`pages.yml` 已在 `a8d4180` 移除，
-> 部署改为 `gh-pages` 分支发布（见 [DEPLOY.md](DEPLOY.md)），下面这段只作为历史记录保留。
+> 注：当时有两个工作流（`ci` 和 `pages`）。`pages.yml` 已在「build: Pages 改为 gh-pages 分支发布」
+> 这一提交中移除，部署改为 `gh-pages` 分支发布（见 [DEPLOY.md](DEPLOY.md)），下面这段只作为历史记录保留。
 
 **现象**：把 `packageManager: pnpm@11.28.5` 加进 `package.json` 之后，两个工作流都改在
 「准备 pnpm」这一步失败：
