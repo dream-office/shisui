@@ -9,8 +9,12 @@
 用法：
     python scripts/privacy-scan.py            # 扫工作树 + 历史
     python scripts/privacy-scan.py --quiet    # 只在有问题时输出
+
+本地白名单：仓库根目录的 `.privacy-allow`（已在 .gitignore，不会发布）里每行一个正则，
+命中即视为「有意公开」，用于放行自己确认过可以公开的邮箱 / 域名。
 退出码：0 干净 / 1 有发现（便于接进 CI 或发布脚本）
 """
+import os
 import re
 import subprocess
 import sys
@@ -21,6 +25,17 @@ QUIET = "--quiet" in sys.argv
 ALLOW = re.compile(
     r"example\.com|example\.org|teacher@edu\.cn|users\.noreply\.github\.com|4294967296"
 )
+
+# 本地白名单：把自己确认可公开的信息写进 .privacy-allow，不要硬编码进这个公开脚本
+_local_allow = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".privacy-allow")
+if os.path.exists(_local_allow):
+    extra = [
+        line.strip()
+        for line in open(_local_allow, encoding="utf-8").read().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if extra:
+        ALLOW = re.compile(ALLOW.pattern + "|" + "|".join(extra))
 
 CHECKS = [
     ("私人邮箱", re.compile(r"[\w.+-]+@(?!example\.|users\.noreply\.)[\w-]+\.[A-Za-z]{2,}")),
