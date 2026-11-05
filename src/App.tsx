@@ -29,10 +29,10 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark">课</span>
+          <span className="brand-mark">穗</span>
           <div className="brand-text">
-            <h1>课代表</h1>
-            <p>把群消息粘进来，10 秒变成不会错过的日程</p>
+            <h1>拾穗</h1>
+            <p>群里散落的截止时间，替你捡起来</p>
           </div>
         </div>
 

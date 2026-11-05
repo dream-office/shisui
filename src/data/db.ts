@@ -5,12 +5,12 @@
 import Dexie, { type Table } from 'dexie'
 import type { ImportBatch, StoredTask } from '@/core/types'
 
-export class KedaibiaoDB extends Dexie {
+export class ShisuiDB extends Dexie {
   tasks!: Table<StoredTask, string>
   batches!: Table<ImportBatch, string>
 
   constructor() {
-    super('kedaibiao')
+    super('shisui')
     this.version(1).stores({
       // 索引：截止时间用于日程排序，done 用于过滤，createdAt 用于导出排序
       tasks: 'id, dueAt, startAt, done, kind, createdAt',
@@ -19,4 +19,4 @@ export class KedaibiaoDB extends Dexie {
   }
 }
 
-export const db = new KedaibiaoDB()
+export const db = new ShisuiDB()

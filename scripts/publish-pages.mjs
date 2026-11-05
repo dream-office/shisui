@@ -33,7 +33,7 @@ if (!remote) {
   process.exit(1)
 }
 
-const work = mkdtempSync(join(tmpdir(), 'kedaibiao-pages-'))
+const work = mkdtempSync(join(tmpdir(), 'shisui-pages-'))
 console.log('→ 临时目录:', work)
 
 try {
