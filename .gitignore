@@ -9,3 +9,4 @@ dist-ssr/
 coverage/
 .DS_Store
 Thumbs.db
+*.tsbuildinfo
