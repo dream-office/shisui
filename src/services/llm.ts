@@ -40,7 +40,7 @@ export function isLLMReady(config: LLMConfig): boolean {
   return Boolean(config.endpoint && config.apiKey && config.model)
 }
 
-const KIND_LIST: TaskKind[] = ['homework', 'exam', 'meeting', 'signup', 'payment', 'survey', 'other']
+const KIND_LIST: TaskKind[] = ['task', 'meeting', 'review', 'signup', 'payment', 'approval', 'survey', 'exam', 'other']
 
 /**
  * 意图控制的核心在这里：把「AI 该做什么、不该做什么、拿不准怎么办」全部写成可执行规则。
@@ -51,9 +51,11 @@ export function buildMessages(raw: string, ref: Date) {
   const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][ref.getDay()]
 
   const system = [
-    '你是「校园通知结构化抽取器」。你只输出 JSON，不输出任何解释性文字。',
+    '你是「群消息结构化抽取器」。你只输出 JSON，不输出任何解释性文字。',
     '',
-    '任务：从一段班级群 / 教务 / 辅导员通知里，抽取「学生必须亲自去做、且有明确时间」的事项。',
+    '任务：从一段群聊 / 工作通知 / 校园通知里，抽取「必须亲自去做、且有明确时间」的事项。',
+    '不要预设场景。这段消息可能来自公司项目群、部门群、客户群、班级群、家长群或学校教务，',
+    '按内容判断，不要按场景套模板：公司群里有「作业」也可能指交付任务，班级群里也可能有「报销」。',
     '',
     '抽取原则：',
     '1. 只抽有行动要求的事项。寒暄、落款、免责声明、纯信息罗列一律不抽。',
@@ -62,7 +64,7 @@ export function buildMessages(raw: string, ref: Date) {
     '   - 「本周X / 这周X」= 本周的星期X；「下周X」= 下一周的星期X；「周X」= 最近的未来星期X',
     '   - 「今天/明天/后天」按当前日期顺延；「N天内」= 当前日期 + N 天',
     '   - 截止类（前 / 之前 / 截止 / 前提交）没有钟点时默认 23:59',
-    '   - 会议 / 考试类没有钟点时默认 09:00',
+    '   - 会议 / 考试 / 评审类没有钟点时默认 09:00',
     '4. 信息来源里没有的字段一律填 null。禁止编造地点、渠道、时间。',
     '5. 一句话里有两件事就拆成两条记录。',
     '6. 拿不准就把 confidence 设为 "low"，并说明原因。',
@@ -70,7 +72,7 @@ export function buildMessages(raw: string, ref: Date) {
     '输出格式（严格 JSON，不要 markdown 代码块）：',
     '{"tasks":[{"title":"干净的一句话标题，不含时间短语","kind":"' +
       KIND_LIST.join('|') +
-      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"学习通/邮箱/纸质/线上 等 或 null","location":"地点 或 null","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
+      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null","location":"地点 或 null","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
   ].join('\n')
 
   return [
