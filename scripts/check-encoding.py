@@ -32,4 +32,4 @@ print("binary:", binary if binary else "none")
 
 text = open("README.md", encoding="utf-8").read()
 print("README 首行:", text.splitlines()[0])
-print("中文可解:", "课代表" in text, "| 行数:", len(text.splitlines()))
+print("中文可解:", "拾穗" in text, "| 行数:", len(text.splitlines()))

@@ -20,7 +20,7 @@ export const DEFAULT_LLM_CONFIG: LLMConfig = {
   model: 'deepseek-chat',
 }
 
-const STORAGE_KEY = 'kedaibiao.llm.config'
+const STORAGE_KEY = 'shisui.llm.config'
 
 export function loadLLMConfig(): LLMConfig {
   try {

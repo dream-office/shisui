@@ -1,38 +1,51 @@
-# 课代表 · kedaibiao
+# 拾穗 · shisui
 
-[![ci](https://github.com/dream-office/kedaibiao/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-office/kedaibiao/actions/workflows/ci.yml)
+[![ci](https://github.com/dream-office/shisui/actions/workflows/ci.yml/badge.svg)](https://github.com/dream-office/shisui/actions/workflows/ci.yml)
 [![license: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 
-> 把班级群、教务通知、辅导员私聊里的截止时间，一次性变成不会错过的日程。
+> 群里散落的截止时间，一穗一穗捡回来。
 
 纯前端 · 本地优先 · 无需账号 · 无后端 · [AGPL-3.0](LICENSE)
 
-> **English** — Paste a wall of Chinese campus announcements, get a clean to-do list with absolute
-> timestamps and an automatic schedule-clash check. Runs entirely in the browser, no account,
-> no server, no data leaves your device.
+> **English** — Paste a wall of Chinese chat messages — project group, department group, class group,
+> family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
+> Runs entirely in the browser: no account, no server, no data leaves your device.
 
 ---
 
-## 为什么做这个
+## 为什么叫「拾穗」
 
-大学的截止时间散落在 QQ 群、班级群、辅导员私聊、教务通知、学习通公告里，写法还都是口语：
+米勒的画里，收割后的麦田落了一地麦穗，只有肯弯腰的人才不会把它踩过去。
+
+群聊就是那片麦田。真正要命的信息往往是一句「@所有人 周五 18:00 前交」，
+淹在两百条闲聊里；说话的人以为大家都看见了，看见的人以为是别人在负责。
+
+拾穗不读你的聊天记录（它没这个权限，也不想要）。你只需要把那句话粘进来。
+
+## 它解决什么
+
+工作群：
 
 ```
-【教务处】各位同学请注意：
-1. 本周五23:59前，请在学习通提交《数据结构》实验报告三，逾期系统自动关闭。
-2. 下周三下午2点，在 教学楼A301 召开选题班会，请准时参加。
-3. 11月18日前完成课程设计答辩PPT，发送至 teacher@edu.cn。
-4. 请大家3天内完成校园学习生活问卷，链接见群公告。
+【项目群】张经理：
+1. 本周五18:00前把 Q4 预算表发到财务邮箱，抄送王总。
+2. 下周一上午10点在 3楼会议室 开项目复盘会。
+3. 报销单请在11月20日前提交到 OA，逾期本季度不再受理。
 ```
 
-人眼扫一遍要半分钟，还得自己在脑子里换算「本周五」是哪天、会不会跟别的事撞上。**错过一次实验报告，代价是平时分。**
+学校群：
 
-课代表把这段话变成 4 条带绝对时间的待办，并当场告诉你：哪两件事几乎同时截止、哪一天堆了 3 件事。
+```
+【教务处】1. 本周五23:59前在学习通提交实验报告三，逾期系统自动关闭。
+```
+
+读起来都是人话，落进日历却全是模糊的。拾穗把它们变成带绝对时间的待办，
+并当场告诉你：哪两件事几乎同时截止、哪一天堆了三件。
 
 ## 功能
 
 - **中文口语时间归一化**：`本周五23:59`、`下周三之前`、`明晚8点`、`中午12点前`、`3天内`、`11月18日`、`八点半`、`下下周一`、`2026-11-18` 全部换算成绝对时刻。
-- **事项结构化**：识别类型（作业 / 考试答辩 / 会议 / 报名 / 缴费 / 问卷）、提交渠道（学习通 / 雨课堂 / 邮箱 / 腾讯会议 / 纸质…）、地点（`教学楼A301`），并把时间短语从标题里剔掉。
+- **事项结构化**：识别类型（任务 / 会议 / 评审 / 报名 / 报销缴费 / 审批 / 问卷 / 考试）、提交渠道（飞书 / 钉钉 / 企业微信 / OA / Jira / 邮箱 / 学习通 / 纸质…）、地点（`3楼会议室`、`教学楼A301`），并把时间短语从标题里剔掉。
 - **可解释的置信度**：每条都给 `high / medium / low` 和判断理由，歧义表达（光说「8点」、已过去的日期）会被标出来，**逼你确认，绝不静默猜错**。
 - **冲突体检**：已过期、两件相差不到 2 小时、同一天堆 3 件以上、未来 7 天压力分布。
 - **双引擎**：规则引擎可离线、可解释；接上任意 OpenAI 兼容接口后叠加 AI 增强。**不配 API Key 也完整可用**。
@@ -51,7 +64,7 @@ pnpm install     # 安装依赖
 pnpm dev         # http://127.0.0.1:5173
 ```
 
-首次打开点「填入示例一」→「开始解析」，2 分钟内能看完整个闭环。
+首次打开点「工作群示例」或「学校通知示例」→「开始解析」，2 分钟内能看完整个闭环。
 
 > 用 npm：`npm install && npm run dev`。本仓库锁文件为 `pnpm-lock.yaml`。
 
@@ -69,7 +82,7 @@ pnpm dev         # http://127.0.0.1:5173
 
 ### 在线 Demo
 
-**https://dream-office.github.io/kedaibiao/**
+**https://dream-office.github.io/shisui/**
 
 纯前端、无后端，页面加载完就能用（数据仍只存在你自己浏览器里）。
 发布方式是把构建产物推到 `gh-pages` 分支，由 GitHub Pages 直接托管——不依赖 CI：
@@ -145,7 +158,7 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 
 - 没有后端，**默认不发任何网络请求**。配置 AI 引擎后，请求直接发给你填的服务商，密钥只存本机 `localStorage`。
 - 数据存在浏览器 IndexedDB，清浏览器数据即彻底删除；设置页可导出 / 导入 JSON 备份。
-- 班级群通知里常有学号、手机号、成绩，这个设计不是省事，是必需。
+- 群消息里常有学号、手机号、客户名、金额，这个设计不是省事，是必需。
 
 ## 已知限制
 
@@ -171,7 +184,7 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 你也必须把修改后的源码以同样的许可证公开。
 
 ```
-Copyright (C) 2026 kedaibiao contributors
+Copyright (C) 2026 shisui contributors
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -179,4 +192,4 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 ```
 
-> 把上方版权署名里的 `kedaibiao contributors` 换成你希望署名的名字或组织即可。
+> 把上方版权署名里的 `shisui contributors` 换成你希望署名的名字或组织即可。

@@ -2,7 +2,7 @@
 
 站点是纯静态的（无后端、无环境变量），所以部署方式只有一条要求：**把 `dist/` 里的文件放到一个能访问的地方**。
 
-当前线上版本：**https://dream-office.github.io/kedaibiao/**
+当前线上版本：**https://dream-office.github.io/shisui/**
 
 ## 当前方式：GitHub Pages · 分支发布
 
@@ -21,7 +21,7 @@ pnpm deploy:pages      # = tsc -b && vite build + node scripts/publish-pages.mjs
 
 仓库设置（只需配一次）：**Settings → Pages → Source 选「Deploy from a branch」→ 分支 `gh-pages` / 目录 `/`**。
 
-> 站点使用相对路径（`vite.config.ts` 里 `base: './'`），所以放在 `/kedaibiao/` 这种子路径下也能正常工作，
+> 站点使用相对路径（`vite.config.ts` 里 `base: './'`），所以放在 `/shisui/` 这种子路径下也能正常工作，
 > 换到任意静态托管（Cloudflare Pages、Netlify、对象存储、内网 Nginx）都只需原样上传 `dist/`。
 
 ## 备选：GitHub Actions

@@ -23,7 +23,7 @@ export default function SettingsView() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `kedaibiao-backup-${new Date().toISOString().slice(0, 10)}.json`
+    link.download = `shisui-backup-${new Date().toISOString().slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
   }
@@ -126,10 +126,13 @@ export default function SettingsView() {
       </section>
 
       <section className="card about">
-        <h3>关于课代表</h3>
+        <h3>关于拾穗</h3>
         <ul>
           <li>
-            <strong>纯前端、本地优先</strong>：没有后端，没有账号，班级群里的学号、手机号、成绩不会离开你的浏览器。
+            <strong>纯前端、本地优先</strong>：没有后端，没有账号。学号、客户名、手机号、合同金额不会离开你的浏览器。
+          </li>
+          <li>
+            <strong>不预设场景</strong>：公司群、项目群、班级群、家长群，同一套解析规则——按内容判断，不按场景套模板。
           </li>
           <li>
             <strong>双引擎</strong>：规则引擎负责可解释、可离线；AI 引擎负责覆盖刁钻写法。两条路都能出结果，谁更可信取谁。

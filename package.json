@@ -1,9 +1,9 @@
 {
-  "name": "kedaibiao",
-  "version": "0.1.0",
+  "name": "shisui",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "description": "把班级群 / 教务通知粘贴进来，解析成带绝对时间的待办清单，并自动体检冲突。纯前端、本地优先。",
+  "description": "把群消息里散落的截止时间捡起来：解析成带绝对时间的待办，并自动体检冲突。纯前端、本地优先，公司群/项目群/班级群通用。",
   "license": "AGPL-3.0-or-later",
   "keywords": [
     "schedule",
@@ -19,11 +19,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dream-office/kedaibiao.git"
+    "url": "git+https://github.com/dream-office/shisui.git"
   },
-  "homepage": "https://dream-office.github.io/kedaibiao/",
+  "homepage": "https://dream-office.github.io/shisui/",
   "bugs": {
-    "url": "https://github.com/dream-office/kedaibiao/issues"
+    "url": "https://github.com/dream-office/shisui/issues"
   },
   "engines": {
     "node": ">=22.13"
