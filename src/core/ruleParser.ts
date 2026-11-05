@@ -8,7 +8,7 @@
  * 大模型作为「增强引擎」叠加在上面（core/llm.ts），两者结果合并后取高置信度者。
  */
 import type { Confidence, ParsedTask, TaskKind } from './types'
-import { extractTime } from './time'
+import { extractTime, type TimeHit } from './time'
 
 /**
  * 类型判定：从「最具体」排到「最宽泛」，先命中先得。
@@ -52,12 +52,17 @@ const CHANNEL_RULES: Array<{ name: string; re: RegExp }> = [
   { name: '纸质/线下', re: /(纸质|手写|打印|交到|办公室|前台|实验室)/ },
 ]
 
+/**
+ * 地点：既要认「教学楼A301」「3楼会议室」，也要避免把会议号 `123-456-789`
+ * 里的 `23-456` 当房间号。所以数字区间两端都加边界断言。
+ */
 const LOCATION_RE =
-  /((?:[东西南中北]?[一二三四五六七八九十\d]*教(?:学楼)?|[A-Za-z]?\d{1,3}\s*号楼|实验楼|图书馆|体育馆|报告厅|会议室)\s*[A-Za-z]?\s*\d{0,4}|\d{1,2}\s*楼\s*(?:会议室|报告厅|\d{2,4})|[A-Za-z]?\d{1,2}\s*[-－]\s*\d{2,4})/
+  /((?:[东西南中北]?[一二三四五六七八九十\d]*教(?:学楼)?|图书馆(?:报告厅)?|实验楼|体育馆|报告厅|会议室)\s*[A-Za-z]?\s*\d{0,4}|\d{1,2}\s*楼\s*(?:会议室|报告厅|\d{2,4})|(?<![\d-])[A-Za-z]?\d{1,2}\s*[-－]\s*\d{2,4}(?![\d-]))/
 
 /** 标题前面那些没有信息量的连接语，逐轮剥掉 */
 const LEADING_NOISE = [
-  /^(?:请|请注意|注意|大家|同学们?|各位|各位同学|各位同事|同事们|各部门|亲们|记得|务必|要求|通知|提醒|麻烦|另外|还有|以及|并且|同时|如|如果|如下|友情提示|特别提醒|紧急|重要)+/,
+  // 「如果」「如下」「若」必须排在裸「如」前面，否则「如果本周五…」会被剥成「果本周五…」
+  /^(?:请|请注意|注意|大家|同学们?|各位|各位同学|各位同事|同事们|各部门|亲们|记得|务必|要求|通知|提醒|麻烦|另外|还有|以及|并且|同时|如果|如下|若|如|友情提示|特别提醒|紧急|重要)+/,
   /^【[^】]{0,20}】/,
   /^\[[^\]]{0,20}\]/,
   /^\d{1,2}\s*[、.．)）]\s*/,
@@ -70,8 +75,70 @@ const LEADING_NOISE = [
  * 「整条通知作废」的措辞。
  * 注意不要写成光秃秃的「不再」——「逾期本季度不再受理」是催你按时交，
  * 不是取消这件事；把它当取消处理会直接吞掉一条真待办。
+ * 但裸「取消」和「已截止」必须认，否则取消通知会被当成新待办。
  */
-const NEGATIVE_RE = /(已取消|已经截止|已结束|作废|不再举行|不再进行|通知取消)/
+const NEGATIVE_RE = /(已取消|取消|已经截止|已截止|已结束|作废|不再举行|不再进行|通知取消)/
+
+/**
+ * 时间短语前后的虚词：一起吃掉，否则标题会留下「于」「前」「在」。
+ * 只认显式说法，不放裸「于 / 在」——「关于11月18日」的「于」属于「关于」，
+ * 「会议时间定在11月18日」的「在」属于「定在」，裸匹配会把它们削成「关」「定」。
+ */
+const BEFORE_TIME_RE =
+  /(?:截止日期为|截止日期是|截止时间是|截止时间为|截止时间在|截止到|截至|日期为|日期是|时间为|时间是|会议时间[：:]|时间[：:]|决定于|安排在|定于|定在|将于|将在|改在|放在|设在|约在|并在|请于|请在|(?<![现存正实])在)\s*$/
+/**
+ * 时间短语后面跟着的截止词或星期注记（「前」「之前」「（周三）」），可能连着出现，最多吃三轮。
+ * 「前」加否定后顾，只挡真正的词：「前台/前往/前后/前夕/年前/期限/前提是」，
+ * 不能一刀切挡「提」——「11月20日前提交」的「前」必须吃掉。
+ */
+const AFTER_TIME_RE =
+  /^\s*(?:之前|以前|前(?!台|往|后|夕|年|期|提是)|[（(]\s*(?:周|星期)[一二三四五六日天]\s*[）)])/
+
+/**
+ * 只删时间短语本身，不删它前后的正文。
+ * 早期实现是「从日期起点切到钟点终点」，当日期和钟点隔得远时
+ * （「11月18日之前把预算表发到财务邮箱，并在下午3点前确认」）会把中间整段正文删掉。
+ */
+function stripTimePhrases(segment: string, hit: TimeHit): string {
+  const ranges: Array<[number, number]> = []
+  if (hit.dateEnd > hit.dateStart) {
+    ranges.push(expandRange(segment, hit.dateStart, hit.dateEnd))
+  }
+  if (hit.clockStart !== null && hit.clockEnd !== null) {
+    ranges.push(expandRange(segment, hit.clockStart, hit.clockEnd))
+  }
+  // 时段词单独作为一段：它可能和钟点隔着字（「上午会议9点」），
+  // 并进去会把「会议」一起删掉。这里也做一次前置虚词扩展，
+  // 否则「并在下午3点前确认」会留下「在确认」。
+  if (hit.periodStart !== null && hit.periodEnd !== null) {
+    ranges.push(expandRange(segment, hit.periodStart, hit.periodEnd))
+  }
+  if (ranges.length === 0) return segment
+
+  ranges.sort((a, b) => a[0] - b[0])
+  let out = ''
+  let cursor = 0
+  for (const [start, end] of ranges) {
+    if (end <= cursor) continue
+    out += segment.slice(cursor, Math.max(start, cursor))
+    cursor = end
+  }
+  return out + segment.slice(cursor)
+}
+
+function expandRange(segment: string, start: number, end: number): [number, number] {
+  let s = start
+  let e = end
+  // 「11月18日（周三）前」这种连写：星期注记与截止词要依次吃掉
+  for (let i = 0; i < 3; i += 1) {
+    const tail = AFTER_TIME_RE.exec(segment.slice(e))
+    if (!tail) break
+    e += tail[0].length
+  }
+  const head = BEFORE_TIME_RE.exec(segment.slice(0, s))
+  if (head) s -= head[0].length
+  return [Math.max(0, s), e]
+}
 
 function cleanTitle(text: string): string {
   let out = text
@@ -82,11 +149,15 @@ function cleanTitle(text: string): string {
     if (out === before) break
   }
   return out
+    // 时间短语被裁掉后常留下悬空的虚词和标点：「，请尽快…」「于把…」「…在前提交」
+    .replace(/^[\s，,、；;：:]+/, '')
+    .replace(/^[于在为的]\s*/, '')
+    .replace(/[，,、；;：:]+$/, '')
     .replace(/[，,、；;\s]+$/, '')
     .replace(/\s{2,}/g, ' ')
-    // 中文之间不该留空格：时间短语被裁掉后中间会剩一个空格，
-    // 「报销单请在 提交到 OA」删掉空格才像人话。中英文之间的空格保留。
+    // 中文之间不该留空格：中英文之间的空格保留
     .replace(/(?<=[\u4e00-\u9fa5，。；：、])\s+(?=[\u4e00-\u9fa5])/g, '')
+    .replace(/^[，,、；;\s]+/, '')
     .trim()
 }
 
@@ -140,13 +211,8 @@ export function parseSegment(segment: string, ref: Date, index: number): ParsedT
 
   let title = segment
   if (hit) {
-    // 时间短语后面常跟着「前 / 之前 / 以前」这类截止词，一并吃掉，
-    // 否则标题里会留下一个孤零零的「前」
-    const tail = segment.slice(hit.end)
-    const tailDeadline = /^(之前|以前|前)/.exec(tail)
-    const cutEnd = hit.end + (tailDeadline ? tailDeadline[0].length : 0)
-    title = segment.slice(0, hit.start) + ' ' + segment.slice(cutEnd)
-    reasons.push(`时间短语「${hit.matched}${tailDeadline ? tailDeadline[0] : ''}」`)
+    title = stripTimePhrases(segment, hit)
+    reasons.push(`时间短语「${hit.matched}」`)
   }
   title = cleanTitle(title)
   if (!title) title = cleanTitle(segment).slice(0, 28)
@@ -161,9 +227,14 @@ export function parseSegment(segment: string, ref: Date, index: number): ParsedT
   const isDeadline = hit?.isDeadline ?? false
   if (isDeadline) reasons.push('含截止语义（前 / 之前 / 截止）')
 
-  // 截止类事项默认 23:59，事件类默认 09:00 —— 人来定，但先给个合理值
-  const startAt = hit?.hasClock ? (hit.atMs ?? null) : null
-  const dueAt = hit ? (hit.hasClock ? hit.atMs : hit.dateMs + 23 * 3600_000 + 59 * 60_000) : null
+  // 截止类事项默认 23:59；会议 / 考试 / 评审这类「有开始时刻」的事项默认 09:00。
+  // 但一句话里出现「前 / 截止」时，即使类型是评审也按截止处理（「11月18日前完成答辩PPT」是截止，不是开会）。
+  const isEventKind = kind === 'meeting' || kind === 'exam' || kind === 'review'
+  const isEvent = isEventKind && !isDeadline
+  const defaultOffset = isEvent ? 9 * 3600_000 : 23 * 3600_000 + 59 * 60_000
+  const clockAt = hit?.hasClock ? (hit.atMs ?? null) : null
+  const dueAt = hit ? (clockAt ?? hit.dateMs + defaultOffset) : null
+  const startAt = isDeadline ? null : (clockAt ?? (isEvent ? dueAt : null))
 
   const confidence = scoreConfidence({ hit, kind, title, isDeadline })
   reasons.push(
@@ -178,7 +249,7 @@ export function parseSegment(segment: string, ref: Date, index: number): ParsedT
     id: stableId(segment, index),
     title,
     dueAt,
-    startAt: isDeadline ? null : startAt,
+    startAt,
     kind,
     channel,
     location,

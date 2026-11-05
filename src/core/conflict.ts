@@ -33,7 +33,7 @@ export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): Confl
         id: `overdue_${task.id}`,
         level: 'danger',
         title: `「${task.title}」已经过期`,
-        detail: '如果这事还没做完，尽快补交或联系老师说明情况。',
+        detail: '如果还没完成，尽快补交，或联系通知发起人说明情况。',
         taskIds: [task.id],
       })
     }

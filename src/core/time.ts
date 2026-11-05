@@ -225,6 +225,9 @@ interface ClockHit {
   length: number
   matched: string
   period: string | null
+  /** 时段词（上午/下午/晚上）的独立区间：它可能和钟点隔着字，必须单独删 */
+  periodStart: number | null
+  periodEnd: number | null
   ambiguous: boolean
 }
 
@@ -260,9 +263,14 @@ function resolveClock(text: string): ClockHit | null {
   if (minute > 59) minute = 0
 
   // 从「几点」往前找时段词，只往前看 4 个字符，避免跨句污染
-  const window = text.slice(Math.max(0, index - 4), index)
+  const windowStart = Math.max(0, index - 4)
+  const window = text.slice(windowStart, index)
   const periodMatch = /(凌晨|早上|早晨|上午|中午|下午|傍晚|晚上|晚间|夜间|晚)/.exec(window)
   const period = periodMatch ? periodMatch[1] : null
+  // 时段词单独记区间：紧贴「下午3点」时自然与钟点相邻，
+  // 隔着字（「上午会议9点」）时也能各自删掉，不会连带吃掉中间正文
+  const periodStart = periodMatch ? windowStart + periodMatch.index : null
+  const periodEnd = periodMatch ? periodStart! + periodMatch[0].length : null
 
   let normalized = hour
   let ambiguous = false
@@ -279,7 +287,7 @@ function resolveClock(text: string): ClockHit | null {
     ambiguous = true
   }
 
-  return { hour: normalized, minute, index, length, matched: m?.[0] ?? '', period, ambiguous }
+  return { hour: normalized, minute, index, length, matched: m?.[0] ?? '', period, periodStart, periodEnd, ambiguous }
 }
 
 /** 截止语义的关键词 */
@@ -295,9 +303,15 @@ export interface TimeHit {
   ambiguous: boolean
   /** 命中的原文 */
   matched: string
-  /** 在原文中的区间，用于从标题里裁掉时间短语 */
-  start: number
-  end: number
+  /** 日期短语在原文中的区间（用于从标题里精确裁掉，避免连带删掉中间正文） */
+  dateStart: number
+  dateEnd: number
+  /** 钟点短语在原文中的区间；没有钟点时两个都为 null */
+  clockStart: number | null
+  clockEnd: number | null
+  /** 时段词（上午/下午/晚上）的独立区间；没有时段词时为 null */
+  periodStart: number | null
+  periodEnd: number | null
 }
 
 /**
@@ -327,8 +341,12 @@ export function extractTime(text: string, ref: Date = new Date()): TimeHit | nul
       isDeadline,
       ambiguous: true,
       matched: clockHit.matched,
-      start: clockHit.index,
-      end: clockHit.index + clockHit.length,
+      dateStart: clockHit.index,
+      dateEnd: clockHit.index,
+      clockStart: clockHit.index,
+      clockEnd: clockHit.index + clockHit.length,
+      periodStart: clockHit.periodStart,
+      periodEnd: clockHit.periodEnd,
     }
   }
 
@@ -336,8 +354,14 @@ export function extractTime(text: string, ref: Date = new Date()): TimeHit | nul
   const hasClock = Boolean(clockHit)
   const atMs = clockHit ? setClock(date, clockHit.hour, clockHit.minute).getTime() : null
 
-  const start = dateHit!.index
-  const end = clockHit ? Math.max(dateHit!.index + dateHit!.length, clockHit.index + clockHit.length) : dateHit!.index + dateHit!.length
+  const dateStart = dateHit!.index
+  const dateEnd = dateHit!.index + dateHit!.length
+  const clockStart = clockHit ? clockHit.index : null
+  const clockEnd = clockHit ? clockHit.index + clockHit.length : null
+
+  // matched 只用于「为什么这么判断」的展示，取两端覆盖即可
+  const spanStart = Math.min(dateStart, clockStart ?? dateStart, clockHit?.periodStart ?? Number.MAX_SAFE_INTEGER)
+  const spanEnd = Math.max(dateEnd, clockEnd ?? dateEnd)
 
   return {
     dateMs: startOfDay(date).getTime(),
@@ -345,9 +369,13 @@ export function extractTime(text: string, ref: Date = new Date()): TimeHit | nul
     hasClock,
     isDeadline,
     ambiguous: dateHit!.ambiguous || Boolean(clockHit?.ambiguous),
-    matched: text.slice(start, end).trim(),
-    start,
-    end,
+    matched: text.slice(spanStart, spanEnd).trim(),
+    dateStart,
+    dateEnd,
+    clockStart,
+    clockEnd,
+    periodStart: clockHit?.periodStart ?? null,
+    periodEnd: clockHit?.periodEnd ?? null,
   }
 }
 

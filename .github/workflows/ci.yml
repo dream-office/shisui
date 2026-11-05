@@ -37,7 +37,7 @@ jobs:
       - name: 类型检查
         run: pnpm typecheck
 
-      - name: 单元测试（48 条，确定性）
+      - name: 单元测试（确定性）
         run: pnpm test
 
       - name: 生产构建

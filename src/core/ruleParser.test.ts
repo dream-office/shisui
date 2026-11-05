@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseNotice, splitSegments } from './ruleParser'
-import { SAMPLE_NOTICE, SAMPLE_WORK } from './samples'
+import { SAMPLE_NOTICE, SAMPLE_NOTICE_2, SAMPLE_WORK } from './samples'
 
 const REF = new Date(2026, 10, 4, 22, 7, 0) // 2026-11-04 周三 22:07
 const at = (m: number, d: number, h: number, min: number) => new Date(2026, m - 1, d, h, min).getTime()
@@ -127,5 +127,154 @@ describe('parseNotice 工作群消息', () => {
     expect(task.kind).toBe('survey')
     expect(task.channel).toBe('飞书')
     expect(task.dueAt).toBe(at(11, 7, 23, 59))
+  })
+})
+
+/**
+ * 标题裁剪：只删时间短语本身（含时段词与紧邻虚词），不删前后正文。
+ * 断言必须是【完整标题】——只写 not.toMatch 抓不到「于确认」「上午在…」这类残句。
+ */
+describe('标题裁剪', () => {
+  const cases: Array<[string, string]> = [
+    ['请于本周五18:00前把预算表发到财务邮箱。', '把预算表发到财务邮箱'],
+    ['截止日期为11月20日，请尽快提交报销单。', '尽快提交报销单'],
+    ['本周五 23:59 之前交实验报告。', '交实验报告'],
+    ['请在 11月20日 前提交到 OA。', '提交到 OA'],
+    ['如果本周五18:00前不提交，视为放弃。', '不提交，视为放弃'],
+    // 时段词必须跟着钟点一起删掉
+    ['请于下午3点前提交报销单。', '提交报销单'],
+    ['11月18日下午3点开会，请准时。', '开会，请准时'],
+    // 「关于」不能被裸「于」削成「关」
+    ['关于11月18日提交报销单的通知。', '提交报销单的通知'],
+    // 显式介词短语
+    ['截至11月20日，请提交报销单。', '提交报销单'],
+    ['截止到11月20日18:00前提交报销单。', '提交报销单'],
+    ['会议定于11月18日下午3点举行', '会议举行'],
+    // 日期后的星期注记
+    ['11月18日（周三）前提交报销单。', '提交报销单'],
+    // 「前台」「前往」里的「前」不是截止词
+    ['11月18日前台集合', '前台集合'],
+    ['11月18日前往北京出差', '前往北京出差'],
+    // 时段词与钟点之间夹了字：两边各自删，不能连带吃掉中间正文
+    ['上午会议9点开始，请准时。', '会议开始，请准时'],
+    ['11月18日下午会议3点开始，请准时。', '会议开始，请准时'],
+    ['会议时间定在11月18日下午3点。', '会议时间'],
+    // 裸「在」兜底：避免「会议在举行」这种残句
+    ['会议在11月18日举行。', '会议举行'],
+  ]
+
+  it.each(cases)('%s → %s', (raw, expected) => {
+    const { tasks } = parseNotice(raw, REF)
+    expect(tasks[0].title).toBe(expected)
+  })
+
+  it('日期与钟点隔得远时，中间正文不能被删（断言完整标题）', () => {
+    const { tasks } = parseNotice('请于11月18日之前把预算表发到财务邮箱，并在下午3点前确认。', REF)
+    expect(tasks[0].title).toBe('把预算表发到财务邮箱，确认')
+  })
+})
+
+/**
+ * 样本标题整体回归：这些标题是用户点「工作群示例 / 学校通知示例」第一眼看到的东西。
+ * 之前只断言 kind/channel/dueAt，标题被裁成「上午在 3楼会议室…」也全绿。
+ */
+describe('示例样本的标题', () => {
+  const PERIOD_WORDS = /上午|下午|中午|晚上|凌晨|傍晚/
+
+  it('工作群样本：标题不含残留时段词', () => {
+    const { tasks } = parseNotice(SAMPLE_WORK, REF)
+    for (const task of tasks) expect(task.title).not.toMatch(PERIOD_WORDS)
+    expect(tasks[1].title).toBe('3楼会议室开项目复盘会，飞书会议同步，请提前准备')
+    expect(tasks[2].title).toBe('报销单提交到 OA，逾期本季度不再受理')
+  })
+
+  it('学校通知样本：标题不含残留时段词', () => {
+    const { tasks } = parseNotice(SAMPLE_NOTICE, REF)
+    for (const task of tasks) expect(task.title).not.toMatch(PERIOD_WORDS)
+    expect(tasks[1].title).toContain('召开选题班会')
+  })
+
+  it('辅导员样本：标题不含残留时段词', () => {
+    const { tasks } = parseNotice(SAMPLE_NOTICE_2, REF)
+    for (const task of tasks) expect(task.title).not.toMatch(PERIOD_WORDS)
+    expect(tasks[0].title).toBe('把国家助学贷款回执交到学生办公室302')
+    expect(tasks[1].title).toBe('图书馆报告厅有考研经验分享会，想去的同学报名')
+  })
+})
+
+describe('取消类通知', () => {
+  it('裸「取消」的班会不生成待办', () => {
+    expect(parseNotice('本周五的班会取消，请大家互相转告。', REF).tasks).toHaveLength(0)
+  })
+
+  it('「已截止」的报名不生成待办', () => {
+    expect(parseNotice('报名已截止，请关注下次通知。', REF).tasks).toHaveLength(0)
+  })
+
+  it('「逾期不再受理」是催交，不是取消', () => {
+    const { tasks } = parseNotice('报销单请在11月20日前提交到 OA，逾期本季度不再受理。', REF)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].kind).toBe('payment')
+  })
+})
+
+/** 默认时刻：事件类 09:00，截止类 23:59 —— README 里承诺的行为，必须有测试兜着 */
+describe('没有钟点时的默认时刻', () => {
+  it('会议默认 09:00，并作为开始时刻', () => {
+    const { tasks } = parseNotice('下周一开会', REF)
+    expect(tasks[0].kind).toBe('meeting')
+    expect(tasks[0].dueAt).toBe(at(11, 9, 9, 0))
+    expect(tasks[0].startAt).toBe(at(11, 9, 9, 0))
+  })
+
+  it('考试默认 09:00', () => {
+    const { tasks } = parseNotice('下周一考试', REF)
+    expect(tasks[0].kind).toBe('exam')
+    expect(tasks[0].dueAt).toBe(at(11, 9, 9, 0))
+  })
+
+  it('截止类默认 23:59，且不设开始时刻', () => {
+    const { tasks } = parseNotice('11月18日前提交报销单', REF)
+    expect(tasks[0].dueAt).toBe(at(11, 18, 23, 59))
+    expect(tasks[0].startAt).toBeNull()
+  })
+})
+
+describe('办公类类型与渠道', () => {
+  it('审批：approval + OA 渠道', () => {
+    const { tasks } = parseNotice('请在本周五前完成报销单审批，走 OA 流程。', REF)
+    expect(tasks[0].kind).toBe('approval')
+    expect(tasks[0].channel).toBe('OA/审批系统')
+  })
+
+  it.each([
+    ['下周一10点钉钉群开周会', '钉钉'],
+    ['下周一10点企业微信开周会', '企业微信'],
+    ['本周五18:00前把文档传到腾讯文档', '在线文档'],
+    ['明天下午3点Zoom会议', '线上会议'],
+  ])('%s → 渠道 %s', (raw, channel) => {
+    expect(parseNotice(raw, REF).tasks[0].channel).toBe(channel)
+  })
+})
+
+/**
+ * 辅导员提醒样本：同时验证「图书馆报告厅」整体地点与「会议号不是房间号」。
+ * 这份样本以前只有定义没人用（死代码），现在接进测试。
+ */
+describe('parseNotice 辅导员提醒', () => {
+  const { tasks } = parseNotice(SAMPLE_NOTICE_2, REF)
+
+  it('三条都能抽出来', () => {
+    expect(tasks).toHaveLength(3)
+  })
+
+  it('「图书馆报告厅」作为整体地点，不被截成「图书馆」', () => {
+    const task = tasks.find((t) => t.title.includes('分享会'))!
+    expect(task.location).toBe('图书馆报告厅')
+  })
+
+  it('会议号 123-456-789 不会被误认成房间号', () => {
+    const task = tasks.find((t) => t.title.includes('班会'))!
+    expect(task.location).toBeNull()
   })
 })
