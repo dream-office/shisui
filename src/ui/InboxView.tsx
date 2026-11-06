@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from '@/state/store'
-import { SAMPLE_NOTICE, SAMPLE_WORK } from '@/core/samples'
+import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import CandidateCard from './CandidateCard'
 import { useNow } from './useNow'
 

@@ -1,0 +1,32 @@
+{
+  "name": "shisui-core",
+  "version": "0.3.0",
+  "description": "拾穗的解析核心：中文口语时间归一化 + 通知解析 + 冲突体检。纯函数、零运行时依赖，可以在浏览器、Node、任何 JS 环境里用。",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "time-parser",
+    "chinese-nlp",
+    "schedule",
+    "todo",
+    "natural-language",
+    "typescript"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  }
+}

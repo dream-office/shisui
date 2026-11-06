@@ -34,7 +34,7 @@
 3. **稳定性**：通知里 70% 的信息高度模式化，规则比模型更稳、更快、更省。
 4. **成本**：批量粘贴几十条通知时，不该每次都付费。
 
-**代价**：规则需要持续维护。缓解方式是「样本驱动」：`src/core/samples.ts` 里的真实通知同时服务 UI 示例和单元测试，出一类新写法就加一条样本 + 一条测试。
+**代价**：规则需要持续维护。缓解方式是「样本驱动」：`packages/core/src/samples.ts` 里的真实通知同时服务 UI 示例和单元测试，出一类新写法就加一条样本 + 一条测试。
 
 ---
 
@@ -228,10 +228,35 @@ if (kind === 'other' && !hasDeadlineWord && !hit?.hasClock) return null
 
 ## 想加一种新的时间写法？
 
-1. 在 `src/core/samples.ts` 加一条包含该写法的真实通知；
-2. 在 `src/core/ruleParser.test.ts` 或 `time.test.ts` 写断言（一定注入固定 `ref`）；
+1. 在 `packages/core/src/samples.ts` 加一条包含该写法的真实通知；
+2. 在 `packages/core/src/ruleParser.test.ts` 或 `time.test.ts` 写断言（一定注入固定 `ref`）；
 3. 跑 `pnpm test` 确认失败；
-4. 改 `src/core/time.ts` 的 `resolveDate` / `resolveClock`，让测试变绿；
+4. 改 `packages/core/src/time.ts` 的 `resolveDate` / `resolveClock`，让测试变绿；
 5. 顺手确认 UI 上「为什么这么判断」的理由说得清。
 
 做到这五步，这次改动就是可回归的。
+
+---
+
+## 006 · 把核心拆成 MIT 独立包
+
+**时间**：2026-11-06
+
+**决定**：`src/core/` 整体迁到 `packages/core/`，作为 `shisui-core` 单独以 MIT 授权；
+应用层保持 AGPL-3.0-or-later。
+
+**理由**：
+
+1. **许可要跟职能匹配**：中文时间解析、通知切分、冲突体检是通用能力，别的项目想用不该被迫 AGPL；
+   应用本身是完整产品，AGPL 依然合理。
+2. **趁还没有外部贡献者**：现在改许可是唯一版权人说了算；一旦有 PR，就要逐个征得同意。
+3. **拆分本身是一次结构审查**：`core` 本来就零依赖、零 IO，迁出去几乎不用改代码 ——
+   这反过来证明分层是干净的。
+
+**代价**：
+
+- 多了一层 workspace 配置（`pnpm-workspace.yaml` 的 `packages`、vite/vitest 的 alias、tsconfig paths），
+  任何一处漏配，表现都是「模块找不到」，而且报错位置离原因很远。
+- 应用 dev 时直接吃核心包**源码**（alias 到 `packages/core/src/index.ts`），不 build 也能跑；
+  但要把 `shisui-core` 发到 npm，必须先 `pnpm --filter shisui-core build`。
+- 两套 LICENSE 并存，必须在 README 里写清楚哪部分适用哪份 —— 否则读者会以为整个仓库都是 MIT。

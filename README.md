@@ -103,26 +103,30 @@ pnpm deploy:pages     # 构建并发布到 gh-pages
 ### 分层
 
 ```
-src/
-├─ core/        纯领域逻辑：零 React、零 IO、可 100% 单测
-│  ├─ time.ts          中文时间表达归一化
-│  ├─ ruleParser.ts    通知切分与待办抽取
-│  ├─ conflict.ts      冲突体检与压力分布
-│  ├─ merge.ts         规则 + AI 双引擎合并
-│  └─ format.ts        时间渲染与倒计时
+packages/core/        ← 独立包 shisui-core（MIT）：纯领域逻辑，零 React、零 IO
+├─ time.ts               中文时间表达归一化
+├─ ruleParser.ts         通知切分与待办抽取
+├─ conflict.ts           冲突体检与压力分布
+├─ merge.ts              规则 + AI 双引擎合并
+└─ format.ts             时间渲染与倒计时
+
+src/                  ← 应用本体（AGPL-3.0-or-later）
 ├─ data/        持久化：Dexie schema 与仓储层
 ├─ services/    外部 IO：AI 引擎（Prompt / 流式 SSE / 降级）
 ├─ state/       状态编排：解析 → 合并 → 确认 → 落库
 └─ ui/          视图组件：只读状态、调 action
 ```
 
-依赖方向严格单向：`ui → state → data / services → core`。`core` 不 import 任何上层模块，
+依赖方向严格单向：`ui → state → data / services → shisui-core`。核心包不 import 任何上层模块，
 所以能被单测完整覆盖；`ui` 不含业务分支，所以改视觉不动逻辑。
+
+**核心包为什么单独拆出来**：解析能力是通用基础设施，不该被 AGPL 绑住。
+它有自己的 `package.json` / `LICENSE`(MIT) / `README`，能单独 build，也能被别的项目直接引用。
 
 ### 时间归一化：注入 `ref` 的纯函数
 
 ```ts
-import { extractTime } from '@/core/time'
+import { extractTime } from 'shisui-core'
 
 extractTime('本周五23:59前提交实验报告', new Date(2026, 10, 4, 22, 7))
 // → { atMs: 2026-11-06 23:59, isDeadline: true, ambiguous: false, ... }
@@ -183,7 +187,7 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 
 ## 参与贡献
 
-见 [CONTRIBUTING.md](CONTRIBUTING.md)。改动 `core/` 层请务必带测试——那里的每条规则都对应一类真实通知写法。
+见 [CONTRIBUTING.md](CONTRIBUTING.md)。改动 `packages/core/` 请务必带测试——那里的每条规则都对应一类真实通知写法。
 
 - [路线图](docs/ROADMAP.md) —— 想做什么、明确不做什么
 - [设计记录](docs/DEVLOG.md) —— 关键决策与踩过的坑
@@ -191,10 +195,18 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 
 ## 许可证
 
-[GNU Affero General Public License v3.0 or later](LICENSE)。
+本项目**分两块授权**：
 
-简单说：你可以自由使用、修改、分发本项目，包括商用；但如果你修改后把它部署成**供他人通过网络访问的服务**，
-你也必须把修改后的源码以同样的许可证公开。
+| 部分 | 目录 | 许可 |
+| --- | --- | --- |
+| 应用本体 | `src/`、`index.html`、`scripts/` | [AGPL-3.0-or-later](LICENSE) |
+| 解析核心 | `packages/core/` | [MIT](packages/core/LICENSE) |
+
+**为什么核心用 MIT**：中文时间解析、通知切分、冲突体检是通用能力，不该被 copyleft 绑住。
+应用是完整产品，保持 AGPL 合理。
+
+应用的许可（AGPL）简单说：你可以自由使用、修改、分发本项目，包括商用；
+但如果你修改后把它部署成**供他人通过网络访问的服务**，你也必须把修改后的源码以同样的许可证公开。
 
 ```
 Copyright (C) 2026 shisui contributors
