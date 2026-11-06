@@ -2,7 +2,7 @@
  * 仓储层：UI 与会话状态只通过这组函数碰数据，不直接写 Dexie。
  * 好处是「换存储介质」不用改 UI —— 以后要同步到云端，只改这一层。
  */
-import type { ImportBatch, ParsedTask, StoredTask } from '@/core/types'
+import type { ImportBatch, ParsedTask, StoredTask } from 'shisui-core'
 import { db } from './db'
 
 export async function listTasks(): Promise<StoredTask[]> {

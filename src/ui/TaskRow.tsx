@@ -1,5 +1,5 @@
-import type { StoredTask } from '@/core/types'
-import { countdown, formatClock, formatDayLabel } from '@/core/format'
+import type { StoredTask } from 'shisui-core'
+import { countdown, formatClock, formatDayLabel } from 'shisui-core'
 
 interface Props {
   task: StoredTask

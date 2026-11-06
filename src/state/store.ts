@@ -4,9 +4,9 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { mergeTasks } from '@/core/merge'
-import { parseNotice } from '@/core/ruleParser'
-import type { ParsedTask, StoredTask } from '@/core/types'
+import { mergeTasks } from 'shisui-core'
+import { parseNotice } from 'shisui-core'
+import type { ParsedTask, StoredTask } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 

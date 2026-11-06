@@ -1,5 +1,5 @@
-import type { ParsedTask, TaskKind } from '@/core/types'
-import { countdown, formatWhen, fromLocalInput, toLocalInput } from '@/core/format'
+import type { ParsedTask, TaskKind } from 'shisui-core'
+import { countdown, formatWhen, fromLocalInput, toLocalInput } from 'shisui-core'
 
 const KIND_LABEL: Record<TaskKind, string> = {
   task: '任务',

@@ -3,7 +3,7 @@
  * 这不只是「省事」，而是这个产品的隐私卖点 —— 班级群通知里往往有学号、手机号、成绩。
  */
 import Dexie, { type Table } from 'dexie'
-import type { ImportBatch, StoredTask } from '@/core/types'
+import type { ImportBatch, StoredTask } from 'shisui-core'
 
 export class ShisuiDB extends Dexie {
   tasks!: Table<StoredTask, string>

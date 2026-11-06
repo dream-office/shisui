@@ -7,6 +7,29 @@
 
 （下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
 
+## [0.3.0] - 2026-11-06
+
+**把解析核心拆成独立包 `shisui-core`，单独以 MIT 授权。**
+
+### 新增
+
+- `packages/core/`：时间归一化、通知解析、冲突体检、格式渲染、双引擎合并、示例样本，
+  从 `src/core/` 整体迁入（`git mv`，保留文件历史）。包自带 `package.json` / `LICENSE`(MIT) / `README.md`，
+  可独立 `pnpm --filter shisui-core build` 产出 `dist/` + `.d.ts`。
+- 应用层改为 `import … from 'shisui-core'`，workspace 依赖（`workspace:*`），开发时直接吃源码，改完立刻生效。
+
+### 变更
+
+- **许可拆分**：应用本体保持 AGPL-3.0-or-later，`packages/core/` 改为 MIT。
+  解析能力是通用基础设施，不该被 copyleft 绑住；应用是完整产品，AGPL 依然合理。
+- 新增 devDependency `@types/node`（`vite.config.ts` 用 `node:url` 定位核心包源码）。
+- 测试配置改为同时发现 `src/**/*.test.ts` 与 `packages/**/*.test.ts`。
+
+### 验证
+
+- `tsc --noEmit` 干净；**89 条测试全过**（全部来自 `packages/core`）；`vite build` 通过；
+  `pnpm --filter shisui-core build` 产出 32 个文件（含 `.d.ts` 与 sourcemap）。
+
 ## [0.2.1] - 2026-11-05
 
 发布前复核（独立子代理）逐条审出来的问题，全部修掉。

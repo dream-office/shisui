@@ -6,7 +6,7 @@
  *  2. temperature = 0，同输入尽量同输出；
  *  3. 流式返回，把「AI 正在读、正在写」的中间态暴露在界面上，而不是转圈等黑盒。
  */
-import type { Confidence, ParsedTask, TaskKind } from '@/core/types'
+import type { Confidence, ParsedTask, TaskKind } from 'shisui-core'
 
 export interface LLMConfig {
   endpoint: string
