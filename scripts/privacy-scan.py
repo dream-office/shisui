@@ -7,35 +7,27 @@
 3) 仓库根目录有没有混进不该公开的备份、导出、密钥文件。
 
 用法：
-    python scripts/privacy-scan.py            # 扫工作树 + 历史
-    python scripts/privacy-scan.py --quiet    # 只在有问题时输出
+    python scripts/privacy-scan.py                    # 扫当前目录
+    python scripts/privacy-scan.py --path D:\\proj    # 扫指定仓库
+    python scripts/privacy-scan.py --quiet            # 只在有问题时输出
 
 本地白名单：仓库根目录的 `.privacy-allow`（已在 .gitignore，不会发布）里每行一个正则，
 命中即视为「有意公开」，用于放行自己确认过可以公开的邮箱 / 域名。
 退出码：0 干净 / 1 有发现（便于接进 CI 或发布脚本）
+
+注意：git 默认会把非 ASCII 路径转义成 "\\346\\225..."，这里统一加
+`-c core.quotepath=false`，否则中文路径的文件会被静默跳过 —— 那种「0 命中」是假的。
 """
+import argparse
 import os
 import re
 import subprocess
 import sys
 
-QUIET = "--quiet" in sys.argv
-
 # 一眼假的占位符，命中这些不算问题
 ALLOW = re.compile(
     r"example\.com|example\.org|teacher@edu\.cn|users\.noreply\.github\.com|4294967296"
 )
-
-# 本地白名单：把自己确认可公开的信息写进 .privacy-allow，不要硬编码进这个公开脚本
-_local_allow = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".privacy-allow")
-if os.path.exists(_local_allow):
-    extra = [
-        line.strip()
-        for line in open(_local_allow, encoding="utf-8").read().splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
-    if extra:
-        ALLOW = re.compile(ALLOW.pattern + "|" + "|".join(extra))
 
 CHECKS = [
     ("私人邮箱", re.compile(r"[\w.+-]+@(?!example\.|users\.noreply\.)[\w-]+\.[A-Za-z]{2,}")),
@@ -48,9 +40,33 @@ CHECKS = [
 SKIP_EXT = (".png", ".jpg", ".jpeg", ".gif", ".ico", ".woff", ".woff2", ".bundle")
 SKIP_PATH = ("pnpm-lock.yaml", "package-lock.json")
 
+ROOT = "."
+
+
+def load_local_allow():
+    """本地白名单：把自己确认可公开的信息写进 .privacy-allow，不硬编码进公开脚本。"""
+    global ALLOW
+    path = os.path.join(ROOT, ".privacy-allow")
+    if not os.path.exists(path):
+        return
+    extra = [
+        line.strip()
+        for line in open(path, encoding="utf-8").read().splitlines()
+        if line.strip() and not line.strip().startswith("#")
+    ]
+    if extra:
+        ALLOW = re.compile(ALLOW.pattern + "|" + "|".join(extra))
+
+
+def git(*args):
+    return subprocess.run(
+        ["git", "-c", "core.quotepath=false", *args],
+        cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+
 
 def tracked_files():
-    out = subprocess.run(["git", "ls-files"], capture_output=True, text=True, encoding="utf-8")
+    out = git("ls-files")
     return [f for f in out.stdout.splitlines() if f.strip()]
 
 
@@ -60,7 +76,7 @@ def scan_worktree():
         if path.endswith(SKIP_EXT) or path in SKIP_PATH:
             continue
         try:
-            text = open(path, encoding="utf-8").read()
+            text = open(os.path.join(ROOT, path), encoding="utf-8").read()
         except (OSError, UnicodeDecodeError):
             continue
         for lineno, line in enumerate(text.splitlines(), 1):
@@ -74,11 +90,8 @@ def scan_worktree():
 
 
 def scan_history():
-    out = subprocess.run(
-        ["git", "log", "--format=%h%x09%an%x09%ae", "--all"],
-        capture_output=True, text=True, encoding="utf-8",
-    )
-    emails, names = {}, {}
+    out = git("log", "--format=%h%x09%an%x09%ae", "--all")
+    emails = {}
     for line in out.stdout.splitlines():
         parts = line.split("\t")
         if len(parts) != 3:
@@ -86,7 +99,6 @@ def scan_history():
         sha, name, email = parts
         if not ALLOW.search(email):
             emails.setdefault(email, []).append(sha)
-        names.setdefault(name, []).append(sha)
     findings = []
     for email, shas in emails.items():
         findings.append(("历史里的私人邮箱", f"git 历史 {len(shas)} 个提交", 0, email))
@@ -104,6 +116,7 @@ def scan_stray_files():
 
 
 def main():
+    global ROOT
     # Windows 默认控制台是 GBK，表情符号会直接抛 UnicodeEncodeError；
     # 先在入口处把 stdout 兜住，输出里也只用 ASCII 标记。
     try:
@@ -111,9 +124,23 @@ def main():
     except (AttributeError, ValueError):
         pass
 
+    ap = argparse.ArgumentParser(description="发布前隐私自查")
+    ap.add_argument("--path", default=".", help="仓库目录（默认当前目录）")
+    ap.add_argument("--quiet", action="store_true", help="只在有问题时输出")
+    args = ap.parse_args()
+
+    ROOT = args.path
+    if not os.path.isdir(ROOT):
+        print(f"[!] 目录不存在：{ROOT}")
+        return 2
+    if not os.path.isdir(os.path.join(ROOT, ".git")):
+        print(f"[!] 不是 git 仓库：{ROOT}")
+        return 2
+
+    load_local_allow()
     findings = scan_worktree() + scan_history() + scan_stray_files()
     if not findings:
-        if not QUIET:
+        if not args.quiet:
             print("[OK] 隐私自查通过：工作树与 git 历史里没有发现个人数据")
         return 0
 

@@ -104,11 +104,12 @@ pnpm deploy:pages     # 构建并发布到 gh-pages
 
 ```
 packages/core/        ← 独立包 shisui-core（MIT）：纯领域逻辑，零 React、零 IO
-├─ time.ts               中文时间表达归一化
-├─ ruleParser.ts         通知切分与待办抽取
-├─ conflict.ts           冲突体检与压力分布
-├─ merge.ts              规则 + AI 双引擎合并
-└─ format.ts             时间渲染与倒计时
+└─ src/
+   ├─ time.ts               中文时间表达归一化
+   ├─ ruleParser.ts         通知切分与待办抽取
+   ├─ conflict.ts           冲突体检与压力分布
+   ├─ merge.ts              规则 + AI 双引擎合并
+   └─ format.ts             时间渲染与倒计时
 
 src/                  ← 应用本体（AGPL-3.0-or-later）
 ├─ data/        持久化：Dexie schema 与仓储层
