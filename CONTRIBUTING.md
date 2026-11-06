@@ -33,13 +33,13 @@ ui → state → data / services → core
 
 | 层 | 允许做的事 | 禁止做的事 |
 | --- | --- | --- |
-| `core/` | 纯函数、纯类型 | import React / Dexie / `fetch` / `localStorage` |
+| `packages/core/` | 纯函数、纯类型 | import React / Dexie / `fetch` / `localStorage` |
 | `data/` | 读写 IndexedDB | 业务判断、UI 文案 |
 | `services/` | 网络请求、外部协议 | 直接改 React 状态 |
 | `state/` | 编排业务流 | 写 JSX |
 | `ui/` | 渲染、交互 | 业务阈值（如「12 小时内算紧急」） |
 
-第二条硬性规则：**业务阈值只允许存在一处**。倒计时颜色阈值在 `core/format.ts` 的 `countdown()`，
+第二条硬性规则：**业务阈值只允许存在一处**。倒计时颜色阈值在 `packages/core/src/format.ts` 的 `countdown()`，
 组件只消费返回的 `tone`。同理，某个数字出现在两个地方就是 bug 的开始。
 
 ## 编码风格
@@ -51,11 +51,22 @@ ui → state → data / services → core
 
 ## 测试要求
 
-改 `core/` 必须带测试，这不是形式主义：
+改 `packages/core/` 必须带测试，这不是形式主义：
 
 - **时间相关一律注入 `ref`**，不要用 `Date.now()`，否则测试会随时间漂移。
 - 断言具体字段（类型、渠道、地点、绝对时间、置信度），不要只断言「长度是 4」。
 - 新增时间表达写法时，在 `packages/core/src/samples.ts` 里加一条真实通知样本，并让 UI 示例与测试共用同一份。
+
+## 贡献许可
+
+提交 PR 即表示你同意：你的贡献按本仓库的许可证（AGPL-3.0-or-later）授权，
+并允许项目在保持同一许可证的前提下分发它。
+
+这条声明就是常说的「inbound = outbound」——**你贡献的代码和仓库里已有的代码用同一份许可**。
+它替代了 CLA（贡献者许可协议）：本项目不要求签任何额外协议，提 PR 不会被额外门槛挡住。
+
+> 项目目前由单一维护者主导，这条声明也保留了「在没有外部贡献者时调整许可」的余地。
+> 如果将来需要双许可或商业授权，会先和处理外部贡献者身份/授权问题一并说明。
 
 ## 提交信息
 
@@ -73,7 +84,7 @@ chore: 升级 vitest
 ## Pull Request 检查清单
 
 - [ ] `pnpm check` 通过
-- [ ] 新增/修改的 `core/` 逻辑有对应测试
+- [ ] 新增/修改的 `packages/core/` 逻辑有对应测试
 - [ ] 没有引入 UI 框架或重量级依赖（新依赖请在 PR 描述里说明理由与体积影响）
 - [ ] 没有把业务判断写进组件
 - [ ] 涉及数据结构的改动说明是否做了 Dexie 版本迁移
