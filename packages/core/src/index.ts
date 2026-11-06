@@ -5,10 +5,10 @@
  * 一段通知怎么拆成待办、待办之间怎么体检冲突。
  * 应用层（AGPL）通过普通 import 使用它；任何别的项目也可以。
  */
-export * from './types'
-export * from './time'
-export * from './ruleParser'
-export * from './conflict'
-export * from './format'
-export * from './merge'
-export * from './samples'
+export * from './types.js'
+export * from './time.js'
+export * from './ruleParser.js'
+export * from './conflict.js'
+export * from './format.js'
+export * from './merge.js'
+export * from './samples.js'

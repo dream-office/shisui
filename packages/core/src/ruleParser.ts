@@ -7,8 +7,8 @@
  *  3. 规则引擎的每条判断都能说明理由，大模型的判断不能——可解释性是可复现性的一部分。
  * 大模型作为「增强引擎」叠加在上面（core/llm.ts），两者结果合并后取高置信度者。
  */
-import type { Confidence, ParsedTask, TaskKind } from './types'
-import { extractTime, type TimeHit } from './time'
+import type { Confidence, ParsedTask, TaskKind } from './types.js'
+import { extractTime, type TimeHit } from './time.js'
 
 /**
  * 类型判定：从「最具体」排到「最宽泛」，先命中先得。

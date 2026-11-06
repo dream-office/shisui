@@ -27,12 +27,14 @@ tasks[0].reasons    // 判定理由，可以直接展示给用户
 warnings            // string[]：解析时发现的可疑之处
 
 const notes = scanConflicts(tasks, ref)
-notes[0]            // { id, level: 'danger' | 'warn' | 'info',
-                    //   title, detail, taskIds }
+// 没有冲突时是 []；有冲突时每条形如：
+// { id, level: 'danger' | 'warn', title, detail, taskIds }
 
 // 只想要「一句话里的时间」也可以单独用
 extractTime('明晚8点开会', ref)   // { atMs, isDeadline, ambiguous, ... }
 ```
+
+> 注意 `level` 只有 `'danger'` 和 `'warn'` 两档，没有 `info`。
 
 ## 许可
 
@@ -47,10 +49,13 @@ shisui         → AGPL-3.0-or-later（应用本体，完整产品）
 
 ```bash
 pnpm --filter shisui-core build    # 出 dist/ + .d.ts（发布用的就是这份）
+node scripts/smoke-core-import.mjs # 冒烟：Node 里真的能 import 这个包
 ```
 
 - 源码在 `src/`，测试在 `src/*.test.ts`，**在仓库内随源码跑**（npm 包里只有 `dist/`，不含测试）。
-- 本包在仓库里以 workspace 方式开发，构建依赖根 workspace 的 TypeScript。
+- 包自带 `typescript` devDependency，可以在包内单独 build；仓库内用 `pnpm --filter` 更省事。
+- 源码的相对导入带 `.js` 扩展名（`from './time.js'`）—— 这是给 Node ESM 用的，
+  TypeScript 会把它解析到 `time.ts`，编译产物不用再做二次处理。
 
 ## 已知边界
 

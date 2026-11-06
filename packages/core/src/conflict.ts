@@ -2,8 +2,8 @@
  * 冲突体检：通知解析完只是「知道了」，真正省心的是「会不会撞车」。
  * 这是产品从「能解析」升级到「真正省心」的关键一步。
  */
-import type { ParsedTask } from './types'
-import { startOfDay } from './time'
+import type { ParsedTask } from './types.js'
+import { startOfDay } from './time.js'
 
 export type ConflictLevel = 'danger' | 'warn'
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { parseNotice, splitSegments } from './ruleParser'
-import { SAMPLE_NOTICE, SAMPLE_NOTICE_2, SAMPLE_WORK } from './samples'
+import { parseNotice, splitSegments } from './ruleParser.js'
+import { SAMPLE_NOTICE, SAMPLE_NOTICE_2, SAMPLE_WORK } from './samples.js'
 
 const REF = new Date(2026, 10, 4, 22, 7, 0) // 2026-11-04 周三 22:07
 const at = (m: number, d: number, h: number, min: number) => new Date(2026, m - 1, d, h, min).getTime()

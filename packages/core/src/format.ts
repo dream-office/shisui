@@ -2,7 +2,7 @@
  * 时间的人话渲染：把时间戳翻译成用户一眼就懂的相对说法。
  * 与 time.ts 相反的方向，同样注入 ref，保证渲染结果可测试。
  */
-import { MS_DAY, isoWeekday, startOfDay } from './time'
+import { MS_DAY, isoWeekday, startOfDay } from './time.js'
 
 const WEEK_CN = ['一', '二', '三', '四', '五', '六', '日']
 
