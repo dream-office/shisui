@@ -242,7 +242,7 @@ if (kind === 'other' && !hasDeadlineWord && !hit?.hasClock) return null
 
 **时间**：2026-11-06
 
-**决定**：`src/core/` 整体迁到 `packages/core/`，作为 `shisui-core` 单独以 MIT 授权；
+**决定**：`src/core/` 整体迁到 `packages/core/src/`，作为 `shisui-core` 单独以 MIT 授权；
 应用层保持 AGPL-3.0-or-later。
 
 **理由**：

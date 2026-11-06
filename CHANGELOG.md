@@ -27,8 +27,9 @@
 
 ### 验证
 
-- `tsc --noEmit` 干净；**89 条测试全过**（全部来自 `packages/core`）；`vite build` 通过；
-  `pnpm --filter shisui-core build` 产出 32 个文件（含 `.d.ts` 与 sourcemap）。
+- `tsc --noEmit` 干净；全部单元测试通过（时间 / 解析 / 冲突三组）；`vite build` 通过；
+  `pnpm --filter shisui-core build` 能产出 `dist/`（含 `.d.ts` 与 sourcemap）。
+- 干净环境验证：`git archive HEAD` 到空目录 → `pnpm install --frozen-lockfile` → 类型检查 / 测试 / 构建全过。
 
 ## [0.2.1] - 2026-11-05
 
