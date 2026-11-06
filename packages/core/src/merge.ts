@@ -2,7 +2,7 @@
  * 双引擎合并：规则引擎负责「稳」，大模型负责「全」。
  * 合并策略必须保守 —— 宁可保留规则结果让人确认，也不能让模型把已确定的时间改错。
  */
-import type { Confidence, ParsedTask } from './types'
+import type { Confidence, ParsedTask } from './types.js'
 
 const CONF_RANK: Record<Confidence, number> = { low: 0, medium: 1, high: 2 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cnToInt, extractTime, isoWeekday, addDays } from './time'
+import { cnToInt, extractTime, isoWeekday, addDays } from './time.js'
 
 /**
  * 固定「现在」为 2026-11-04 22:07（周三），所有断言都用本地时区构造，

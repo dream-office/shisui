@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { scanConflicts, weeklyLoad } from './conflict'
-import { countdown, formatDayLabel, formatWhen } from './format'
+import { scanConflicts, weeklyLoad } from './conflict.js'
+import { countdown, formatDayLabel, formatWhen } from './format.js'
 
 const REF = new Date(2026, 10, 4, 22, 7, 0) // 2026-11-04 周三 22:07
 const at = (m: number, d: number, h: number, min: number) => new Date(2026, m - 1, d, h, min).getTime()
