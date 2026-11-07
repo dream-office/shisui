@@ -181,12 +181,29 @@ test.describe('PWA', () => {
     const response = await page.request.get('/manifest.webmanifest')
     expect(response.status()).toBe(200)
 
-    const manifest = (await response.json()) as { name?: string; start_url?: string; icons?: unknown[] }
+    const manifest = (await response.json()) as {
+      name?: string
+      start_url?: string
+      icons?: { src: string; sizes: string; type: string; purpose?: string }[]
+    }
     expect(manifest.name ?? '').toContain('拾穗')
     expect(manifest.start_url).toBe('./')
     expect(Array.isArray(manifest.icons) && manifest.icons.length > 0).toBe(true)
 
+    // iOS / 部分 Android 不认 SVG 图标，必须有 PNG（192/512 与 maskable）
+    const icons = manifest.icons ?? []
+    expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '192x192')).toBe(true)
+    expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '512x512')).toBe(true)
+    expect(icons.some((icon) => icon.purpose === 'maskable' && icon.type === 'image/png')).toBe(true)
+
+    // apple-touch-icon 必须是 PNG，且实际可访问
     await page.goto('/')
+    const appleIcon = await page.getAttribute('link[rel="apple-touch-icon"]', 'href')
+    expect(appleIcon ?? '').toMatch(/\.png$/)
+    const appleResponse = await page.request.get(appleIcon as string)
+    expect(appleResponse.status()).toBe(200)
+    expect(appleResponse.headers()['content-type'] ?? '').toContain('image/png')
+
     const href = await page.getAttribute('link[rel="manifest"]', 'href')
     expect(href ?? '').toContain('manifest.webmanifest')
   })

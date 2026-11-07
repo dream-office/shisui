@@ -23,6 +23,8 @@ const APP_SHELL = [
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-maskable.svg',
+  './icons/icon-192.png',
+  './icons/apple-touch-icon.png',
 ]
 
 /**
@@ -84,9 +86,10 @@ self.addEventListener('message', (event) => {
 })
 
 function put(request, response) {
-  if (!response || !response.ok) return
+  if (!response || !response.ok) return Promise.resolve()
   const copy = response.clone()
-  caches.open(CACHE).then((cache) => cache.put(request, copy))
+  // 返回 Promise，调用方用 event.waitUntil() 包住 —— 否则 Worker 可能在写缓存前被终止
+  return caches.open(CACHE).then((cache) => cache.put(request, copy))
 }
 
 self.addEventListener('fetch', (event) => {
@@ -100,7 +103,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          put(request, response)
+          event.waitUntil(put(request, response))
           return response
         })
         .catch(async () => {
@@ -116,7 +119,7 @@ self.addEventListener('fetch', (event) => {
       (hit) =>
         hit ||
         fetch(request).then((response) => {
-          put(request, response)
+          event.waitUntil(put(request, response))
           return response
         }),
     ),

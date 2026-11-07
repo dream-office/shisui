@@ -30,6 +30,10 @@
 
 - 版本 0.4.0 → **0.5.0**；`shisui-core` → **0.4.0**（新增 `tasksToIcs` / `isAllDayTimestamp` / `escapeIcsText`）。
 - Playwright 的 `webServer` 改为「先 build 再 preview」：PWA 只在生产构建注册，dev server 测不了离线。
+- **图标改为 PNG**（192 / 512 / maskable 512 / apple-touch-icon 180）：iOS 不认 SVG 形式的
+  `apple-touch-icon`，只给 SVG 会导致 iOS 添加到主屏时没有图标。SVG 保留作为 `sizes: any` 的补充。
+- Service Worker 的缓存写入包进 `event.waitUntil()`：否则 Worker 可能在写缓存前被浏览器终止，
+  表现为「偶尔离线打不开」。`put()` 现在返回 Promise，便于等待。
 
 ### 测试
 
