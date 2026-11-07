@@ -8,7 +8,7 @@
 
 用法：
     python scripts/privacy-scan.py                    # 扫当前目录
-    python scripts/privacy-scan.py --path D:\\proj    # 扫指定仓库
+    python scripts/privacy-scan.py --path <仓库目录>   # 扫指定仓库
     python scripts/privacy-scan.py --quiet            # 只在有问题时输出
 
 本地白名单：仓库根目录的 `.privacy-allow`（已在 .gitignore，不会发布）里每行一个正则，

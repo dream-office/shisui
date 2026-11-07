@@ -71,6 +71,9 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
       <p className="muted" style={{ marginTop: -4 }}>
         口头通知、临时安排、或者解析结果想自己修 —— 都可以直接写在这里。不走解析引擎。
       </p>
+      <p className="muted" style={{ marginTop: -2 }}>
+        手动添加的条目不进「导入历史」——历史只记录「粘贴 + 全部收录」的批次。
+      </p>
 
       <label className="field">
         <span>标题</span>

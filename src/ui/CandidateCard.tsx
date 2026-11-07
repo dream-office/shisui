@@ -49,7 +49,13 @@ export default function CandidateCard({ task, now, onUpdate, onAccept, onDismiss
 
         <span className={`conf-badge conf-${task.confidence}`}>{CONF_LABEL[task.confidence]}</span>
         <span className={`engine-tag engine-${task.engine}`}>
-          {task.engine === 'rule' ? '规则' : task.engine === 'llm' ? 'AI' : '双引擎'}
+          {task.engine === 'rule'
+            ? '规则'
+            : task.engine === 'llm'
+              ? 'AI'
+              : task.engine === 'manual'
+                ? '手动'
+                : '双引擎'}
         </span>
         {cd && <span className={`countdown tone-${cd.tone}`}>{cd.text}</span>}
       </header>
