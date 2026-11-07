@@ -4,9 +4,9 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { mergeTasks } from 'shisui-core'
+import { createManualTask, mergeTasks } from 'shisui-core'
 import { parseNotice } from 'shisui-core'
-import type { ParsedTask, StoredTask } from 'shisui-core'
+import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 
@@ -23,10 +23,14 @@ interface AppState {
   stage: string
   engineNote: string | null
   llmConfig: LLMConfig
+  /** 导入历史：每次「全部收录」都会留一条，可回看与二次收录 */
+  history: ImportBatch[]
 
   setView: (view: View) => void
   hydrate: () => Promise<void>
+  loadHistory: () => Promise<void>
   parse: (raw: string) => Promise<void>
+  addManualTask: (input: ManualTaskInput) => Promise<void>
   updateCandidate: (id: string, patch: Partial<ParsedTask>) => void
   dismissCandidate: (id: string) => void
   acceptCandidates: (ids: string[]) => Promise<void>
@@ -49,12 +53,24 @@ export const useApp = create<AppState>((set, get) => ({
   stage: '',
   engineNote: null,
   llmConfig: loadLLMConfig(),
+  history: [],
 
   setView: (view) => set({ view }),
 
   hydrate: async () => {
-    const tasks = await repo.listTasks()
-    set({ tasks, hydrated: true })
+    const [tasks, history] = await Promise.all([repo.listTasks(), repo.listBatches()])
+    set({ tasks, history, hydrated: true })
+  },
+
+  loadHistory: async () => {
+    set({ history: await repo.listBatches() })
+  },
+
+  addManualTask: async (input) => {
+    const id = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    const task = createManualTask(input, id)
+    await repo.insertTasks([task])
+    set({ tasks: await repo.listTasks() })
   },
 
   parse: async (raw) => {
@@ -119,7 +135,8 @@ export const useApp = create<AppState>((set, get) => ({
       engine: picked.some((t) => t.engine === 'rule') && picked.some((t) => t.engine !== 'rule') ? 'hybrid' : picked[0].engine === 'rule' ? 'rule' : 'llm',
     })
     const tasks = await repo.listTasks()
-    set({ tasks, candidates: state.candidates.filter((task) => !ids.includes(task.id)) })
+    const history = await repo.listBatches()
+    set({ tasks, history, candidates: state.candidates.filter((task) => !ids.includes(task.id)) })
   },
 
   toggleDone: async (id) => {

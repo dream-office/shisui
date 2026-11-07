@@ -1288,3 +1288,41 @@ em {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ── 手动添加表单 ───────────────────────────────── */
+.manual { margin-top: 16px; }
+.manual-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+.manual-head h3 { margin: 0; }
+.manual .field { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 0; }
+.manual .field > span { font-size: 12.5px; color: var(--muted); }
+.manual .field input,
+.manual .field select {
+  width: 100%; padding: 9px 11px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface-2);
+  font-size: 14px; color: var(--ink); font-family: inherit;
+}
+.manual .field input:focus,
+.manual .field select:focus {
+  outline: none; border-color: var(--accent); background: #fff;
+  box-shadow: 0 0 0 3px rgba(74, 69, 214, 0.1);
+}
+.manual-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.manual > .field { margin-top: 12px; }
+.manual-error { margin: 10px 0 0; font-size: 13px; color: var(--danger); }
+.manual-actions { margin-top: 14px; display: flex; gap: 10px; }
+
+/* ── 导入历史 ──────────────────────────────────── */
+.history { margin-top: 16px; }
+.history h3 { margin: 0 0 10px; }
+.history ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.history li {
+  padding: 11px 13px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface-2); display: flex; flex-direction: column; gap: 6px;
+}
+.history-meta { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.history-raw { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.6; word-break: break-all; }
+.history li .btn { align-self: flex-start; }
+
+@media (max-width: 640px) {
+  .manual-row { grid-template-columns: 1fr; }
+}

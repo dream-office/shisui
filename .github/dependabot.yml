@@ -1,0 +1,40 @@
+# 依赖更新策略（GitHub Dependabot）
+#
+# 目的：把「依赖过时了」变成一条可处理的 PR，而不是某天突然发现。
+# 分组是为了少打扰：小版本的补丁打包成一个 PR，major 单独走（可能要改代码）。
+version: 2
+
+updates:
+  # 应用依赖（React / Dexie / zustand / shisui-core）+ 构建工具（vite / vitest / TS / Playwright）
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      include: scope
+    groups:
+      # 补丁与次版本合并成一个 PR；major 不分组（有破坏性变更，要单独看）
+      minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+    labels:
+      - dependencies
+
+  # GitHub Actions 的版本（checkout / setup-node / pnpm 等）
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+    labels:
+      - dependencies
+      - ci

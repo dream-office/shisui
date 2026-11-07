@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { version as appVersion } from '../../package.json'
 import { useApp } from '@/state/store'
 import { DEFAULT_LLM_CONFIG, isLLMReady, type LLMConfig } from '@/services/llm'
 import { exportSnapshot, importSnapshot, type Snapshot } from '@/data/repo'
@@ -139,6 +140,19 @@ export default function SettingsView() {
           </li>
           <li>
             <strong>可复现</strong>：时间解析是注入 ref 的纯函数，全部单测确定性通过，换机器换时区结果一致。
+          </li>
+          <li>
+            <strong>版本</strong>：v{appVersion} · 应用本体 AGPL-3.0-or-later，解析核心 <code>shisui-core</code> 为 MIT。
+          </li>
+          <li>
+            <strong>第三方</strong>：
+            <a href="./licenses/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">
+              依赖与许可声明
+            </a>
+            （Dexie 为 Apache-2.0，React / Zustand 为 MIT）。
+          </li>
+          <li>
+            <strong>安全问题</strong>：见仓库 <code>SECURITY.md</code>，走 GitHub 私密报告，不要公开提 issue。
           </li>
         </ul>
       </section>

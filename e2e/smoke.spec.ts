@@ -99,3 +99,32 @@ test.describe('隐私', () => {
     expect(foreign, `不应有跨域请求，实际：\n${foreign.join('\n')}`).toEqual([])
   })
 })
+
+test.describe('手动添加', () => {
+  test('E. 手动添加一条 → 日程可见', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await expect(page.getByRole('heading', { name: '手动添加一条' })).toBeVisible()
+
+    await page.getByLabel('标题').fill('把报销单交给财务')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByRole('main')).toContainText('把报销单交给财务')
+  })
+})
+
+test.describe('历史', () => {
+  test('F. 收录后历史留有记录，可重新解析', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '学校通知示例' }).click()
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    await page.getByRole('button', { name: /^历史/ }).click()
+    await expect(page.getByRole('heading', { name: /导入历史/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: '重新解析' }).first()).toBeVisible()
+  })
+})

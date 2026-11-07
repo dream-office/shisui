@@ -41,8 +41,8 @@ export interface ParsedTask {
   confidence: Confidence
   /** 可解释性：为什么给出这个判定，直接展示给用户 */
   reasons: string[]
-  /** 谁解析出来的 */
-  engine: 'rule' | 'llm' | 'hybrid'
+  /** 谁解析出来的；manual = 用户手动添加，没经过引擎 */
+  engine: 'rule' | 'llm' | 'hybrid' | 'manual'
 }
 
 /** 已确认、落地到日程的事项 */

@@ -2,10 +2,15 @@ import { useState } from 'react'
 import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import CandidateCard from './CandidateCard'
+import HistoryPanel from './HistoryPanel'
+import ManualAddForm from './ManualAddForm'
 import { useNow } from './useNow'
 
 export default function InboxView() {
   const [raw, setRaw] = useState('')
+  const [manualOpen, setManualOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const history = useApp((s) => s.history)
   const candidates = useApp((s) => s.candidates)
   const parsing = useApp((s) => s.parsing)
   const stage = useApp((s) => s.stage)
@@ -68,6 +73,12 @@ export default function InboxView() {
           <button type="button" className="btn btn-ghost" onClick={() => setRaw('')} disabled={parsing || !raw}>
             清空
           </button>
+          <button type="button" className="btn btn-ghost" onClick={() => setManualOpen((open) => !open)} disabled={parsing}>
+            手动添加
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => setHistoryOpen((open) => !open)} disabled={parsing}>
+            历史{history.length > 0 ? ` (${history.length})` : ''}
+          </button>
         </div>
 
         {parsing && (
@@ -77,6 +88,19 @@ export default function InboxView() {
           </div>
         )}
       </section>
+
+      {manualOpen && <ManualAddForm onClose={() => setManualOpen(false)} />}
+
+      {historyOpen && (
+        <HistoryPanel
+          onReuse={(text) => {
+            setRaw(text)
+            setHistoryOpen(false)
+            setAccepted(0)
+            void parse(text)
+          }}
+        />
+      )}
 
       {engineNote && (
         <div className="engine-note">
