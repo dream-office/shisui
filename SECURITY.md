@@ -4,10 +4,11 @@
 
 ## 报告安全问题
 
-**请不要公开提交 Issue。** 任选其一：
+**请不要公开提交 Issue。** 请用 GitHub 的私密渠道：
 
-1. 邮件：`dream-office`（标题以 `[SECURITY]` 开头）
-2. GitHub：仓库 **Security** 标签页 → **Report a vulnerability**（私密报告）
+1. 仓库 **Security** 标签页 → **Report a vulnerability**（GitHub Security Advisories，仅维护者可见）
+2. 如果私密报告入口不可用：在 Issues 里只写「需要私下报告安全问题」，**不要贴任何细节**，
+   维护者会主动联系你并转入私密渠道
 
 请尽量附上：影响版本（或 commit）、复现步骤、影响范围、你的判断（读取数据 / 诱导操作 / 拒绝服务）。
 

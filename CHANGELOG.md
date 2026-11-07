@@ -7,6 +7,21 @@
 
 （下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
 
+## [0.3.2] - 2026-11-07
+
+**公开材料里不再出现个人邮箱；反馈与安全报告统一走 GitHub。**
+
+### 变更
+
+- 移除 `SECURITY.md`、`package.json` 的 `author` 以及本文件里的邮箱地址。
+  安全报告改用 GitHub **Security → Report a vulnerability**（私密渠道）；一般反馈走仓库 Issues。
+- **重写 git 历史**：所有提交的作者/提交者邮箱统一为 `dream-office@users.noreply.github.com`
+  （范围含 `main`、`gh-pages` 与全部 tag）。因此**旧提交哈希全部变化**，
+  旧 tag 到新 SHA 的映射随 Release 说明提供。
+- 本地提交身份同步改为 noreply，避免以后再写进历史。
+
+> 本版不改任何产品行为，只改文档与仓库元数据。功能与 0.3.1 完全一致。
+
 ## [0.3.1] - 2026-11-07
 
 **发布质量与门面补齐：可复用的说明文档、真浏览器冒烟测试、依赖升级。**
@@ -19,7 +34,7 @@
   React / React DOM / Zustand 为 MIT；许可原文一并放进产物，可通过 `/licenses/` 访问。
 - **Playwright 冒烟测试**（`e2e/smoke.spec.ts`）覆盖四条用户最先遇到的路径：首屏无 console error、
   示例数据→解析→收录→日程、设置页文案、**默认零跨域请求**。
-- `package.json` 补 `author`（`dream-office <dream-office>`）。
+- `package.json` 补 `author`（`dream-office`）。
 
 ### 变更
 
