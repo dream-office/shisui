@@ -1,0 +1,28 @@
+{
+  "name": "拾穗 · 群消息变日程",
+  "short_name": "拾穗",
+  "description": "把群消息里散落的截止时间捡起来：解析成带绝对时间的待办，并自动体检冲突。纯前端、本地优先。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f6fb",
+  "theme_color": "#4a45d6",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

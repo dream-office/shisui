@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '@/state/store'
+import { registerServiceWorker } from '@/services/pwa'
 import InboxView from '@/ui/InboxView'
 import PlanView from '@/ui/PlanView'
 import SettingsView from '@/ui/SettingsView'
@@ -17,10 +18,16 @@ export default function App() {
   const hydrate = useApp((s) => s.hydrate)
   const tasks = useApp((s) => s.tasks)
   const llmConfig = useApp((s) => s.llmConfig)
+  const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null)
 
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  // 只在生产构建里注册 Service Worker；有新版本时提示用户，而不是自动替换页面
+  useEffect(() => {
+    registerServiceWorker((apply) => setApplyUpdate(() => apply))
+  }, [])
 
   const pending = tasks.filter((task) => !task.done).length
   const aiOn = isLLMReady(llmConfig)
@@ -67,6 +74,15 @@ export default function App() {
         <span className="footer-sep">·</span>
         <span>规则引擎离线可用，接不接 AI 都能跑</span>
       </footer>
+
+      {applyUpdate && (
+        <div className="toast update-toast" role="status">
+          <span>有新版本可用</span>
+          <button type="button" className="btn btn-sm" onClick={applyUpdate}>
+            刷新
+          </button>
+        </div>
+      )}
     </div>
   )
 }

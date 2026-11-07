@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test, type ConsoleMessage, type Page, type Request } from '@playwright/test'
 
 /**
@@ -126,5 +127,67 @@ test.describe('历史', () => {
     await page.getByRole('button', { name: /^历史/ }).click()
     await expect(page.getByRole('heading', { name: /导入历史/ })).toBeVisible()
     await expect(page.getByRole('button', { name: '重新解析' }).first()).toBeVisible()
+  })
+})
+
+test.describe('ICS 导出', () => {
+  test('G. 导出的 .ics 含 VCALENDAR / VEVENT，且标题转义正确', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('交报告, 记得盖章')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: '导出 .ics' }).click(),
+    ])
+
+    expect(download.suggestedFilename()).toMatch(/^shisui-\d{4}-\d{2}-\d{2}\.ics$/)
+    const filePath = await download.path()
+    expect(filePath).not.toBeNull()
+    const content = await readFile(filePath as string, 'utf-8')
+
+    expect(content).toContain('BEGIN:VCALENDAR')
+    expect(content).toContain('BEGIN:VEVENT')
+    expect(content).toContain('SUMMARY:交报告\\, 记得盖章') // 逗号必须被转义
+    expect(content).toContain('END:VCALENDAR')
+    expect(content.includes('\r\n')).toBe(true) // ICS 用 CRLF
+  })
+})
+
+test.describe('PWA', () => {
+  test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+
+    // 等 Service Worker 激活并接管
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready
+    })
+
+    await context.setOffline(true)
+    try {
+      await page.reload()
+      await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible({ timeout: 15_000 })
+    } finally {
+      await context.setOffline(false)
+    }
+  })
+
+  test('I. manifest 可访问且声明正确', async ({ page }) => {
+    const response = await page.request.get('/manifest.webmanifest')
+    expect(response.status()).toBe(200)
+
+    const manifest = (await response.json()) as { name?: string; start_url?: string; icons?: unknown[] }
+    expect(manifest.name ?? '').toContain('拾穗')
+    expect(manifest.start_url).toBe('./')
+    expect(Array.isArray(manifest.icons) && manifest.icons.length > 0).toBe(true)
+
+    await page.goto('/')
+    const href = await page.getAttribute('link[rel="manifest"]', 'href')
+    expect(href ?? '').toContain('manifest.webmanifest')
   })
 })
