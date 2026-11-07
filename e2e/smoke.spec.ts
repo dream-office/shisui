@@ -30,6 +30,11 @@ test.describe('首屏', () => {
     await expect(page.getByText('群里散落的截止时间，替你捡起来')).toBeVisible()
     await expect(page.getByText('数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器')).toBeVisible()
 
+    // AGPL §13：通过网络使用本应用的人必须能拿到源码入口，页脚不许被删
+    const sourceLink = page.getByRole('link', { name: /源码/ })
+    await expect(sourceLink).toBeVisible()
+    await expect(sourceLink).toHaveAttribute('href', 'https://github.com/dream-office/shisui')
+
     // 给 React 的 effect（hydrate）留一点时间，让启动期错误先冒出来
     await page.waitForTimeout(500)
     expect(errors, `控制台不应有错误：\n${errors.join('\n')}`).toEqual([])

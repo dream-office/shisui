@@ -73,6 +73,15 @@ export default function App() {
         <span>数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器</span>
         <span className="footer-sep">·</span>
         <span>规则引擎离线可用，接不接 AI 都能跑</span>
+        <span className="footer-sep">·</span>
+        <a
+          className="footer-link"
+          href="https://github.com/dream-office/shisui"
+          target="_blank"
+          rel="noreferrer"
+        >
+          源码（AGPL-3.0）
+        </a>
       </footer>
 
       {applyUpdate && (

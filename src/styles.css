@@ -1357,3 +1357,13 @@ em {
 .update-toast .btn:hover {
   background: rgba(255, 255, 255, 0.28);
 }
+.footer-link {
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--line-strong);
+}
+
+.footer-link:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}

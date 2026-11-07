@@ -28,6 +28,10 @@
 
 ### 变更
 
+- **补充 AGPL §13 源码入口**：页脚与「关于」页都链到
+  [github.com/dream-office/shisui](https://github.com/dream-office/shisui)，
+  并附 LICENSE。AGPL 第 13 条要求：通过网络使用本应用的，有权获取对应源码。
+  页脚链接由 E2E 断言守护（删掉即红）。
 - 版本 0.4.0 → **0.5.0**；`shisui-core` → **0.4.0**（新增 `tasksToIcs` / `isAllDayTimestamp` / `escapeIcsText`）。
 - Playwright 的 `webServer` 改为「先 build 再 preview」：PWA 只在生产构建注册，dev server 测不了离线。
 - **图标改为 PNG**（192 / 512 / maskable 512 / apple-touch-icon 180）：iOS 不认 SVG 形式的

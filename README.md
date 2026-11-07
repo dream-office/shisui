@@ -213,6 +213,11 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 应用的许可（AGPL）简单说：你可以自由使用、修改、分发本项目，包括商用；
 但如果你修改后把它部署成**供他人通过网络访问的服务**，你也必须把修改后的源码以同样的许可证公开。
 
+**源码入口（AGPL §13）**：本项目的源码始终公开在
+[github.com/dream-office/shisui](https://github.com/dream-office/shisui)，
+应用页脚与「关于」页也提供了同一个入口。按 AGPL 第 13 条，通过网页使用本应用的人，
+有权获取对应的完整源码——直接点这个链接即可。
+
 ```
 Copyright (C) 2026 dream-office
 
