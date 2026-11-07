@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+（下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
+
+## [0.3.1] - 2026-11-07
+
+**发布质量与门面补齐：可复用的说明文档、真浏览器冒烟测试、依赖升级。**
+
+### 新增
+
+- `SECURITY.md`：安全漏洞的私密报告渠道（邮件 + GitHub Security）、48 小时确认承诺、支持范围，
+  并写清哪些是「设计行为」而不是漏洞（清空浏览器=数据删除、启用 AI 后内容会发给服务商）。
+- `public/licenses/THIRD_PARTY_NOTICES.md`：第三方依赖与许可声明。Dexie 为 **Apache-2.0**（含 NOTICE），
+  React / React DOM / Zustand 为 MIT；许可原文一并放进产物，可通过 `/licenses/` 访问。
+- **Playwright 冒烟测试**（`e2e/smoke.spec.ts`）覆盖四条用户最先遇到的路径：首屏无 console error、
+  示例数据→解析→收录→日程、设置页文案、**默认零跨域请求**。
+- `package.json` 补 `author`（`dream-office <dream-office>`）。
+
+### 变更
+
+- 版本 0.3.0 → **0.3.1**；README / CHANGELOG / 版权主体统一为 `dream-office`。
+- CI 增加「核心包构建 → 核心包冒烟（Node ESM 可 import）」两步，防止发布产物不可用这类回归（`pnpm smoke:core`）。
+- 依赖：`vitest` 3.2.7 → **4.1.12**（合并依赖机器人 PR #1，2 个 critical 告警）；新增 `@playwright/test` 开发依赖。
+
 ### 修复
 
 - **设置页「关于拾穗」的隐私表述过于绝对**：原来写「学号、客户名、手机号、合同金额不会离开你的浏览器」，
@@ -13,12 +35,6 @@
 - **贡献许可表述与混合许可不符**：`CONTRIBUTING.md` 原写「按本仓库的许可证（AGPL-3.0-or-later）授权」，
   但 `packages/core/` 是 MIT。改为按「所修改部分所在的许可证」授权（应用 AGPL / 核心 MIT），
   并去掉容易被误读为 CLA 的「保留调整许可余地」说法。
-
-### 变更
-
-- CI 增加「核心包构建 → 核心包冒烟（Node ESM 可 import）」两步，防止发布产物不可用这类回归（`pnpm smoke:core`）。
-
-（下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
 
 ## [0.3.0] - 2026-11-06
 

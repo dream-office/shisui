@@ -210,7 +210,7 @@ AI 请求固定 `temperature: 0`，流式读取，把「正在读 / 已收 N 字
 但如果你修改后把它部署成**供他人通过网络访问的服务**，你也必须把修改后的源码以同样的许可证公开。
 
 ```
-Copyright (C) 2026 shisui contributors
+Copyright (C) 2026 dream-office
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
@@ -218,4 +218,7 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 ```
 
-> 把上方版权署名里的 `shisui contributors` 换成你希望署名的名字或组织即可。
+第三方依赖与许可见 [`public/licenses/THIRD_PARTY_NOTICES.md`](public/licenses/THIRD_PARTY_NOTICES.md)
+（站点发布后位于 `/licenses/` 下）。其中一个依赖 Dexie 是 Apache-2.0，其 NOTICE 已一并保留。
+
+安全问题怎么报：见 [SECURITY.md](SECURITY.md)。

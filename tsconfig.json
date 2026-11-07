@@ -23,5 +23,5 @@
       "shisui-core": ["packages/core/src/index.ts"]
     }
   },
-  "include": ["src", "packages/core/src", "vite.config.ts", "vitest.config.ts"]
+  "include": ["src", "packages/core/src", "e2e", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
 }

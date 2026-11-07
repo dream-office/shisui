@@ -8,6 +8,10 @@ packages/*/dist/
 !.env.example
 .vite/
 coverage/
+# Playwright 产物
+test-results/
+playwright-report/
+blob-report/
 .DS_Store
 Thumbs.db
 *.tsbuildinfo

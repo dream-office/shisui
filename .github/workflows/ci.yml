@@ -48,5 +48,11 @@ jobs:
       - name: 核心包冒烟（Node ESM 可 import）
         run: pnpm smoke:core
 
+      - name: 安装 Playwright 浏览器
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: 端到端冒烟（真浏览器跑主路径）
+        run: pnpm test:e2e
+
       - name: 生产构建
         run: pnpm build
