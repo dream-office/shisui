@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
+import BatchPreview from './BatchPreview'
 import CandidateCard from './CandidateCard'
 import HistoryPanel from './HistoryPanel'
 import IcsImportPanel from './IcsImportPanel'
@@ -30,6 +31,42 @@ export default function InboxView() {
   const [icsOpen, setIcsOpen] = useState(false)
   const [sharedFrom, setSharedFrom] = useState<string | null>(null)
   const history = useApp((s) => s.history)
+  const candidates = useApp((s) => s.candidates)
+  const batchMode = useApp((s) => s.batchMode)
+
+  // 「本周日」当天会产出本周/下周两个候选：同组默认选「本周」，UI 里可切换
+  const choiceGroups = useMemo(() => {
+    const groups = new Map<string, typeof candidates>()
+    for (const task of candidates) {
+      if (!task.choiceGroup) continue
+      const list = groups.get(task.choiceGroup) ?? []
+      list.push(task)
+      groups.set(task.choiceGroup, list)
+    }
+    return groups
+  }, [candidates])
+
+  const [choiceSelection, setChoiceSelection] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    setChoiceSelection((current) => {
+      const next: Record<string, string> = {}
+      choiceGroups.forEach((groupTasks, group) => {
+        const existing = current[group]
+        if (existing && groupTasks.some((task) => task.id === existing)) {
+          next[group] = existing
+          return
+        }
+        const preferred = groupTasks.find((task) => task.choiceLabel === '本周') ?? groupTasks[0]
+        next[group] = preferred.id
+      })
+      return next
+    })
+  }, [choiceGroups])
+
+  const visibleCandidates = candidates.filter(
+    (task) => !task.choiceGroup || choiceSelection[task.choiceGroup] === task.id,
+  )
 
   // 启动时只取一次：分享过来的内容填进输入框，并提示来源
   useEffect(() => {
@@ -38,7 +75,6 @@ export default function InboxView() {
     setRaw(shared)
     setSharedFrom('分享内容')
   }, [])
-  const candidates = useApp((s) => s.candidates)
   const parsing = useApp((s) => s.parsing)
   const stage = useApp((s) => s.stage)
   const engineNote = useApp((s) => s.engineNote)
@@ -56,7 +92,7 @@ export default function InboxView() {
   }
 
   const acceptAll = async () => {
-    const ids = candidates.map((task) => task.id)
+    const ids = visibleCandidates.map((task) => task.id)
     await acceptCandidates(ids)
     setAccepted((n) => n + ids.length)
   }
@@ -158,7 +194,16 @@ export default function InboxView() {
         </ul>
       )}
 
-      {candidates.length > 0 && (
+      {candidates.length > 0 && batchMode && (
+        <BatchPreview
+          tasks={candidates}
+          onAccepted={(count) => {
+            setAccepted((n) => n + count)
+          }}
+        />
+      )}
+
+      {candidates.length > 0 && !batchMode && (
         <section className="results">
           <div className="results-head">
             <h3>
@@ -171,8 +216,28 @@ export default function InboxView() {
             </div>
           </div>
 
+          {choiceGroups.size > 0 && (
+            <div className="choice-picker" role="group" aria-label="二选一">
+              <span className="muted">「本周日」当天有两种理解，选一个：</span>
+              {[...choiceGroups.entries()].map(([group, groupTasks]) => (
+                <span key={group} className="choice-options">
+                  {groupTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      className={`btn btn-sm ${choiceSelection[group] === task.id ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => setChoiceSelection((current) => ({ ...current, [group]: task.id }))}
+                    >
+                      {task.choiceLabel ?? '候选'}
+                    </button>
+                  ))}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="cards">
-            {candidates.map((task) => (
+            {visibleCandidates.map((task) => (
               <CandidateCard
                 key={task.id}
                 task={task}

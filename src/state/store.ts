@@ -4,13 +4,13 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { createManualTask, mergeIcsImport, mergeTasks } from 'shisui-core'
+import { createManualTask, mergeIcsImport, mergeTasks, parseNoticeBatch, splitNoticeSections } from 'shisui-core'
 import { parseNotice } from 'shisui-core'
 import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 
-export type View = 'inbox' | 'plan' | 'calendar' | 'settings'
+export type View = 'inbox' | 'plan' | 'calendar' | 'stats' | 'settings'
 
 interface AppState {
   view: View
@@ -25,6 +25,8 @@ interface AppState {
   llmConfig: LLMConfig
   /** 导入历史：每次「全部收录」都会留一条，可回看与二次收录 */
   history: ImportBatch[]
+  /** 是否处于「多段粘贴」批量模式（预览列表改为勾选式） */
+  batchMode: boolean
 
   setView: (view: View) => void
   hydrate: () => Promise<void>
@@ -58,6 +60,7 @@ export const useApp = create<AppState>((set, get) => ({
   engineNote: null,
   llmConfig: loadLLMConfig(),
   history: [],
+  batchMode: false,
 
   setView: (view) => set({ view }),
 
@@ -121,14 +124,30 @@ export const useApp = create<AppState>((set, get) => ({
   parse: async (raw) => {
     const trimmed = raw.trim()
     if (!trimmed) {
-      set({ warnings: ['先贴一段通知进来吧'], candidates: [], engineNote: null })
+      set({ warnings: ['先贴一段通知进来吧'], candidates: [], engineNote: null, batchMode: false })
       return
     }
 
-    set({ parsing: true, stage: '规则引擎正在切分通知…', warnings: [], candidates: [], engineNote: null })
+    set({ parsing: true, stage: '规则引擎正在切分通知…', warnings: [], candidates: [], engineNote: null, batchMode: false })
     await nextTick()
 
     const ref = new Date()
+
+    // 多段粘贴：一次贴进多段通知时按段解析、批内去重（批量模式只用规则引擎，避免逐段调 AI）
+    const sections = splitNoticeSections(trimmed)
+    if (sections.length > 1) {
+      const batch = parseNoticeBatch(trimmed, ref)
+      set({
+        candidates: batch.tasks,
+        warnings: batch.warnings,
+        parsing: false,
+        stage: '',
+        batchMode: true,
+        engineNote: `批量模式：${batch.sections} 段 → ${batch.tasks.length} 条（去重 ${batch.duplicates.length} 条）`,
+      })
+      return
+    }
+
     const ruleResult = parseNotice(trimmed, ref)
     const warnings = [...ruleResult.warnings]
     let tasks = ruleResult.tasks

@@ -8,7 +8,7 @@
  * 大模型作为「增强引擎」叠加在上面（core/llm.ts），两者结果合并后取高置信度者。
  */
 import type { Confidence, ParsedTask, TaskKind } from './types.js'
-import { extractTime, type TimeHit } from './time.js'
+import { extractTime, setClock, startOfDay, type TimeHit } from './time.js'
 
 /**
  * 类型判定：从「最具体」排到「最宽泛」，先命中先得。
@@ -193,12 +193,30 @@ function detectChannel(text: string): string | null {
   return null
 }
 
-/** 解析一条候选句 */
-export function parseSegment(segment: string, ref: Date, index: number): ParsedTask | null {
+/** 把同一句话的时间替换成另一个日期（用于「本周日」双候选），钟点保留 */
+function overrideHitDate(hit: TimeHit, dateMs: number): TimeHit {
+  const base = startOfDay(new Date(dateMs))
+  let atMs: number | null = null
+  if (hit.hasClock && hit.atMs !== null) {
+    const clock = new Date(hit.atMs)
+    atMs = setClock(base, clock.getHours(), clock.getMinutes()).getTime()
+  }
+  return { ...hit, dateMs: base.getTime(), atMs, weekBoundary: undefined }
+}
+
+function localDateKey(ms: number): string {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/** 解析一条候选句；overrideDateMs 用于把时间挪到另一个候选日期 */
+export function parseSegment(segment: string, ref: Date, index: number, overrideDateMs?: number): ParsedTask | null {
   const reasons: string[] = []
   if (NEGATIVE_RE.test(segment)) return null
 
-  const hit = extractTime(segment, ref)
+  let hit = extractTime(segment, ref)
+  if (hit && overrideDateMs !== undefined) hit = overrideHitDate(hit, overrideDateMs)
   const { kind, label } = detectKind(segment)
   if (label) reasons.push(`命中「${label}」关键词`)
 
@@ -213,6 +231,7 @@ export function parseSegment(segment: string, ref: Date, index: number): ParsedT
   if (hit) {
     title = stripTimePhrases(segment, hit)
     reasons.push(`时间短语「${hit.matched}」`)
+    if (hit.note) reasons.push(hit.note)
   }
   title = cleanTitle(title)
   if (!title) title = cleanTitle(segment).slice(0, 28)
@@ -275,6 +294,43 @@ function scoreConfidence(input: {
   return 'low'
 }
 
+/**
+ * 一条候选句 → 候选任务列表。
+ * 绝大多数情况是 1 条；「本周日」恰好落在周日当天时产出 2 条（本周 / 下周），
+ * 用 choiceGroup 标记为二选一，UI 侧同组只能选一个。
+ */
+export function parseSegmentCandidates(segment: string, ref: Date, index: number): ParsedTask[] {
+  const hit = extractTime(segment, ref)
+  if (hit?.weekBoundary) {
+    const thisWeek = parseSegment(segment, ref, index, hit.weekBoundary.thisWeek)
+    const nextWeek = parseSegment(segment, ref, index, hit.weekBoundary.nextWeek)
+    if (thisWeek && nextWeek) {
+      const group = `本周日|${localDateKey(hit.weekBoundary.thisWeek)}`
+      const note = '周日当天，本周=今天 23:59；下周=7 天后'
+      return [
+        {
+          ...thisWeek,
+          id: `${thisWeek.id}@this-week`,
+          choiceGroup: group,
+          choiceLabel: '本周',
+          confidence: 'low',
+          reasons: [...thisWeek.reasons, note],
+        },
+        {
+          ...nextWeek,
+          id: `${nextWeek.id}@next-week`,
+          choiceGroup: group,
+          choiceLabel: '下周',
+          confidence: 'low',
+          reasons: [...nextWeek.reasons, note],
+        },
+      ]
+    }
+  }
+  const single = parseSegment(segment, ref, index)
+  return single ? [single] : []
+}
+
 export interface ParseResult {
   tasks: ParsedTask[]
   warnings: string[]
@@ -283,13 +339,8 @@ export interface ParseResult {
 /** 一段通知 → 一组待办 */
 export function parseNotice(raw: string, ref: Date = new Date()): ParseResult {
   const segments = splitSegments(raw)
-  const tasks: ParsedTask[] = []
+  const tasks = segments.flatMap((segment, index) => parseSegmentCandidates(segment, ref, index))
   const warnings: string[] = []
-
-  segments.forEach((segment, index) => {
-    const task = parseSegment(segment, ref, index)
-    if (task) tasks.push(task)
-  })
 
   if (segments.length === 0) warnings.push('这段文本太短，没找到可解析的内容')
   else if (tasks.length === 0) warnings.push('识别到文字，但没找到带时间的待办事项')

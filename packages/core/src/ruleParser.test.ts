@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseNotice, splitSegments } from './ruleParser.js'
+import { parseNotice, parseSegment, parseSegmentCandidates, splitSegments } from './ruleParser.js'
 import { SAMPLE_NOTICE, SAMPLE_NOTICE_2, SAMPLE_WORK } from './samples.js'
 
 const REF = new Date(2026, 10, 4, 22, 7, 0) // 2026-11-04 周三 22:07
@@ -276,5 +276,59 @@ describe('parseNotice 辅导员提醒', () => {
   it('会议号 123-456-789 不会被误认成房间号', () => {
     const task = tasks.find((t) => t.title.includes('班会'))!
     expect(task.location).toBeNull()
+  })
+})
+
+describe('v0.7.0 规则引擎：新时间表达与双候选', () => {
+  const SUN = new Date(2026, 10, 8, 10, 0, 0) // 周日
+  const REF2 = new Date(2026, 10, 4, 10, 0, 0) // 周三
+
+  it('周日当天「本周日」产出两个候选（本周 / 下周）', () => {
+    const tasks = parseSegmentCandidates('本周日交周报', SUN, 0)
+
+    expect(tasks).toHaveLength(2)
+    expect(tasks[0].id).toMatch(/@this-week$/)
+    expect(tasks[1].id).toMatch(/@next-week$/)
+    expect(tasks[0].choiceGroup).toBe(tasks[1].choiceGroup)
+    expect(tasks[0].choiceGroup).toContain('本周日|2026-11-08')
+    expect(tasks[0].choiceLabel).toBe('本周')
+    expect(tasks[1].choiceLabel).toBe('下周')
+    expect(tasks[0].confidence).toBe('low')
+    expect(tasks[0].reasons.join(' ')).toContain('周日当天，本周=今天 23:59；下周=7 天后')
+
+    // 默认本周 = 今天 23:59；下周 = 7 天后 23:59
+    expect(tasks[0].dueAt).toBe(new Date(2026, 10, 8, 23, 59, 0, 0).getTime())
+    expect(tasks[1].dueAt).toBe(new Date(2026, 10, 15, 23, 59, 0, 0).getTime())
+  })
+
+  it('非周日不产生双候选', () => {
+    const tasks = parseSegmentCandidates('本周日交周报', REF2, 0)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].choiceGroup).toBeUndefined()
+  })
+
+  it('parseNotice 在周日当天返回两条候选', () => {
+    const result = parseNotice('本周日交周报', SUN)
+    expect(result.tasks).toHaveLength(2)
+  })
+
+  it('月底前 → 本月最后一天 23:59，低置信度且有假设说明', () => {
+    const task = parseSegment('月底前把报销单交了', REF2, 0)!
+    expect(task.dueAt).toBe(new Date(2026, 10, 30, 23, 59, 0, 0).getTime())
+    expect(task.confidence).toBe('low')
+    expect(task.reasons.join(' ')).toContain('月底')
+  })
+
+  it('工作日 → 18:00，reasons 写明「今天 18:00」的假设', () => {
+    const monday = new Date(2026, 10, 9, 9, 0, 0)
+    const task = parseSegment('工作日把材料交了', monday, 0)!
+    expect(task.dueAt).toBe(new Date(2026, 10, 9, 18, 0, 0, 0).getTime())
+    expect(task.reasons.join(' ')).toContain('今天 18:00')
+  })
+
+  it('学期末 → 最近的 1/15 或 7/15', () => {
+    const task = parseSegment('本学期末交实习报告', REF2, 0)!
+    expect(task.dueAt).toBe(new Date(2027, 0, 15, 23, 59, 0, 0).getTime())
+    expect(task.reasons.join(' ')).toContain('2027-01-15')
   })
 })

@@ -73,6 +73,19 @@ export function isoWeekday(input: Date): number {
   return ((input.getDay() + 6) % 7) + 1
 }
 
+/** 往后数 N 个工作日（跳过周六周日），返回当天 00:00 */
+export function addWorkdays(input: Date, count: number): Date {
+  const d = new Date(input)
+  let remaining = count
+  while (remaining > 0) {
+    d.setDate(d.getDate() + 1)
+    const weekday = d.getDay()
+    if (weekday !== 0 && weekday !== 6) remaining -= 1
+  }
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
 interface DateHit {
   date: Date
   index: number
@@ -81,6 +94,14 @@ interface DateHit {
   ambiguous: boolean
   /** 该短语本身是否已经指明了「日」这个精度（用于覆盖默认时刻） */
   hasDayPrecision: boolean
+  /** 需要写进 reasons 的「假设说明」（月底/学期末/工作日这类有解释成本的说法） */
+  note?: string
+  /** 强制使用的钟点（「工作日」默认 18:00），不被普通默认值覆盖 */
+  forcedClock?: { hour: number; minute: number }
+  /** 该短语本身含截止语义（如「月底前」「工作日」下班前） */
+  deadlineHint?: boolean
+  /** 「本周日」落在周日当天时的双候选：本周=今天、下周=7 天后 */
+  weekBoundary?: { thisWeek: number; nextWeek: number }
 }
 
 const REL_DAY: Array<[string, number]> = [
@@ -109,8 +130,110 @@ const WEEKDAY_BASE: Record<string, number> = {
 function resolveDate(text: string, ref: Date): DateHit | null {
   const today = startOfDay(ref)
 
+  // 0-a) 月底 / 本月末 → 本月最后一天
+  //     （排除「下个月底」，那个不在本版支持范围，避免误命中本月）
+  let m = /(?<!下个)月[底末]/.exec(text)
+  if (m) {
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    return {
+      date: lastDay,
+      index: m.index,
+      length: m[0].length,
+      matched: m[0],
+      ambiguous: true,
+      hasDayPrecision: true,
+      note: '「月底」按本月最后一天理解',
+      deadlineHint: true,
+    }
+  }
+
+  // 0-b) 下个月初 / 下月初 → 次月 1 日
+  m = /下个?月(?:初|月初)/.exec(text)
+  if (m) {
+    const firstDay = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+    return {
+      date: firstDay,
+      index: m.index,
+      length: m[0].length,
+      matched: m[0],
+      ambiguous: true,
+      hasDayPrecision: true,
+      note: '「下个月初」按次月 1 日理解',
+      deadlineHint: true,
+    }
+  }
+
+  // 0-c) 本学期末 / 学期末 → 最近的 1 月 15 日或 7 月 15 日（取未来最近的一个）
+  m = /(?:本)?学期[末底]/.exec(text)
+  if (m) {
+    const candidates: Date[] = []
+    for (let yearOffset = 0; yearOffset <= 1; yearOffset += 1) {
+      const year = today.getFullYear() + yearOffset
+      candidates.push(new Date(year, 0, 15))
+      candidates.push(new Date(year, 6, 15))
+    }
+    const future = candidates
+      .filter((date) => startOfDay(date).getTime() >= today.getTime())
+      .sort((a, b) => a.getTime() - b.getTime())
+    const target = future[0] ?? candidates[candidates.length - 1]
+    return {
+      date: target,
+      index: m.index,
+      length: m[0].length,
+      matched: m[0],
+      ambiguous: true,
+      hasDayPrecision: true,
+      note: `「学期末」按最近的学期边界理解（${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-15）`,
+      deadlineHint: true,
+    }
+  }
+
+  // 0-d) 工作日
+  //   「工作日」单独出现：今天是工作日且未到 18:00 → 今天 18:00；否则下一个工作日 18:00
+  //   「N 个工作日内」：跳过周末往后数 N 个工作日
+  //   「周三工作日」这类（日期 + 工作日）不在这里处理，交给 extractTime 的顺延规则
+  const workdayCount = new RegExp(`(${NUM})\\s*个\\s*工作日`).exec(text)
+  const workdayIndex = text.indexOf('工作日')
+  const precededByWeekday =
+    workdayIndex > 0 && /(?:周|星期|礼拜)[一二三四五六日天1-7]\s*$/.test(text.slice(0, workdayIndex))
+  const standaloneWorkday = workdayIndex >= 0 && !precededByWeekday ? { index: workdayIndex, text: '工作日' } : null
+  if (workdayCount) {
+    const n = cnToInt(workdayCount[1])
+    if (n && n > 0 && n <= 60) {
+      return {
+        date: addWorkdays(today, n),
+        index: workdayCount.index,
+        length: workdayCount[0].length,
+        matched: workdayCount[0],
+        ambiguous: false,
+        hasDayPrecision: true,
+        note: `「${workdayCount[1]} 个工作日」按跳过周末计算`,
+        deadlineHint: true,
+      }
+    }
+  }
+  if (standaloneWorkday) {
+    const isWorkday = isoWeekday(today) <= 5
+    const beforeSixPm = ref.getHours() < 18
+    const useToday = isWorkday && beforeSixPm
+    const date = useToday ? today : addWorkdays(today, 1)
+    return {
+      date,
+      index: standaloneWorkday.index,
+      length: 3,
+      matched: standaloneWorkday.text,
+      ambiguous: true,
+      hasDayPrecision: true,
+      forcedClock: { hour: 18, minute: 0 },
+      deadlineHint: true,
+      note: useToday
+        ? '今天是工作日且未到 18:00 → 今天 18:00'
+        : '已过 18:00 或今天不是工作日 → 下一个工作日 18:00',
+    }
+  }
+
   // 1) 2026-11-18 / 2026年11月18日
-  let m = /(\d{4})\s*[-/年]\s*(\d{1,2})\s*[-/月]\s*(\d{1,2})\s*[日号]?/.exec(text)
+  m = /(\d{4})\s*[-/年]\s*(\d{1,2})\s*[-/月]\s*(\d{1,2})\s*[日号]?/.exec(text)
   if (m) {
     const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
     if (isValidDate(d)) {
@@ -170,10 +293,24 @@ function resolveDate(text: string, ref: Date): DateHit | null {
         // 「本周五」已经过去时，语义确实含糊，交给人确认
         if (target.getTime() < today.getTime()) ambiguous = true
       }
+
+      // 「本周日」恰好落在周日当天 → 本周=今天 vs 下周=7 天后，产出双候选
+      const isThisWeekSunday = (base === '本' || base === '这') && wd === 7
+      if (isThisWeekSunday && target.getTime() === today.getTime()) {
+        return {
+          date: target,
+          index: m.index,
+          length: m[0].length,
+          matched: m[0],
+          ambiguous: true,
+          hasDayPrecision: true,
+          weekBoundary: { thisWeek: today.getTime(), nextWeek: addDays(today, 7).getTime() },
+        }
+      }
+
       return { date: target, index: m.index, length: m[0].length, matched: m[0], ambiguous, hasDayPrecision: true }
     }
   }
-
   // 5) 今天 / 明天 / 后天 / 今晚
   let best: { kw: string; offset: number; index: number } | null = null
   for (const [kw, offset] of REL_DAY) {
@@ -312,6 +449,10 @@ export interface TimeHit {
   /** 时段词（上午/下午/晚上）的独立区间；没有时段词时为 null */
   periodStart: number | null
   periodEnd: number | null
+  /** 「月底 / 学期末 / 工作日」这类需要解释的假设，直接进 reasons */
+  note?: string
+  /** 「本周日」落在周日当天时的双候选（本周 / 下周） */
+  weekBoundary?: { thisWeek: number; nextWeek: number }
 }
 
 /**
@@ -319,12 +460,37 @@ export interface TimeHit {
  * 返回 null 表示这句话没有可用的时间线索 —— 调用方应当把它降级为「待确认」。
  */
 export function extractTime(text: string, ref: Date = new Date()): TimeHit | null {
-  const dateHit = resolveDate(text, ref)
+  let dateHit = resolveDate(text, ref)
   const clockHit = resolveClock(text)
+
+  // 「下周三工作日」这类：先解析日期，周末则顺延到下一个工作日，时刻固定 18:00
+  // （「N 个工作日」已在 resolveDate 里算好，不再二次处理）
+  if (dateHit && !dateHit.forcedClock && /工作日/.test(text) && !dateHit.note?.includes('个工作日')) {
+    const weekday = dateHit.date.getDay()
+    if (weekday === 0 || weekday === 6) {
+      const shifted = addDays(dateHit.date, weekday === 6 ? 2 : 1)
+      dateHit = {
+        ...dateHit,
+        date: shifted,
+        forcedClock: { hour: 18, minute: 0 },
+        deadlineHint: true,
+        ambiguous: true,
+        note: '该日期是周末，已顺延到下一个工作日 18:00',
+      }
+    } else {
+      dateHit = {
+        ...dateHit,
+        forcedClock: { hour: 18, minute: 0 },
+        deadlineHint: true,
+        ambiguous: true,
+        note: '按工作日 18:00 理解',
+      }
+    }
+  }
 
   if (!dateHit && !clockHit) return null
 
-  const isDeadline = DEADLINE_RE.test(text)
+  const isDeadline = DEADLINE_RE.test(text) || (dateHit?.deadlineHint ?? false)
 
   if (!dateHit && clockHit) {
     // 「晚上8点开会」：只有钟点没有日期，按最近一次未过期的时刻算
@@ -351,8 +517,15 @@ export function extractTime(text: string, ref: Date = new Date()): TimeHit | nul
   }
 
   const date = dateHit!.date
-  const hasClock = Boolean(clockHit)
-  const atMs = clockHit ? setClock(date, clockHit.hour, clockHit.minute).getTime() : null
+  // 「工作日」这类短语会强制一个钟点（18:00），且文本里没有钟点词
+  const forcedClock = clockHit ? null : (dateHit!.forcedClock ?? null)
+  const hasClock = Boolean(clockHit) || Boolean(forcedClock)
+  const clockHour = clockHit ? clockHit.hour : forcedClock?.hour
+  const clockMinute = clockHit ? clockHit.minute : forcedClock?.minute
+  const atMs =
+    hasClock && clockHour !== undefined && clockMinute !== undefined
+      ? setClock(date, clockHour, clockMinute).getTime()
+      : null
 
   const dateStart = dateHit!.index
   const dateEnd = dateHit!.index + dateHit!.length
@@ -376,6 +549,8 @@ export function extractTime(text: string, ref: Date = new Date()): TimeHit | nul
     clockEnd,
     periodStart: clockHit?.periodStart ?? null,
     periodEnd: clockHit?.periodEnd ?? null,
+    note: dateHit!.note,
+    weekBoundary: dateHit!.weekBoundary,
   }
 }
 

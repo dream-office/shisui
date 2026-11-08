@@ -45,6 +45,10 @@ export interface ParsedTask {
   engine: 'rule' | 'llm' | 'hybrid' | 'manual' | 'import'
   /** 日历文件里的 UID：再导入同一事件时用于去重 / 更新；其它来源为 null */
   sourceUid?: string | null
+  /** 二选一分组（「本周日」当天会产出两个候选，同组只能选一个） */
+  choiceGroup?: string
+  /** 该候选在组内的标签，如「本周」/「下周」 */
+  choiceLabel?: string
 }
 
 /** 已确认、落地到日程的事项 */
