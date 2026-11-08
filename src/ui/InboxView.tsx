@@ -28,6 +28,23 @@ function takeSharedText(): string | null {
 export default function InboxView() {
   const [raw, setRaw] = useState('')
   const [pasteError, setPasteError] = useState<string | null>(null)
+  const [showFirstVisit, setShowFirstVisit] = useState(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      return window.localStorage.getItem('shisui-help-banner-seen') !== '1'
+    } catch {
+      return false
+    }
+  })
+
+  const dismissFirstVisit = () => {
+    try {
+      window.localStorage.setItem('shisui-help-banner-seen', '1')
+    } catch {
+      // 隐私模式禁用 localStorage 时忽略：本次关闭即可
+    }
+    setShowFirstVisit(false)
+  }
 
   /** iOS 没有系统分享目标：用户复制内容后点这里读取剪贴板，追加到输入末尾（不覆盖） */
   const pasteFromClipboard = async () => {
@@ -116,6 +133,14 @@ export default function InboxView() {
 
   return (
     <div className="inbox">
+      {showFirstVisit && (
+        <div className="first-visit card" role="note">
+          <span>第一次用？三步就能把群消息变成待办：粘贴 → 检查 → 收录。</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={dismissFirstVisit}>
+            知道了
+          </button>
+        </div>
+      )}
       <section className="hero">
         <h2>
           把群里的消息<em>粘进来</em>，剩下的它替你记着

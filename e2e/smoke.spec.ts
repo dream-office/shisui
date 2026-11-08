@@ -1043,3 +1043,44 @@ test.describe('v0.10 iOS 剪贴板替代', () => {
     expect(value).toBe('已有内容\n周一9点开会')
   })
 })
+
+
+test.describe('v1.0 使用说明', () => {
+  test('H1. 首次访问提示条只出现一次', async ({ page }) => {
+    await page.goto('/')
+    const banner = page.locator('.first-visit')
+    await expect(banner).toBeVisible()
+    await page.getByRole('button', { name: '知道了' }).first().click()
+    await expect(banner).toHaveCount(0)
+    await page.reload()
+    await expect(page.locator('.first-visit')).toHaveCount(0)
+  })
+
+  test('H2. 怎么用：打开/Esc 关闭/焦点回按钮/aria；360px 不溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await page.goto('/')
+    const trigger = page.getByRole('button', { name: '怎么用' })
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+    await trigger.click()
+
+    const dialog = page.getByRole('dialog', { name: '怎么用拾穗' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    await expect(dialog).toContainText('粘贴群消息')
+    await expect(dialog).toContainText('检查解析结果并收录')
+    await expect(dialog).toContainText('去日程 / 月历')
+    await expect(dialog).toContainText('不上传服务器')
+    await expect(dialog).toContainText('iOS')
+
+    // Esc 关闭，焦点回到触发按钮
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+
+    // 遮罩点击也关闭
+    await trigger.click()
+    await expect(dialog).toBeVisible()
+    await page.locator('.help-overlay').click({ position: { x: 5, y: 5 } })
+    await expect(dialog).toHaveCount(0)
+  })
+})

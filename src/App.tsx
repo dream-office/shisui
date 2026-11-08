@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from '@/state/store'
 import { registerServiceWorker } from '@/services/pwa'
 import InboxView from '@/ui/InboxView'
 import ErrorBoundary from '@/ui/ErrorBoundary'
+import HelpPanel from '@/ui/HelpPanel'
 import MonthView from '@/ui/MonthView'
 import PlanView from '@/ui/PlanView'
 import SettingsView from '@/ui/SettingsView'
@@ -32,6 +33,8 @@ export default function App() {
   const [armed, setArmed] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('__boom') === '1',
   )
+  const [helpOpen, setHelpOpen] = useState(false)
+  const helpButtonRef = useRef<HTMLButtonElement>(null)
 
   // 错误边界自测开关：读取后立刻清掉 URL，保证刷新/回首页不会再次 armed
   useEffect(() => {
@@ -60,6 +63,15 @@ export default function App() {
             <h1>拾穗</h1>
             <p>群里散落的截止时间，替你捡起来</p>
           </div>
+            <button
+              ref={helpButtonRef}
+              type="button"
+              className="btn btn-ghost btn-sm help-open"
+              aria-haspopup="dialog"
+              onClick={() => setHelpOpen(true)}
+            >
+              怎么用
+            </button>
         </div>
 
         <nav className="tabs" aria-label="主视图">
@@ -107,6 +119,14 @@ export default function App() {
           源码（AGPL-3.0）
         </a>
       </footer>
+
+      <HelpPanel
+        open={helpOpen}
+        onClose={() => {
+          setHelpOpen(false)
+          helpButtonRef.current?.focus()
+        }}
+      />
 
       {applyUpdate && (
         <div className="toast update-toast" role="status">
