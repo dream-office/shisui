@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { appendClipboardText } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import BatchPreview from './BatchPreview'
@@ -36,7 +37,7 @@ export default function InboxView() {
         setPasteError('剪贴板里没有文字，先复制群消息再点一次')
         return
       }
-      setRaw((prev) => (prev.trim().length > 0 ? `${prev}\n${text}` : text))
+      setRaw((prev) => appendClipboardText(prev, text))
       setPasteError(null)
     } catch {
       setPasteError('浏览器不允许读取剪贴板，请长按输入框手动粘贴')

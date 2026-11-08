@@ -1035,12 +1035,11 @@ test.describe('v0.10 iOS 剪贴板替代', () => {
         value: { readText: async () => '周一9点开会' },
       })
     })
-    await page.getByLabel('群消息原文').fill('已有内容')
+    await page.getByLabel('群消息原文').fill('已有内容\n')
 
     await page.getByRole('button', { name: '粘贴分享内容' }).click()
     const value = await page.getByLabel('群消息原文').inputValue()
-    expect(value).toContain('已有内容')
-    expect(value).toContain('周一9点开会')
-    expect(value.indexOf('已有内容')).toBeLessThan(value.indexOf('周一9点开会'))
+    // 精确等于：末尾已有换行时不重复补，只保留单个分隔换行
+    expect(value).toBe('已有内容\n周一9点开会')
   })
 })
