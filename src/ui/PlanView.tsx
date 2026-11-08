@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { startOfDay } from 'shisui-core'
-import { describeRule, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
+import { describeRule, filterTasks, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
 import { tasksToIcs } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { downloadTextFile } from '@/services/download'
+import FocusView from './FocusView'
 import TaskRow, { dayHeading } from './TaskRow'
 import { useNow } from './useNow'
 
@@ -16,11 +17,31 @@ export default function PlanView() {
   const series = useApp((s) => s.series)
   const skipTask = useApp((s) => s.skipTask)
   const endSeries = useApp((s) => s.endSeries)
+  const searchQuery = useApp((s) => s.searchQuery)
+  const setSearchQuery = useApp((s) => s.setSearchQuery)
+  const selectedIds = useApp((s) => s.selectedIds)
+  const toggleSelection = useApp((s) => s.toggleSelection)
+  const clearSelection = useApp((s) => s.clearSelection)
+  const selectAll = useApp((s) => s.selectAll)
+  const batchSetDone = useApp((s) => s.batchSetDone)
+  const batchDelete = useApp((s) => s.batchDelete)
+  const undo = useApp((s) => s.undo)
+  const undoLastBatch = useApp((s) => s.undoLastBatch)
+  const setTags = useApp((s) => s.setTags)
+  const focusMode = useApp((s) => s.focusMode)
+  const openFocus = useApp((s) => s.openFocus)
+  const [batchMode, setBatchMode] = useState(false)
+  const [onlyOpen, setOnlyOpen] = useState(false)
   const now = useNow(30_000)
   const ref = useMemo(() => new Date(now), [now])
 
   const active = useMemo(() => tasks.filter((task) => !task.done), [tasks])
   const done = useMemo(() => tasks.filter((task) => task.done), [tasks])
+  const visibleActive = useMemo(
+    () => filterTasks(active, searchQuery).filter((task) => !onlyOpen || !task.skipped),
+    [active, searchQuery, onlyOpen],
+  )
+  const visibleDone = useMemo(() => (onlyOpen ? [] : filterTasks(done, searchQuery)), [done, searchQuery, onlyOpen])
 
   const seriesById = useMemo(() => new Map(series.map((item) => [item.id, item])), [series])
   const seriesLabelOf = (task: StoredTask): string | null => {
@@ -31,12 +52,12 @@ export default function PlanView() {
     return rule ? describeRule(rule) : item.rrule
   }
 
-  const conflicts = useMemo(() => scanConflicts(active, ref), [active, ref])
-  const load = useMemo(() => weeklyLoad(active, ref), [active, ref])
+  const conflicts = useMemo(() => scanConflicts(visibleActive, ref), [visibleActive, ref])
+  const load = useMemo(() => weeklyLoad(visibleActive, ref), [visibleActive, ref])
 
   const groups = useMemo(() => {
     const buckets = new Map<number, StoredTask[]>()
-    for (const task of active) {
+    for (const task of visibleActive) {
       const at = task.dueAt ?? task.startAt
       if (at === null) continue
       const key = startOfDay(new Date(at)).getTime()
@@ -50,9 +71,9 @@ export default function PlanView() {
         day,
         list: list.sort((a, b) => (a.dueAt ?? a.startAt ?? 0) - (b.dueAt ?? b.startAt ?? 0)),
       }))
-  }, [active])
+  }, [visibleActive])
 
-  const noTime = active.filter((task) => task.dueAt === null && task.startAt === null)
+  const noTime = visibleActive.filter((task) => task.dueAt === null && task.startAt === null)
   const maxLoad = Math.max(1, ...load)
   const today = startOfDay(ref).getTime()
 
@@ -95,11 +116,75 @@ export default function PlanView() {
   return (
     <div className="plan">
       <div className="plan-toolbar">
+        <input
+          className="search-input"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="搜索标题 / 原文 / 地点 / #标签"
+          aria-label="搜索任务"
+        />
         <button type="button" className="btn btn-sm" onClick={exportIcs}>
           导出 .ics
         </button>
+        <button type="button" className={`btn btn-sm ${focusMode ? 'btn-primary' : ''}`} onClick={openFocus}>
+          专注模式
+        </button>
+        <label className="muted inline-check">
+          <input type="checkbox" checked={onlyOpen} onChange={(event) => setOnlyOpen(event.target.checked)} />
+          只看未完成
+        </label>
+        <button
+          type="button"
+          className={`btn btn-sm ${batchMode ? 'btn-primary' : ''}`}
+          onClick={() => {
+            setBatchMode((value) => !value)
+            clearSelection()
+          }}
+        >
+          {batchMode ? '退出多选' : '多选'}
+        </button>
+        {undo && (
+          <button type="button" className="btn btn-sm" onClick={() => void undoLastBatch()}>
+            撤销「{undo.label}」
+          </button>
+        )}
         <span className="muted">导出后可在系统日历 / Google Calendar 里导入或订阅</span>
       </div>
+
+      {focusMode && <FocusView />}
+
+      {batchMode && (
+        <div className="batch-bar card">
+          <span>已选 {selectedIds.length} 件</span>
+          <button type="button" className="btn btn-sm" onClick={() => selectAll(visibleActive.map((task) => task.id))}>
+            全选当前
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={selectedIds.length === 0}
+            onClick={() => void batchSetDone(selectedIds, true)}
+          >
+            批量完成
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={selectedIds.length === 0}
+            onClick={() => void batchSetDone(selectedIds, false)}
+          >
+            取消完成
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-danger"
+            disabled={selectedIds.length === 0}
+            onClick={() => void batchDelete(selectedIds)}
+          >
+            批量删除
+          </button>
+        </div>
+      )}
 
       <section className="stats">
         <div className="stat card">
@@ -162,8 +247,12 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
+                selectionMode={batchMode}
+                selected={selectedIds.includes(task.id)}
+                onSelect={() => toggleSelection(task.id)}
+                onTagsChange={(tags) => void setTags(task.id, tags)}
               />
             ))}
           </ul>
@@ -182,19 +271,23 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
+                selectionMode={batchMode}
+                selected={selectedIds.includes(task.id)}
+                onSelect={() => toggleSelection(task.id)}
+                onTagsChange={(tags) => void setTags(task.id, tags)}
               />
             ))}
           </ul>
         </section>
       )}
 
-      {done.length > 0 && (
+      {visibleDone.length > 0 && (
         <details className="done-block">
-          <summary>已完成 {done.length} 件</summary>
+          <summary>已完成 {visibleDone.length} 件</summary>
           <ul className="task-list">
-            {done.map((task) => (
+            {visibleDone.map((task) => (
               <TaskRow
                 key={task.id}
                 task={task}
@@ -202,8 +295,12 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
+                selectionMode={batchMode}
+                selected={selectedIds.includes(task.id)}
+                onSelect={() => toggleSelection(task.id)}
+                onTagsChange={(tags) => void setTags(task.id, tags)}
               />
             ))}
           </ul>

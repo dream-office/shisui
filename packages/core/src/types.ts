@@ -61,6 +61,8 @@ export interface ParsedTask {
   recurrenceIndex?: number
   /** 「跳过这一次」的标记（不等于完成，不进完成率分母） */
   skipped?: boolean
+  /** 标签（普通字段，不加 DB 索引；搜索全表扫） */
+  tags?: string[]
 }
 
 /** 重复系列：规则与系列级状态（每条实例只引用 seriesId） */

@@ -1,16 +1,29 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { version as appVersion } from '../../package.json'
+import { validateBackup } from 'shisui-core'
 import { useApp } from '@/state/store'
+import { downloadTextFile } from '@/services/download'
 import { DEFAULT_LLM_CONFIG, isLLMReady, type LLMConfig } from '@/services/llm'
-import { exportSnapshot, importSnapshot, type Snapshot } from '@/data/repo'
+
+interface RestorePreview {
+  text: string
+  tasks: number
+  series: number
+  batches: number
+  exportedAt: string
+}
 
 export default function SettingsView() {
   const llmConfig = useApp((s) => s.llmConfig)
   const saveLLM = useApp((s) => s.saveLLM)
-  const clearAll = useApp((s) => s.clearAll)
-  const hydrate = useApp((s) => s.hydrate)
+  const exportBackup = useApp((s) => s.exportBackup)
+  const restoreBackup = useApp((s) => s.restoreBackup)
   const [draft, setDraft] = useState<LLMConfig>(llmConfig)
   const [saved, setSaved] = useState(false)
+  const [preview, setPreview] = useState<RestorePreview | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const handleSave = () => {
     saveLLM(draft)
@@ -18,25 +31,98 @@ export default function SettingsView() {
     window.setTimeout(() => setSaved(false), 1800)
   }
 
-  const handleExport = async () => {
-    const snapshot = await exportSnapshot()
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `shisui-backup-${new Date().toISOString().slice(0, 10)}.json`
-    link.click()
-    URL.revokeObjectURL(url)
+  const handleExport = () => {
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadTextFile(exportBackup(), `shisui-backup-${stamp}.json`, 'application/json;charset=utf-8')
+    setDone('备份已下载')
+    setError(null)
   }
 
-  const handleImport = async (file: File) => {
+  const handlePick = async (file: File) => {
+    setError(null)
+    setDone(null)
     const text = await file.text()
-    await importSnapshot(JSON.parse(text) as Snapshot)
-    await hydrate()
+    const result = validateBackup(text)
+    if (!result.ok || !result.backup) {
+      setPreview(null)
+      setError(result.errors[0] ?? '备份文件不合法')
+      return
+    }
+    setPreview({
+      text,
+      tasks: result.backup.tasks.length,
+      series: result.backup.series.length,
+      batches: result.backup.batches.length,
+      exportedAt: result.backup.exportedAt,
+    })
+  }
+
+  const confirmRestore = async () => {
+    if (!preview) return
+    const result = await restoreBackup(preview.text)
+    setPreview(null)
+    if (!result.ok) {
+      setError(result.errors[0] ?? '恢复失败')
+      return
+    }
+    setDone(`已恢复 ${result.counts?.tasks ?? 0} 条任务、${result.counts?.series ?? 0} 个系列`)
   }
 
   return (
     <div className="settings">
+      <section className="card" aria-labelledby="backup-title">
+        <h3 id="backup-title">备份与恢复</h3>
+        <p className="muted">
+          备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。**恢复会覆盖当前全部数据**，先下载一份再恢复最稳。
+          文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。
+        </p>
+        <div className="backup-actions">
+          <button type="button" className="btn btn-primary" onClick={handleExport}>
+            导出 JSON 备份
+          </button>
+          <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
+            选择备份文件恢复
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="application/json,.json"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              event.target.value = ''
+              if (file) void handlePick(file)
+            }}
+          />
+        </div>
+
+        {error && (
+          <p className="import-error" role="alert">
+            {error}
+          </p>
+        )}
+        {done && <p className="import-ok">{done}</p>}
+
+        {preview && (
+          <div className="restore-preview" role="region" aria-label="恢复预览">
+            <p>
+              这份备份导出时间：{new Date(preview.exportedAt).toLocaleString()}，
+              含 <strong>{preview.tasks}</strong> 条任务、<strong>{preview.series}</strong> 个重复系列、
+              <strong>{preview.batches}</strong> 条历史。
+            </p>
+            <p className="muted">确认后会**清空当前数据并替换**，不可撤销。</p>
+            <div className="backup-actions">
+              <button type="button" className="btn btn-danger" onClick={() => void confirmRestore()}>
+                确认恢复
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setPreview(null)}>
+                取消
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
       <section className="card">
         <h3>AI 增强引擎（可选）</h3>
         <p className="muted">
@@ -72,96 +158,25 @@ export default function SettingsView() {
             onChange={(event) => setDraft({ ...draft, apiKey: event.target.value })}
             placeholder="sk-..."
             spellCheck={false}
+            autoComplete="off"
           />
         </label>
 
         <div className="settings-actions">
           <button type="button" className="btn btn-primary" onClick={handleSave}>
-            保存配置
+            {saved ? '已保存' : '保存'}
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              setDraft({ ...DEFAULT_LLM_CONFIG })
-              saveLLM({ ...DEFAULT_LLM_CONFIG })
-            }}
-          >
-            关掉 AI，只用规则引擎
-          </button>
-          <span className={`status ${isLLMReady(draft) ? 'is-on' : ''}`}>
-            {isLLMReady(draft) ? '双引擎已启用' : '当前仅规则引擎'}
-          </span>
-          {saved && <span className="status is-on">已保存</span>}
+          <span className="muted">{isLLMReady(draft) ? '已配置：解析时会尝试 AI，失败自动降级' : '未配置：只用规则引擎'}</span>
         </div>
       </section>
 
       <section className="card">
-        <h3>数据</h3>
-        <p className="muted">所有数据都在本机浏览器。导出成 JSON 等于一份完整备份，换浏览器或换设备时导入即可恢复。</p>
-        <div className="settings-actions">
-          <button type="button" className="btn" onClick={handleExport}>
-            导出备份 JSON
-          </button>
-          <label className="btn btn-ghost file-btn">
-            导入备份
-            <input
-              type="file"
-              accept="application/json"
-              onChange={(event) => {
-                const file = event.target.files?.[0]
-                if (file) void handleImport(file)
-              }}
-            />
-          </label>
-          <button
-            type="button"
-            className="btn btn-danger"
-            onClick={() => {
-              if (window.confirm('会清空所有待办与导入记录，确定吗？')) void clearAll()
-            }}
-          >
-            清空全部数据
-          </button>
-        </div>
-      </section>
-
-      <section className="card about">
         <h3>关于拾穗</h3>
-        <ul>
-          <li>
-            <strong>纯前端、本地优先</strong>：没有后端，没有账号，默认不联网——学号、客户名、手机号、合同金额都留在你的浏览器里。只有你主动启用 AI 引擎时，粘贴的内容才会发给你自己填写的服务商。
-          </li>
-          <li>
-            <strong>不预设场景</strong>：公司群、项目群、班级群、家长群，同一套解析规则——按内容判断，不按场景套模板。
-          </li>
-          <li>
-            <strong>双引擎</strong>：规则引擎负责可解释、可离线；AI 引擎负责覆盖刁钻写法。两条路都能出结果，谁更可信取谁。
-          </li>
-          <li>
-            <strong>可复现</strong>：时间解析是注入 ref 的纯函数，全部单测确定性通过，换机器换时区结果一致。
-          </li>
-          <li>
-            <strong>版本</strong>：v{appVersion} · 应用本体 AGPL-3.0-or-later，解析核心 <code>shisui-core</code> 为 MIT。
-          </li>
-          <li>
-            <strong>源码</strong>：
-            <a href="https://github.com/dream-office/shisui" target="_blank" rel="noreferrer">
-              github.com/dream-office/shisui
-            </a>
-            （AGPL §13：通过网络使用本应用的，有权获取对应源码；仓库始终公开）。
-          </li>
-          <li>
-            <strong>第三方</strong>：
-            <a href="./licenses/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">
-              依赖与许可声明
-            </a>
-            （Dexie 为 Apache-2.0，React / Zustand 为 MIT）。
-          </li>
-          <li>
-            <strong>安全问题</strong>：见仓库 <code>SECURITY.md</code>，走 GitHub 私密报告，不要公开提 issue。
-          </li>
-        </ul>
+        <p className="muted">拾穗 v{appVersion} · AGPL-3.0-or-later</p>
+        <p className="muted">
+          默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。
+          唯一会出网的情况是你自己配置了 AI 接口并触发解析。
+        </p>
       </section>
     </div>
   )

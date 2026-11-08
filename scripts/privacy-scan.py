@@ -114,14 +114,57 @@ def scan_history():
     return findings
 
 
+# 只匹配「数据文件形态」：模块名/源码文件叫 backup.ts 不算（曾误报 packages/core/src/backup.ts）
+STRAY_PATTERN = re.compile(
+    r"\.(bundle|bak|backup|zip|7z|tar|gz|env|pem|key)$"
+    r"|^\.env"
+    r"|(^|/)[^/]*backup[^/]*\.(json|csv|db|sqlite|txt|zip|7z|tar|gz)$"
+    r"|导出",
+    re.I,
+)
+
+
 def scan_stray_files():
     """仓库根目录不该出现的文件：备份包、导出、密钥、本地库"""
-    bad = re.compile(r"\.(bundle|bak|backup|zip|7z|tar|gz|env|pem|key)$|^\.env|backup|导出", re.I)
     findings = []
     for path in tracked_files():
-        if bad.search(path):
+        if STRAY_PATTERN.search(path):
             findings.append(("不该公开的文件", path, 0, path))
     return findings
+
+
+def self_test() -> int:
+    """扫描规则回归：模块名不该误报，数据文件仍要命中"""
+    should_not_match = [
+        "packages/core/src/backup.ts",
+        "packages/core/src/backup.test.ts",
+        "src/state/store.ts",
+        "docs/ROADMAP.md",
+    ]
+    should_match = [
+        "foo.backup.json",
+        "shisui-backup-2026-11-08.json",
+        "导出.csv",
+        "dump.bak",
+        ".env",
+        "cert.pem",
+        "app.key",
+        "data.zip",
+    ]
+    failed = []
+    for path in should_not_match:
+        if STRAY_PATTERN.search(path):
+            failed.append(f"误报：{path}")
+    for path in should_match:
+        if not STRAY_PATTERN.search(path):
+            failed.append(f"漏报：{path}")
+    if failed:
+        print("[!] privacy-scan self-test 失败：")
+        for item in failed:
+            print("  " + item)
+        return 1
+    print(f"[OK] privacy-scan self-test：{len(should_not_match)} 个不命中 / {len(should_match)} 个命中")
+    return 0
 
 
 def main():
@@ -136,7 +179,11 @@ def main():
     ap = argparse.ArgumentParser(description="发布前隐私自查")
     ap.add_argument("--path", default=".", help="仓库目录或仓库内任意子目录（会自动解析到仓库根）")
     ap.add_argument("--quiet", action="store_true", help="只在有问题时输出")
+    ap.add_argument("--self-test", action="store_true", help="验证扫描规则本身（模块名不误报、数据文件命中）")
     args = ap.parse_args()
+
+    if args.self_test:
+        return self_test()
 
     base = os.path.abspath(args.path)
     if not os.path.isdir(base):
