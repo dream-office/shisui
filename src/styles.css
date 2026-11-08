@@ -151,6 +151,7 @@ em {
 
 .tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 4px;
   background: var(--surface);
@@ -165,6 +166,7 @@ em {
   background: transparent;
   color: var(--muted);
   padding: 7px 16px;
+  white-space: nowrap;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 550;
@@ -1241,7 +1243,7 @@ em {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 860px) {
   .topbar {
     flex-wrap: wrap;
     gap: 10px;

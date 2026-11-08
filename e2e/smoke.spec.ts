@@ -1459,3 +1459,24 @@ test.describe('v1.2 结构化多事项 + DB v4', () => {
     expect(migrated.note).toBeNull()
   })
 })
+
+
+test.describe('v1.2.0 导航布局', () => {
+  test('N1. 800/820/860/861：5 个标签单行、无横向滚动；1920 不变', async ({ page }) => {
+    for (const width of [800, 820, 860, 861, 1920]) {
+      await page.setViewportSize({ width, height: 800 })
+      await page.goto('/')
+      const tabs = page.locator('.tab')
+      await expect(tabs).toHaveCount(5)
+      const allSingleLine = await tabs.evaluateAll((els) =>
+        els.every((el) => el.scrollHeight <= el.clientHeight + 1 && getComputedStyle(el).whiteSpace === 'nowrap'),
+      )
+      expect(allSingleLine, `width=${width}`).toBe(true)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, `width=${width}`).toBeLessThanOrEqual(1)
+      await expect(page.getByRole('navigation', { name: '主视图' })).toBeVisible()
+    }
+  })
+})
