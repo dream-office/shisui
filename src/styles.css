@@ -1452,9 +1452,10 @@ em {
 .month-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--accent); }
 .month-dot.is-done { background: var(--line-strong); }
 .month-count { font-size: 10px; color: var(--muted); }
-.month-day h3 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
-.month-day-title { font-weight: 600; }
-.month-day-count { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.month-day.card { padding: 16px 18px; min-width: 0; overflow-wrap: anywhere; }
+.month-day h3 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; row-gap: 4px; }
+.month-day-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.month-day-count { background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; flex: none; }
 .month-day-empty { line-height: 1.7; margin: 0 0 10px; }
 .month-day-empty:last-child { margin-bottom: 0; }
 .day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
