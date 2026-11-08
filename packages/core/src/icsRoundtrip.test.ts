@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { importIcs } from './icsImport.js'
 import { tasksToIcs, type IcsSeries } from './ics.js'
+import { parseRRule } from './recurrence.js'
 
 const REF = new Date(Date.UTC(2026, 10, 1, 0, 0, 0))
 
@@ -36,12 +37,26 @@ describe('ICS 往返：重复系列', () => {
     expect(ics).toContain('SUMMARY:交报告')
   })
 
-  it('结束系列 → RRULE 带 UNTIL 截断', () => {
+  it('结束系列 → RRULE 带 UNTIL 截断（断言由实际 UTC 推导，不写死年份）', () => {
+    const endedAt = at(2026, 12, 31, 23)
     const ics = tasksToIcs([], {
       ref: REF,
-      series: [{ ...series, endedAt: at(2026, 12, 31, 23) }],
+      series: [{ ...series, endedAt }],
     })
-    expect(ics).toMatch(/RRULE:.*UNTIL=2026\d{4}T\d{6}Z/)
+
+    // 由 endedAt 的真实 UTC 值推出 YYYYMMDD，避免时区把本地 23:00 推到次日
+    const utcDate = new Date(endedAt).toISOString().slice(0, 10).replace(/-/g, '')
+    expect(ics).toMatch(new RegExp(`RRULE:.*UNTIL=${utcDate}T\\d{6}Z`))
+
+    // 语义断言（与 TZ 无关）：UNTIL 换算回本地仍是 2026-12-31 23:00
+    const imported = importIcs(ics, { makeId: (i) => `imp_${i}` }).tasks[0]
+    const rule = parseRRule(imported.rrule!)
+    expect(rule?.until).not.toBeNull()
+    const local = new Date(rule!.until!)
+    expect(local.getFullYear()).toBe(2026)
+    expect(local.getMonth()).toBe(11)
+    expect(local.getDate()).toBe(31)
+    expect(local.getHours()).toBe(23)
   })
 
   it('往返：导出 → 再导入，规则不丢、不展开成多条', () => {
