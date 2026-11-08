@@ -231,6 +231,61 @@ test.describe('分享目标', () => {
   })
 })
 
+test.describe('月视图', () => {
+  test('M. 42 格网格、切换月份、今天按钮', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    await expect(page.locator('.month-cell')).toHaveCount(42)
+    const title = page.locator('.month-title')
+    const initial = (await title.textContent()) ?? ''
+
+    await page.getByRole('button', { name: '下个月' }).click()
+    await expect(title).not.toHaveText(initial)
+
+    await page.getByRole('button', { name: '今天' }).click()
+    await expect(title).toHaveText(initial)
+  })
+
+  test('N. 拖拽任务到另一天：日期变化、时刻保留', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('拖我试试')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const todayCell = page.locator('.month-cell.is-today')
+    const todayEpoch = Number(await todayCell.getAttribute('data-day'))
+    const targetCell = page.locator(`.month-cell[data-day="${todayEpoch + 86_400_000}"]`)
+    await expect(targetCell).toHaveCount(1)
+
+    const source = page.locator('.day-task', { hasText: '拖我试试' })
+    await expect(source).toBeVisible()
+    await source.dragTo(targetCell)
+
+    const moved = page.locator('.day-task', { hasText: '拖我试试' })
+    await expect(moved).toBeVisible()
+    await expect(moved).toContainText('18:00')
+  })
+
+  test('O. 360px 宽度下不横向溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    await expect(page.locator('.month-grid')).toBeVisible()
+
+    const size = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }))
+    expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
+  })
+})
+
 test.describe('PWA', () => {
   test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
     await page.goto('/')
