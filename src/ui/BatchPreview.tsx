@@ -1,10 +1,11 @@
+import { t } from '@/i18n'
 import { useState } from 'react'
 import { defaultChoiceSelection, toggleChoiceSelection, type ParsedTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 
 function formatWhen(task: ParsedTask): string {
   const at = task.startAt ?? task.dueAt
-  if (at === null) return '无时间'
+  if (at === null) return t('无时间')
   const date = new Date(at)
   const allDay = date.getHours() === 0 && date.getMinutes() === 0
   const stamp = `${date.getMonth() + 1}-${String(date.getDate()).padStart(2, '0')}`
@@ -49,14 +50,14 @@ export default function BatchPreview({
     <section className="batch-preview card">
       <div className="batch-head">
         <h3>
-          批量预览<span className="muted">（{tasks.length} 条，已选 {selected.length}）</span>
+          {t('批量预览')}<span className="muted">（{tasks.length} 条，已选 {selected.length}）</span>
         </h3>
         <div className="batch-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={selectAll}>
-            全选
+            {t('全选')}
           </button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={selectNone}>
-            全不选
+            {t('全不选')}
           </button>
         </div>
       </div>
@@ -70,17 +71,17 @@ export default function BatchPreview({
             </label>
             <span className="batch-time muted">{formatWhen(task)}</span>
             {task.choiceLabel && <span className="batch-chip">{task.choiceLabel}</span>}
-            {task.confidence === 'low' && <span className="batch-chip is-warn">待核对</span>}
+            {task.confidence === 'low' && <span className="batch-chip is-warn">{t('待核对')}</span>}
           </li>
         ))}
       </ul>
 
       <div className="batch-footer">
         <button type="button" className="btn btn-primary" onClick={accept} disabled={busy || selected.length === 0}>
-          收录选中（{selected.length}）
+          {t('收录选中（{n}）', { n: selected.length })}
         </button>
         {tasks.some((task) => task.choiceGroup) && (
-          <span className="muted">同一组只能选一个：「本周日」当天默认本周</span>
+          <span className="muted">{t('同一组只能选一个：「本周日」当天默认本周')}</span>
         )}
       </div>
     </section>

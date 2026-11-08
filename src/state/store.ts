@@ -26,6 +26,7 @@ import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 
 export type View = 'inbox' | 'plan' | 'calendar' | 'stats' | 'settings'
+export type Lang = 'zh' | 'en'
 
 interface AppState {
   view: View
@@ -50,6 +51,8 @@ interface AppState {
   selectedIds: string[]
   /** 最近一次批量操作的撤销快照（内存，刷新后失效） */
   undo: { label: string; before: StoredTask[]; generatedIds?: string[] } | null
+  /** 界面语言 */
+  lang: Lang
   /** 专注模式 */
   focusMode: boolean
   focusIndex: number
@@ -63,6 +66,7 @@ interface AppState {
   skipTask: (id: string) => Promise<void>
   /** 结束系列：停止生成、保留历史 */
   endSeries: (id: string) => Promise<void>
+  setLang: (lang: Lang) => void
   setSearchQuery: (query: string) => void
   toggleSelection: (id: string) => void
   clearSelection: () => void
@@ -165,6 +169,14 @@ export const useApp = create<AppState>((set, get) => ({
   history: [],
   batchMode: false,
   series: [],
+  lang: (() => {
+    if (typeof window === 'undefined') return 'zh' as Lang
+    try {
+      return window.localStorage.getItem('shisui-lang') === 'en' ? ('en' as Lang) : ('zh' as Lang)
+    } catch {
+      return 'zh' as Lang
+    }
+  })(),
   searchQuery: '',
   selectedIds: [],
   undo: null,
@@ -256,6 +268,15 @@ export const useApp = create<AppState>((set, get) => ({
     if (!task || !task.seriesId) return
     await repo.endSeries(task.seriesId, task.recurrenceIndex ?? 0)
     set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+  },
+
+  setLang: (lang) => {
+    try {
+      window.localStorage.setItem('shisui-lang', lang)
+    } catch {
+      // 隐私模式下忽略，仅本次生效
+    }
+    set({ lang })
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),

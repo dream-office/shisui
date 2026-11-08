@@ -1,3 +1,4 @@
+import { t, setLang } from '@/i18n'
 import { useRef, useState } from 'react'
 import { version as appVersion } from '../../package.json'
 import {
@@ -25,6 +26,13 @@ export default function SettingsView() {
   const saveLLM = useApp((s) => s.saveLLM)
   const exportBackup = useApp((s) => s.exportBackup)
   const restoreBackup = useApp((s) => s.restoreBackup)
+  const lang = useApp((s) => s.lang)
+  const setAppLang = useApp((s) => s.setLang)
+  const changeLang = (next: 'zh' | 'en') => {
+    setAppLang(next)
+    setLang(next)
+    document.title = next === 'en' ? 'Shisui — turn group messages into to-dos' : '拾穗 · 群消息变待办'
+  }
   const [draft, setDraft] = useState<LLMConfig>(llmConfig)
   const [saved, setSaved] = useState(false)
   const [preview, setPreview] = useState<RestorePreview | null>(null)
@@ -53,11 +61,11 @@ export default function SettingsView() {
       try {
         assertPassword(password)
       } catch (err) {
-        setError(err instanceof BackupCryptoError ? err.message : '密码不合法')
+        setError(err instanceof BackupCryptoError ? err.message : t('密码不合法'))
         return
       }
       if (password !== confirm) {
-        setError('两次输入的密码不一致')
+        setError(t('两次输入的密码不一致'))
         return
       }
       setBusy(true)
@@ -71,7 +79,7 @@ export default function SettingsView() {
     }
     const suffix = encrypt ? 'encrypted' : 'backup'
     downloadTextFile(text, `shisui-${suffix}-${stamp}.json`, 'application/json;charset=utf-8')
-    setDone(encrypt ? '加密备份已下载（密码请自己记住，丢了无法恢复）' : '备份已下载')
+    setDone(encrypt ? t('加密备份已下载（密码请自己记住，丢了无法恢复）') : t('备份已下载'))
   }
 
   const handlePick = async (file: File) => {
@@ -89,7 +97,7 @@ export default function SettingsView() {
     const result = validateBackup(text)
     if (!result.ok || !result.backup) {
       setPreview(null)
-      setError(result.errors[0] ?? '备份文件不合法')
+      setError(result.errors[0] ?? t('备份文件不合法'))
       return
     }
     setPreview({
@@ -109,7 +117,7 @@ export default function SettingsView() {
       const plaintext = await decryptBackup(pendingEncrypted, decryptPassword)
       const result = validateBackup(plaintext)
       if (!result.ok || !result.backup) {
-        setError(result.errors[0] ?? '解密后的备份不合法')
+        setError(result.errors[0] ?? t('解密后的备份不合法'))
         return
       }
       setPendingEncrypted(null)
@@ -122,7 +130,7 @@ export default function SettingsView() {
         exportedAt: result.backup.exportedAt,
       })
     } catch (err) {
-      setError(err instanceof BackupCryptoError ? err.message : '解密失败')
+      setError(err instanceof BackupCryptoError ? err.message : t('解密失败'))
     } finally {
       setBusy(false)
     }
@@ -133,16 +141,36 @@ export default function SettingsView() {
     const result = await restoreBackup(preview.text)
     setPreview(null)
     if (!result.ok) {
-      setError(result.errors[0] ?? '恢复失败')
+      setError(result.errors[0] ?? t('恢复失败'))
       return
     }
-    setDone(`已恢复 ${result.counts?.tasks ?? 0} 条任务、${result.counts?.series ?? 0} 个系列`)
+    setDone(t('已恢复 {n} 条任务、{series} 个系列', { n: result.counts?.tasks ?? 0, series: result.counts?.series ?? 0 }))
   }
 
   return (
     <div className="settings">
+      <section className="card" aria-labelledby="language-title">
+        <h3 id="language-title">{t('界面语言')}</h3>
+        <div className="language-switch">
+          <button
+            type="button"
+            className={`btn btn-sm ${lang === 'zh' ? 'btn-primary' : ''}`}
+            onClick={() => changeLang('zh')}
+          >
+            {t('中文')}
+          </button>
+          <button
+            type="button"
+            className={`btn btn-sm ${lang === 'en' ? 'btn-primary' : ''}`}
+            onClick={() => changeLang('en')}
+          >
+            {t('English')}
+          </button>
+        </div>
+      </section>
+
       <section className="card" aria-labelledby="backup-title">
-        <h3 id="backup-title">备份与恢复</h3>
+        <h3 id="backup-title">{t('备份与恢复')}</h3>
         <p className="muted">
           备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。**恢复会覆盖当前全部数据**，先下载一份再恢复最稳。
           文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。
@@ -294,7 +322,7 @@ export default function SettingsView() {
       </section>
 
       <section className="card">
-        <h3>关于拾穗</h3>
+        <h3>{t('关于拾穗')}</h3>
         <p className="muted">拾穗 v{appVersion} · AGPL-3.0-or-later</p>
         <p className="muted">
           默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。

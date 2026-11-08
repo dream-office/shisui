@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useMemo } from 'react'
 import { computeStats } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -30,37 +31,37 @@ export default function StatsView() {
   return (
     <section className="stats-view">
       <div className="stats-head">
-        <h2>统计</h2>
-        <span className="muted">全部在本地计算</span>
+        <h2>{t('统计')}</h2>
+        <span className="muted">{t('全部在本地计算')}</span>
       </div>
 
       <div className="metric-grid">
         <MetricBar
-          label="本周完成率"
+          label={t('本周完成率')}
           value={stats.completion}
-          hint={`本周到期 ${stats.weekTotal} 件，已完成 ${stats.doneThisWeek} 件（按到期时间统计，不看完成时间）`}
+          hint={t('本周到期 {n} 件，已完成 {done} 件（按到期时间统计，不看完成时间）', { n: stats.weekTotal, done: stats.doneThisWeek })}
         />
         <MetricBar
-          label="解析手改率"
+          label={t('解析手改率')}
           value={stats.editRate}
-          hint={`解析来源 ${stats.parsedTotal} 件，其中你手动改过 ${stats.edited} 件（手动添加 / 日历导入不算）`}
+          hint={t('解析来源 {n} 件，其中你手动改过 {edited} 件（手动添加 / 日历导入不算）', { n: stats.parsedTotal, edited: stats.edited })}
         />
       </div>
 
       <div className="metric-grid">
         <div className="metric card">
           <div className="metric-head">
-            <span className="metric-label">全部任务</span>
+            <span className="metric-label">{t('全部任务')}</span>
             <strong className="metric-value">{stats.total}</strong>
           </div>
-          <p className="metric-hint muted">包括所有来源与已完成</p>
+          <p className="metric-hint muted">{t('包括所有来源与已完成')}</p>
         </div>
         <div className="metric card">
           <div className="metric-head">
-            <span className="metric-label">未完成</span>
+            <span className="metric-label">{t('未完成')}</span>
             <strong className="metric-value">{stats.open}</strong>
           </div>
-          <p className="metric-hint muted">还在日程里的条目</p>
+          <p className="metric-hint muted">{t('还在日程里的条目')}</p>
         </div>
       </div>
     </section>

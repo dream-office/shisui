@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useEffect, useRef } from 'react'
 
 interface Props {
@@ -55,8 +56,8 @@ export default function HelpPanel({ open, onClose }: Props) {
         onClick={(event) => event.stopPropagation()}
       >
         <div className="help-head">
-          <h2 id="help-title">怎么用拾穗</h2>
-          <button ref={closeRef} type="button" className="icon-btn" onClick={onClose} aria-label="关闭使用说明">
+          <h2 id="help-title">{t('怎么用拾穗')}</h2>
+          <button ref={closeRef} type="button" className="icon-btn" onClick={onClose} aria-label={t('关闭使用说明')}>
             ✕
           </button>
         </div>
@@ -66,25 +67,25 @@ export default function HelpPanel({ open, onClose }: Props) {
             <li key={step.title}>
               <span className="help-step-num">{index + 1}</span>
               <div>
-                <strong>{step.title}</strong>
-                <p>{step.body}</p>
+                <strong>{t(step.title)}</strong>
+                <p>{t(step.body)}</p>
               </div>
             </li>
           ))}
         </ol>
 
         <div className="help-notes">
-          <h3>补充说明</h3>
+          <h3>{t('补充说明')}</h3>
           <ul>
             {NOTES.map((note) => (
-              <li key={note}>{note}</li>
+              <li key={note}>{t(note)}</li>
             ))}
           </ul>
         </div>
 
         <div className="help-actions">
           <button type="button" className="btn btn-primary" onClick={onClose}>
-            知道了
+            {t('知道了')}
           </button>
         </div>
       </section>

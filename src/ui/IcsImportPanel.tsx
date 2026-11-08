@@ -1,3 +1,4 @@
+import { t, formatDateOnlyI18n } from '@/i18n'
 import { useState, type ChangeEvent } from 'react'
 import { importIcs, mergeIcsImport } from 'shisui-core'
 import type { ParsedTask } from 'shisui-core'
@@ -5,11 +6,11 @@ import { useApp } from '@/state/store'
 
 function formatWhen(task: ParsedTask): string {
   const at = task.startAt ?? task.dueAt
-  if (at === null) return '无时间'
+  if (at === null) return t('无时间')
   const date = new Date(at)
   const isMidnight =
     date.getHours() === 0 && date.getMinutes() === 0 && date.getSeconds() === 0
-  if (isMidnight) return `${date.toLocaleDateString('zh-CN')} · 全天`
+  if (isMidnight) return `${formatDateOnlyI18n(at)} · ${t('全天')}`
   return date.toLocaleString('zh-CN', { hour12: false })
 }
 
@@ -54,12 +55,12 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
       })
       setWarnings(out.warnings)
       if (out.tasks.length === 0) {
-        setError(out.warnings[0] ?? '这个文件里没有可以导入的事件')
+        setError(out.warnings[0] ?? t('这个文件里没有可以导入的事件'))
         return
       }
       setParsed(out.tasks)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '读取文件失败')
+      setError(err instanceof Error ? err.message : t('读取文件失败'))
     } finally {
       setBusy(false)
     }
@@ -74,7 +75,7 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
       setParsed(null)
       setWarnings([])
     } catch (err) {
-      setError(err instanceof Error ? err.message : '写入失败，已回滚')
+      setError(err instanceof Error ? err.message : t('写入失败，已回滚'))
     } finally {
       setBusy(false)
     }
@@ -83,22 +84,22 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
   return (
     <section className="ics-import card">
       <div className="ics-head">
-        <h3>导入日历文件</h3>
+        <h3>{t('导入日历文件')}</h3>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-          关闭
+          {t('关闭')}
         </button>
       </div>
       <p className="muted" style={{ marginTop: -4 }}>
-        支持系统日历 / Google Calendar 导出的 <code>.ics</code>。同一事件重复导入会更新，不会翻倍。
+        {t('支持系统日历 / Google Calendar 导出的')} <code>.ics</code>{t('。同一事件重复导入会更新，不会翻倍。')}
         <br />
-        重复事件（RRULE）只导入首个实例。
+        {t('重复事件（RRULE）只导入首个实例。')}
       </p>
 
       <label className="ics-file">
         <input type="file" accept=".ics,text/calendar" onChange={onFile} disabled={busy} />
       </label>
 
-      {busy && <p className="muted">正在解析…</p>}
+      {busy && <p className="muted">{t('正在解析…')}</p>}
 
       {error && <p className="ics-error">{error}</p>}
 
@@ -107,18 +108,18 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
           {warnings.slice(0, 6).map((warning) => (
             <li key={warning}>{warning}</li>
           ))}
-          {warnings.length > 6 && <li>…另有 {warnings.length - 6} 条提示</li>}
+          {warnings.length > 6 && <li>{t('另有 {n} 条提示', { n: warnings.length - 6 })}</li>}
         </ul>
       )}
 
       {parsed && plan && (
         <div className="ics-preview">
           <p className="ics-summary">
-            <strong>{fileName}</strong> · 新增 <b>{plan.toInsert.length}</b> / 更新 <b>{plan.toUpdate.length}</b> / 跳过{' '}
+            <strong>{fileName}</strong> {t('· 新增')} <b>{plan.toInsert.length}</b> {t('/ 更新')} <b>{plan.toUpdate.length}</b> / 跳过{' '}
             <b>{plan.skipped.length}</b>
           </p>
           {warnings.some((warning) => warning.includes('重复事件')) && (
-            <p className="ics-note">含重复事件（RRULE）：只导入首个实例，后续不自动展开。</p>
+            <p className="ics-note">{t('含重复事件（RRULE）：只导入首个实例，后续不自动展开。')}</p>
           )}
           <ul>
             {parsed.slice(0, 10).map((task) => {
@@ -134,14 +135,14 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
                 </li>
               )
             })}
-            {parsed.length > 10 && <li className="muted">…另有 {parsed.length - 10} 条</li>}
+            {parsed.length > 10 && <li className="muted">{t('…另有 {n} 条', { n: parsed.length - 10 })}</li>}
           </ul>
           <div className="ics-actions">
             <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>
-              确认导入
+              {t('确认导入')}
             </button>
             <button type="button" className="btn btn-ghost" onClick={() => setParsed(null)} disabled={busy}>
-              取消
+              {t('取消')}
             </button>
           </div>
         </div>

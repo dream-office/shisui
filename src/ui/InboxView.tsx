@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useEffect, useMemo, useState } from 'react'
 import { appendClipboardText } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -51,13 +52,13 @@ export default function InboxView() {
     try {
       const text = await navigator.clipboard.readText()
       if (!text.trim()) {
-        setPasteError('剪贴板里没有文字，先复制群消息再点一次')
+        setPasteError(t('剪贴板里没有文字，先复制群消息再点一次'))
         return
       }
       setRaw((prev) => appendClipboardText(prev, text))
       setPasteError(null)
     } catch {
-      setPasteError('浏览器不允许读取剪贴板，请长按输入框手动粘贴')
+      setPasteError(t('浏览器不允许读取剪贴板，请长按输入框手动粘贴'))
     }
   }
   const [manualOpen, setManualOpen] = useState(false)
@@ -135,35 +136,35 @@ export default function InboxView() {
     <div className="inbox">
       {showFirstVisit && (
         <div className="first-visit card" role="note">
-          <span>第一次用？三步就能把群消息变成待办：粘贴 → 检查 → 收录。</span>
+          <span>{t('第一次用？三步就能把群消息变成待办：粘贴 → 检查 → 收录。')}</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={dismissFirstVisit}>
-            知道了
+            {t('知道了')}
           </button>
         </div>
       )}
       <section className="hero">
         <h2>
-          把群里的消息<em>粘进来</em>，剩下的它替你记着
+          {t('把群里的消息')}<em>{t('粘进来')}</em>{t('，剩下的它替你记着')}
         </h2>
         <p>
           「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——
-          项目群、部门群、班级群、家长群，说的是同一件事：<strong>有个截止时间，别错过</strong>。
+          项目群、部门群、班级群、家长群，说的是同一件事：<strong>{t('有个截止时间，别错过')}</strong>。
         </p>
       </section>
 
       {sharedFrom && (
         <div className="share-banner" role="status">
-          <span>来自分享：内容已填入下面的输入框，点「开始解析」就能变成待办。</span>
+          <span>{t('来自分享：内容已填入下面的输入框，点「开始解析」就能变成待办。')}</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSharedFrom(null)}>
-            知道了
+            {t('知道了')}
           </button>
         </div>
       )}
 
       <section className="composer card">
         <div className="composer-head">
-          <label htmlFor="notice">群消息原文</label>
-          <span className="muted">{raw.length} 字</span>
+          <label htmlFor="notice">{t('群消息原文')}</label>
+          <span className="muted">{t('{n} 字', { n: raw.length })}</span>
         </div>
         <textarea
           id="notice"
@@ -181,35 +182,35 @@ export default function InboxView() {
         )}
         <div className="composer-actions">
           <button type="button" className="btn btn-primary" onClick={handleParse} disabled={parsing || !raw.trim()}>
-            {parsing ? '解析中…' : '开始解析'}
+            {parsing ? t('解析中…') : t('开始解析')}
           </button>
           <button type="button" className="btn" onClick={() => void pasteFromClipboard()} disabled={parsing}>
-            粘贴分享内容
+            {t('粘贴分享内容')}
           </button>
           <button type="button" className="btn" onClick={() => setRaw(SAMPLE_WORK)} disabled={parsing}>
-            工作群示例
+            {t('工作群示例')}
           </button>
           <button type="button" className="btn" onClick={() => setRaw(SAMPLE_NOTICE)} disabled={parsing}>
-            学校通知示例
+            {t('学校通知示例')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setRaw('')} disabled={parsing || !raw}>
-            清空
+            {t('清空')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setManualOpen((open) => !open)} disabled={parsing}>
-            手动添加
+            {t('手动添加')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setHistoryOpen((open) => !open)} disabled={parsing}>
-            历史{history.length > 0 ? ` (${history.length})` : ''}
+            {history.length > 0 ? t('历史 ({n})', { n: history.length }) : t('历史')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={() => setIcsOpen((open) => !open)} disabled={parsing}>
-            导入 .ics
+            {t('导入 .ics')}
           </button>
         </div>
 
         {parsing && (
           <div className="stage">
             <span className="spinner" aria-hidden />
-            <span>{stage || '正在解析…'}</span>
+            <span>{stage || t('正在解析…')}</span>
           </div>
         )}
       </section>
@@ -231,7 +232,7 @@ export default function InboxView() {
 
       {engineNote && (
         <div className="engine-note">
-          <span className="engine-note-label">解析引擎</span>
+          <span className="engine-note-label">{t('解析引擎')}</span>
           <span>{engineNote}</span>
         </div>
       )}
@@ -257,18 +258,18 @@ export default function InboxView() {
         <section className="results">
           <div className="results-head">
             <h3>
-              识别到 <em>{candidates.length}</em> 条待办
+              {t('识别到')} <em>{candidates.length}</em> {t('条待办')}
             </h3>
             <div className="results-actions">
               <button type="button" className="btn btn-primary btn-sm" onClick={acceptAll}>
-                全部收录
+                {t('全部收录')}
               </button>
             </div>
           </div>
 
           {choiceGroups.size > 0 && (
-            <div className="choice-picker" role="group" aria-label="二选一">
-              <span className="muted">「本周日」当天有两种理解，选一个：</span>
+            <div className="choice-picker" role="group" aria-label={t('二选一')}>
+              <span className="muted">{t('「本周日」当天有两种理解，选一个：')}</span>
               {[...choiceGroups.entries()].map(([group, groupTasks]) => (
                 <span key={group} className="choice-options">
                   {groupTasks.map((task) => (
@@ -278,7 +279,7 @@ export default function InboxView() {
                       className={`btn btn-sm ${choiceSelection[group] === task.id ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => setChoiceSelection((current) => ({ ...current, [group]: task.id }))}
                     >
-                      {task.choiceLabel ?? '候选'}
+                      {task.choiceLabel ? t(task.choiceLabel) : t('候选')}
                     </button>
                   ))}
                 </span>
@@ -312,26 +313,26 @@ export default function InboxView() {
 
       {candidates.length === 0 && !parsing && (
         <section className="capabilities card">
-          <h3>它能认出什么</h3>
+          <h3>{t('它能认出什么')}</h3>
           <p className="muted" style={{ marginBottom: 14 }}>
-            不区分场景：公司群、项目群、班级群、家长群、学校教务，同一套规则。
+            {t('不区分场景：公司群、项目群、班级群、家长群、学校教务，同一套规则。')}
           </p>
           <div className="cap-grid">
             <div>
-              <h4>时间</h4>
-              <p>本周五23:59 / 下周三 / 明晚8点 / 中午12点前 / 3天内 / 11月18日 / 周五下午2点</p>
+              <h4>{t('时间')}</h4>
+              <p>{t('本周五23:59 / 下周三 / 明晚8点 / 中午12点前 / 3天内 / 11月18日 / 周五下午2点')}</p>
             </div>
             <div>
-              <h4>事项</h4>
-              <p>任务与交付物、会议与培训、评审与验收、审批签字、报销缴费、报名、问卷打卡、考试</p>
+              <h4>{t('事项')}</h4>
+              <p>{t('任务与交付物、会议与培训、评审与验收、审批签字、报销缴费、报名、问卷打卡、考试')}</p>
             </div>
             <div>
-              <h4>提交渠道</h4>
-              <p>飞书、钉钉、企业微信、OA、Jira、在线文档、邮箱、学习通、腾讯会议、纸质线下</p>
+              <h4>{t('提交渠道')}</h4>
+              <p>{t('飞书、钉钉、企业微信、OA、Jira、在线文档、邮箱、学习通、腾讯会议、纸质线下')}</p>
             </div>
             <div>
-              <h4>不止于此</h4>
-              <p>收录后会自动体检：已经过期、两件撞车、同一天堆三件，都会直接标出来</p>
+              <h4>{t('不止于此')}</h4>
+              <p>{t('收录后会自动体检：已经过期、两件撞车、同一天堆三件，都会直接标出来')}</p>
             </div>
           </div>
         </section>

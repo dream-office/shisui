@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useState, type FormEvent } from 'react'
 import type { TaskKind } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -41,12 +42,12 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
     event.preventDefault()
     setError(null)
     if (!title.trim()) {
-      setError('先写一个标题')
+      setError(t('先写一个标题'))
       return
     }
     const dueAt = new Date(when).getTime()
     if (Number.isNaN(dueAt)) {
-      setError('时间格式不对，请重新选')
+      setError(t('时间格式不对，请重新选'))
       return
     }
     setSaving(true)
@@ -54,7 +55,7 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
       await addManualTask({ title, dueAt, kind, channel, location })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : '添加失败')
+      setError(err instanceof Error ? err.message : t('添加失败'))
     } finally {
       setSaving(false)
     }
@@ -63,24 +64,24 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
   return (
     <form className="manual card" onSubmit={submit}>
       <div className="manual-head">
-        <h3>手动添加一条</h3>
+        <h3>{t('手动添加一条')}</h3>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-          取消
+          {t('取消')}
         </button>
       </div>
       <p className="muted" style={{ marginTop: -4 }}>
-        口头通知、临时安排、或者解析结果想自己修 —— 都可以直接写在这里。不走解析引擎。
+        {t('口头通知、临时安排、或者解析结果想自己修 —— 都可以直接写在这里。不走解析引擎。')}
       </p>
       <p className="muted" style={{ marginTop: -2 }}>
-        手动添加的条目不进「导入历史」——历史只记录「粘贴 + 全部收录」的批次。
+        {t('手动添加的条目不进「导入历史」——历史只记录「粘贴 + 全部收录」的批次。')}
       </p>
 
       <label className="field">
-        <span>标题</span>
+        <span>{t('标题')}</span>
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="例如：把报销单交给财务"
+          placeholder={t('例如：把报销单交给财务')}
           maxLength={60}
           autoFocus
         />
@@ -88,11 +89,11 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
 
       <div className="manual-row">
         <label className="field">
-          <span>截止时间</span>
+          <span>{t('截止时间')}</span>
           <input type="datetime-local" value={when} onChange={(event) => setWhen(event.target.value)} />
         </label>
         <label className="field">
-          <span>类型</span>
+          <span>{t('类型')}</span>
           <select value={kind} onChange={(event) => setKind(event.target.value as TaskKind)}>
             {KINDS.map((item) => (
               <option key={item.value} value={item.value}>
@@ -105,12 +106,12 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
 
       <div className="manual-row">
         <label className="field">
-          <span>渠道（可选）</span>
-          <input value={channel} onChange={(event) => setChannel(event.target.value)} placeholder="学习通 / 邮箱 / 线下…" />
+          <span>{t('渠道（可选）')}</span>
+          <input value={channel} onChange={(event) => setChannel(event.target.value)} placeholder={t('学习通 / 邮箱 / 线下…')} />
         </label>
         <label className="field">
-          <span>地点（可选）</span>
-          <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder="3 楼会议室" />
+          <span>{t('地点（可选）')}</span>
+          <input value={location} onChange={(event) => setLocation(event.target.value)} placeholder={t('3 楼会议室')} />
         </label>
       </div>
 
@@ -118,7 +119,7 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
 
       <div className="manual-actions">
         <button type="submit" className="btn btn-primary" disabled={saving}>
-          {saving ? '保存中…' : '添加'}
+          {saving ? t('保存中…') : t('添加')}
         </button>
       </div>
     </form>

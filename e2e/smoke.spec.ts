@@ -258,7 +258,7 @@ test.describe('分享目标', () => {
     // replaceState 之后地址栏不应再有 query（刷新不会重复触发，也不留别人的分享内容）
     expect(new URL(page.url()).search).toBe('')
 
-    await page.getByRole('button', { name: '知道了' }).click()
+    await page.locator('.share-banner').getByRole('button', { name: '知道了' }).click()
     await expect(page.getByText('来自分享')).toBeHidden()
   })
 })
@@ -284,6 +284,11 @@ test.describe('月视图', () => {
     await page.goto('/')
     await page.getByRole('button', { name: '手动添加' }).click()
     await page.getByLabel('标题').fill('拖我试试')
+    // 显式填今天 23:00：默认值在 18:00 之后会顺延到明天，测试不能依赖运行时刻
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:00`
+    await page.locator('.manual input[type="datetime-local"]').fill(today)
     await page.getByRole('button', { name: '添加', exact: true }).click()
 
     const nav = page.getByRole('navigation', { name: '主视图' })
@@ -300,7 +305,7 @@ test.describe('月视图', () => {
 
     const moved = page.locator('.day-task', { hasText: '拖我试试' })
     await expect(moved).toBeVisible()
-    await expect(moved).toContainText('18:00')
+    await expect(moved).toContainText('23:00')
   })
 
   test('O. 360px 宽度下不横向溢出', async ({ page }) => {
@@ -1082,5 +1087,35 @@ test.describe('v1.0 使用说明', () => {
     await expect(dialog).toBeVisible()
     await page.locator('.help-overlay').click({ position: { x: 5, y: 5 } })
     await expect(dialog).toHaveCount(0)
+  })
+})
+
+
+test.describe('v1.0 中英双语', () => {
+  test('L1. 切换 English：导航/标题/html lang 同步，刷新保持，可切回', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('button', { name: 'English' }).click()
+
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('nav')).toContainText('Inbox')
+    await expect(page.locator('nav')).toContainText('Settings')
+    await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
+    expect(await page.title()).toContain('Shisui')
+
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('nav')).toContainText('Inbox')
+    await expect(page.locator('nav')).toContainText('Plan')
+    // 刷新后默认回到收件页；重新进入设置再断言英文标题
+    await page.locator('nav').getByRole('button', { name: 'Settings' }).click()
+    await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
+
+    await page.getByRole('button', { name: '中文' }).click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+    await expect(page.locator('nav')).toContainText('收件')
   })
 })
