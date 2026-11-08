@@ -86,3 +86,39 @@ describe('人话时间渲染', () => {
     expect(formatWhen(at(11, 5, 20, 0), REF)).toBe('明天 20:00')
   })
 })
+
+
+describe('区间重叠（v0.8.0）', () => {
+  const at = (h: number, m = 0) => new Date(2026, 10, 20, h, m, 0, 0).getTime()
+  const task = (id: string, start: number, end: number) => ({
+    id,
+    title: id,
+    dueAt: null,
+    startAt: start,
+    endAt: end,
+    kind: 'meeting' as const,
+  })
+
+  it('[9,11) 与 [10,12) 重叠 → danger', () => {
+    const notes = scanConflicts([task('a', at(9), at(11)), task('b', at(10), at(12))], new Date(2026, 10, 20, 8))
+    expect(notes.some((note) => note.title === '时间重叠' && note.level === 'danger')).toBe(true)
+  })
+
+  it('[9,10) 与 [10,11) 首尾相接 → 不算重叠', () => {
+    const notes = scanConflicts([task('a', at(9), at(10)), task('b', at(10), at(11))], new Date(2026, 10, 20, 8))
+    expect(notes.some((note) => note.title === '时间重叠')).toBe(false)
+  })
+
+  it('全天区间与当天定时事件重叠', () => {
+    const allDayStart = new Date(2026, 10, 20, 0, 0, 0, 0).getTime()
+    const allDayEnd = new Date(2026, 10, 21, 0, 0, 0, 0).getTime()
+    const notes = scanConflicts(
+      [
+        { id: 'all', title: '全天', dueAt: null, startAt: allDayStart, endAt: allDayEnd, allDay: true, kind: 'task' as const },
+        task('meet', at(10), at(11)),
+      ],
+      new Date(2026, 10, 20, 8),
+    )
+    expect(notes.some((note) => note.title === '时间重叠')).toBe(true)
+  })
+})

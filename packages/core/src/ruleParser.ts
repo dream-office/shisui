@@ -10,6 +10,13 @@
 import type { Confidence, ParsedTask, TaskKind } from './types.js'
 import { extractTime, setClock, startOfDay, type TimeHit } from './time.js'
 import { CHOICE_NEXT_WEEK, CHOICE_THIS_WEEK } from './choice.js'
+import {
+  describeRule,
+  looksRecurring,
+  parseRecurrenceInput,
+  ruleToRRule,
+  stripRecurrencePhrase,
+} from './recurrence.js'
 
 /**
  * 类型判定：从「最具体」排到「最宽泛」，先命中先得。
@@ -221,12 +228,23 @@ export function parseSegment(segment: string, ref: Date, index: number, override
   const { kind, label } = detectKind(segment)
   if (label) reasons.push(`命中「${label}」关键词`)
 
+  // 重复说法：每周五 / 每两周的周一 / 每月 31 号 …（先解析，后面的兜底判断要用）
+  let rrule: string | null = null
+  if (looksRecurring(segment)) {
+    const rule = parseRecurrenceInput(segment)
+    if (rule) {
+      rrule = ruleToRRule(rule)
+      reasons.push(`重复规则：${describeRule(rule)}`)
+    }
+  }
+
   // 既没有时间、也不是任何已知事项类型 → 这是通知里的寒暄/落款，不是待办
   if (!hit && kind === 'other') return null
 
   const hasDeadlineWord = hit?.isDeadline ?? false
   // 光有一个日期（「今天天气不错」），既不是已知类型、也没有截止语义、还没到点 → 不是待办
-  if (kind === 'other' && !hasDeadlineWord && !hit?.hasClock) return null
+  // 重复任务即使没有钟点、也不是已知类型，也应保留（如「每月31号交房租」）
+  if (kind === 'other' && !hasDeadlineWord && !hit?.hasClock && !rrule) return null
 
   let title = segment
   if (hit) {
@@ -234,6 +252,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     reasons.push(`时间短语「${hit.matched}」`)
     if (hit.note) reasons.push(hit.note)
   }
+  if (rrule) title = stripRecurrencePhrase(title)
   title = cleanTitle(title)
   if (!title) title = cleanTitle(segment).slice(0, 28)
 
@@ -277,6 +296,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     confidence,
     reasons,
     engine: 'rule',
+    rrule,
   }
 }
 

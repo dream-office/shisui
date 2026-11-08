@@ -43,7 +43,8 @@ describe('importIcs', () => {
     const task = result.tasks[0]
     expect(task.title).toBe('项目评审')
     expect(task.startAt).toBe(Date.UTC(2026, 10, 20, 1, 0, 0))
-    expect(task.dueAt).toBe(Date.UTC(2026, 10, 20, 3, 0, 0))
+    expect(task.endAt).toBe(Date.UTC(2026, 10, 20, 3, 0, 0))
+    expect(task.dueAt).toBeNull()
     expect(task.kind).toBe('meeting')
     expect(task.location).toBe('3 楼会议室')
     expect(task.sourceUid).toBe('event-1@example.com')
@@ -53,14 +54,15 @@ describe('importIcs', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
-  it('全天事件：按本地 00:00 作为到期日', () => {
+  it('全天事件：startAt=当日 00:00、allDay=true、单日无 endAt', () => {
     const ics = wrap(event(['UID:all-day', 'SUMMARY:报名截止', 'DTSTART;VALUE=DATE:20261120']))
     const result = importIcs(ics, { makeId })
 
     const task = result.tasks[0]
-    expect(task.dueAt).toBe(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
-    expect(task.startAt).toBeNull()
-    expect(result.warnings.some((w) => w.includes('全天'))).toBe(true)
+    expect(task.startAt).toBe(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
+    expect(task.allDay).toBe(true)
+    expect(task.endAt).toBeNull()
+    expect(task.dueAt).toBeNull()
   })
 
   it('floating 时间按本地时间理解', () => {
@@ -87,7 +89,7 @@ describe('importIcs', () => {
     expect(result.warnings[0]).toContain('Mars/Olympus')
   })
 
-  it('重复事件只导入首个实例并告警', () => {
+  it('重复事件：保留 RRULE（不展开）', () => {
     const ics = wrap(
       event([
         'UID:weekly',
@@ -99,7 +101,18 @@ describe('importIcs', () => {
     const result = importIcs(ics, { makeId })
 
     expect(result.tasks).toHaveLength(1)
-    expect(result.warnings.some((w) => w.includes('重复事件'))).toBe(true)
+    expect(result.tasks[0].rrule).toContain('FREQ=WEEKLY')
+    expect(result.tasks[0].rrule).toContain('COUNT=10')
+  })
+
+  it('不支持的 RRULE：按单次导入并给 warning', () => {
+    const ics = wrap(
+      event(['UID:weird', 'SUMMARY:怪规则', 'DTSTART:20261120T090000Z', 'RRULE:FREQ=YEARLY']),
+    )
+    const result = importIcs(ics, { makeId })
+    expect(result.tasks).toHaveLength(1)
+    expect(result.tasks[0].rrule).toBeNull()
+    expect(result.warnings.some((w) => w.includes('不受支持'))).toBe(true)
   })
 
   it('坏文件不抛异常，返回可读错误', () => {
@@ -114,7 +127,7 @@ describe('importIcs', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
-  it('多天全天事件：warning 带天数与首日日期（动态生成，不写死）', () => {
+  it('多天全天事件：startAt/endAt 完整保留（exclusive）', () => {
     const ics = wrap(
       event([
         'UID:multi',
@@ -125,19 +138,18 @@ describe('importIcs', () => {
     )
     const result = importIcs(ics, { makeId })
 
-    // 只保留首日
     expect(result.tasks).toHaveLength(1)
-    expect(result.tasks[0].dueAt).toBe(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
-
-    const warning = result.warnings.find((text) => text.includes('天')) ?? ''
-    expect(warning).toContain('是 3 天的全天事件')
-    expect(warning).toContain('只保留首日（2026-11-20）')
+    const task = result.tasks[0]
+    expect(task.allDay).toBe(true)
+    expect(task.startAt).toBe(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
+    expect(task.endAt).toBe(new Date(2026, 10, 23, 0, 0, 0, 0).getTime())
+    expect(result.warnings).toHaveLength(0)
   })
 
-  it('单日全天事件的 warning 保持原措辞', () => {
+  it('单日全天带 DTEND=次日：endAt 照搬（exclusive）', () => {
     const ics = wrap(event(['UID:one-day', 'SUMMARY:单日全天', 'DTSTART;VALUE=DATE:20261120', 'DTEND;VALUE=DATE:20261121']))
     const result = importIcs(ics, { makeId })
-    expect(result.warnings.some((text) => text.includes('是全天事件，按到期日导入'))).toBe(true)
+    expect(result.tasks[0].endAt).toBe(new Date(2026, 10, 21, 0, 0, 0, 0).getTime())
   })
 
   it('嵌套 VALARM 不会把其属性当成事件字段', () => {
@@ -165,12 +177,12 @@ describe('importIcs', () => {
     expect(result.warnings[0]).toContain('END:VEVENT')
   })
 
-  it('定时事件没有 DTEND 时按 30 分钟计（与导出规则对称）', () => {
+  it('定时事件没有 DTEND 时 endAt 按 30 分钟（与导出对称）', () => {
     const ics = wrap(event(['UID:no-end', 'SUMMARY:没有结束时间', 'DTSTART:20261120T010000Z']))
     const task = importIcs(ics, { makeId }).tasks[0]
     expect(task.startAt).toBe(Date.UTC(2026, 10, 20, 1, 0, 0))
-    expect(task.dueAt).toBe(Date.UTC(2026, 10, 20, 1, 30, 0))
-    expect(task.reasons.some((reason) => reason.includes('30 分钟'))).toBe(true)
+    expect(task.endAt).toBe(Date.UTC(2026, 10, 20, 1, 30, 0))
+    expect(task.dueAt).toBeNull()
   })
 
   it('同文件里坏事件跳过、好事件照常导入', () => {

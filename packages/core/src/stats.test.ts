@@ -109,3 +109,14 @@ describe('computeStats 夏令时边界', () => {
     expect(stats.weekEnd).toBe(new Date(2026, 2, 9, 0, 0, 0, 0).getTime())
   })
 })
+
+
+describe('归属按 startAt（拍板 7）', () => {
+  it('startAt 在本周、dueAt 不在 → 计入本周', () => {
+    const tasks = [
+      task({ id: 'a', startAt: at(11, 10), dueAt: at(12, 10), done: false }),
+    ]
+    const stats = computeStats(tasks, REF)
+    expect(stats.weekTotal).toBe(1)
+  })
+})

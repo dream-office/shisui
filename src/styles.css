@@ -1544,3 +1544,16 @@ em {
   .batch-item { align-items: flex-start; }
   .batch-time { width: 100%; padding-left: 24px; }
 }
+
+/* ── 重复 / 区间 标记 ─────────────────────────── */
+.series-tag { color: var(--accent); }
+.range-tag { color: var(--ink-soft); }
+.skipped-tag { color: var(--muted); text-decoration: line-through; }
+.day-span {
+  flex: none;
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}

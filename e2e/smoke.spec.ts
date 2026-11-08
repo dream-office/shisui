@@ -215,7 +215,7 @@ test.describe('ICS 导入', () => {
     await expect(page.locator('.ics-error')).toContainText('BEGIN:VCALENDAR', { timeout: 10_000 })
   })
 
-  test('K2. RRULE 只导入首实例，预览里有明确标注', async ({ page }) => {
+  test('K2. RRULE 作为重复任务导入（保留规则、不展开）', async ({ page }) => {
     const rruleIcs = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -238,9 +238,12 @@ test.describe('ICS 导入', () => {
       buffer: Buffer.from(rruleIcs, 'utf-8'),
     })
 
-    // 只导入 1 条 + 预览明确标注「仅导入首个实例」
+    // 不展开：8 次重复只入库 1 条，规则保留在 series 里
     await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('.ics-note')).toContainText('只导入首个实例')
+    await page.getByRole('button', { name: '确认导入' }).click()
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag').first()).toBeVisible()
   })
 })
 
@@ -490,5 +493,308 @@ test.describe('错误边界（armed 开关）', () => {
     await expect(page.getByRole('alert')).toContainText('界面出了点问题')
     await page.getByRole('button', { name: '回首页' }).click()
     await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+  })
+})
+test.describe('重复任务', () => {
+  test('S. 每周任务：收录后显示规则；完成后生成下一次', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag')).toBeVisible()
+
+    // 完成一次 → 自动生成下一次（已完成进折叠区）
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible({ timeout: 15_000 })
+    // 完成后的下一条也带重复标记（已完成那条在折叠区，仍在 DOM 里）
+    await expect(page.locator('.series-tag').first()).toBeVisible()
+
+    // 幂等：完成 → 取消 → 再完成，下一条不会被生成两次
+    await page.locator('.done-block summary').click()
+    await page.getByRole('button', { name: '标记为未完成' }).first().click()
+    await expect(page.getByText(/已完成 \d+ 件/)).toHaveCount(0)
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible()
+    // 只有一条未完成的下一条，没有翻倍
+    await expect(page.locator('.task-row:not(.is-done)')).toHaveCount(1)
+  })
+})
+
+test.describe('多日区间', () => {
+  const ICS_MULTI = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:multi-day@example.com',
+    'SUMMARY:三天活动',
+    'DTSTART;VALUE=DATE:20261120',
+    'DTEND;VALUE=DATE:20261123',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  test('T. 导入多日全天：日程显示区间，月历覆盖每一天', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'multi.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_MULTI, 'utf-8'),
+    })
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '确认导入' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText(/三天活动/)).toBeVisible()
+    await expect(page.getByText(/3 天/)).toBeVisible()
+
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    const day = (d: number) => new Date(2026, 10, d).getTime()
+    for (const d of [20, 21, 22]) {
+      await expect(page.locator(`.month-cell[data-day="${day(d)}"] .month-dot`)).toHaveCount(1)
+    }
+    await expect(page.locator(`.month-cell[data-day="${day(23)}"] .month-dot`)).toHaveCount(0)
+  })
+})
+
+test.describe('DB v2 → v3 迁移', () => {
+  test('U. 老库自动升级：旧任务保留、新字段补默认值', async ({ page }) => {
+    // 先在同源下造一个 v2 老库（不加载应用，避免提前升级）
+    await page.goto('/manifest.webmanifest')
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve) => {
+        const req = indexedDB.deleteDatabase('shisui')
+        req.onsuccess = () => resolve()
+        req.onerror = () => resolve()
+        req.onblocked = () => resolve()
+      })
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.open('shisui', 2)
+        req.onupgradeneeded = () => {
+          const db = req.result
+          if (!db.objectStoreNames.contains('tasks')) {
+            const tasks = db.createObjectStore('tasks', { keyPath: 'id' })
+            for (const idx of ['dueAt', 'startAt', 'done', 'kind', 'createdAt', 'sourceUid']) {
+              tasks.createIndex(idx, idx)
+            }
+          }
+          if (!db.objectStoreNames.contains('batches')) db.createObjectStore('batches', { keyPath: 'id' })
+        }
+        req.onsuccess = () => {
+          const db = req.result
+          const tx = db.transaction('tasks', 'readwrite')
+          const store = tx.objectStore('tasks')
+          const midnight = new Date(2026, 10, 20, 0, 0, 0, 0).getTime()
+          store.put({
+            id: 'old_all_day',
+            title: '老全天任务',
+            dueAt: midnight,
+            startAt: null,
+            kind: 'task',
+            channel: null,
+            location: null,
+            rawText: 'x',
+            confidence: 'high',
+            reasons: [],
+            engine: 'rule',
+            createdAt: 1,
+            done: false,
+            editedFields: [],
+          })
+          store.put({
+            id: 'old_timed',
+            title: '老定时任务',
+            dueAt: new Date(2026, 11, 1, 9, 0, 0, 0).getTime(),
+            startAt: null,
+            kind: 'task',
+            channel: null,
+            location: null,
+            rawText: 'y',
+            confidence: 'high',
+            reasons: [],
+            engine: 'rule',
+            createdAt: 1,
+            done: true,
+            editedFields: [],
+          })
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
+          }
+          tx.onerror = () => reject(tx.error)
+        }
+        req.onerror = () => reject(req.error)
+      })
+    })
+
+    // 打开应用 → Dexie 自动升级到 v3
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('老全天任务')).toBeVisible()
+
+    const record = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const req = indexedDB.open('shisui')
+        req.onsuccess = () => resolve(req.result)
+        req.onerror = () => reject(req.error)
+      })
+      const version = db.version
+      const tx = db.transaction('tasks', 'readonly')
+      const store = tx.objectStore('tasks')
+      const get = (id: string) =>
+        new Promise<Record<string, unknown>>((resolve, reject) => {
+          const req = store.get(id)
+          req.onsuccess = () => resolve(req.result)
+          req.onerror = () => reject(req.error)
+        })
+      const all = await get('old_all_day')
+      const timed = await get('old_timed')
+      db.close()
+      return { version, all, timed }
+    })
+
+    // Dexie 内部把声明版本 ×10 存进 IndexedDB（3 → 30）
+    expect(record.version).toBe(30)
+    expect(record.all.title).toBe('老全天任务')
+    expect(record.all.allDay).toBe(true)
+    expect(record.all.endAt).toBeNull()
+    expect(record.all.recurrenceIndex).toBe(0)
+    expect(record.all.skipped).toBe(false)
+    expect(record.timed.done).toBe(true)
+    expect(record.timed.allDay).toBe(false)
+  })
+})
+
+test.describe('跨月区间', () => {
+  const ICS_CROSS = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:cross-month@example.com',
+    'SUMMARY:跨月项目',
+    'DTSTART;VALUE=DATE:20261120',
+    'DTEND;VALUE=DATE:20261203',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  test('V. 20 日 → 次月 2 日：列表显示区间、月历两个月都有标记', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'cross.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_CROSS, 'utf-8'),
+    })
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '确认导入' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText(/11月20日–12月2日（13 天）/)).toBeVisible()
+
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    const day = (m: number, d: number) => new Date(2026, m - 1, d).getTime()
+    // 11 月格：20 日、30 日有标记
+    await expect(page.locator(`.month-cell[data-day="${day(11, 20)}"] .month-dot`)).toHaveCount(1)
+    await expect(page.locator(`.month-cell[data-day="${day(11, 30)}"] .month-dot`)).toHaveCount(1)
+    // 12 月前两格（在 11 月网格里是下月格）也有标记
+    await expect(page.locator(`.month-cell[data-day="${day(12, 1)}"] .month-dot`)).toHaveCount(1)
+    await expect(page.locator(`.month-cell[data-day="${day(12, 2)}"] .month-dot`)).toHaveCount(1)
+    await expect(page.locator(`.month-cell[data-day="${day(12, 3)}"] .month-dot`)).toHaveCount(0)
+  })
+})
+
+test.describe('跳过这一次', () => {
+  test('W. 跳过：标 skipped、生成下一条、不记为完成', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag').first()).toBeVisible()
+
+    await page.getByRole('button', { name: '跳过这一次' }).first().click()
+    await expect(page.locator('.skipped-tag').first()).toBeVisible()
+    // 跳过后：被跳过的那条 + 新生成的下一条，共 2 行带重复标记
+    await expect(page.locator('.series-tag')).toHaveCount(2)
+    // 跳过不等于完成
+    await expect(page.getByText(/已完成 1 件/)).toHaveCount(0)
+  })
+})
+
+
+test.describe('结束重复', () => {
+  test('X. 结束系列：不再生成下一条，历史保留', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag').first()).toBeVisible()
+
+    await page.getByRole('button', { name: '结束重复' }).first().click()
+    // 结束后再完成：不生成下一条
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.task-row:not(.is-done)')).toHaveCount(0)
+  })
+})
+
+test.describe('多日区间整段拖拽', () => {
+  const ICS_SPAN = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:span-drag@example.com',
+    'SUMMARY:跨天项目',
+    'DTSTART:20261120T010000Z',
+    'DTEND:20261122T030000Z',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  test('Y. 整段拖拽 20→22：区间整体平移、长度不变', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'span.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_SPAN, 'utf-8'),
+    })
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '确认导入' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (d: number) => new Date(2026, 10, d).getTime()
+    const targetCell = page.locator(`.month-cell[data-day="${day(22)}"]`)
+    await expect(targetCell).toHaveCount(1)
+    // 月历格子里只有圆点；任务列表在下方「当天」面板，先选中 20 日再拖
+    await page.locator(`.month-cell[data-day="${day(20)}"]`).click()
+    const source = page.locator('.month-day .day-task', { hasText: '跨天项目' }).first()
+    await expect(source).toBeVisible()
+    await source.dragTo(targetCell)
+
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    // 起点 20 日 09:00 → 22 日 09:00；终点 22 日 11:00 → 24 日 11:00，长度不变（3 个日历日）
+    await expect(page.getByText(/11月22日–11月24日（3 天）/)).toBeVisible()
   })
 })
