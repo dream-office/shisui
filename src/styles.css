@@ -1473,7 +1473,7 @@ em {
 .day-task.is-done { opacity: 0.55; text-decoration: line-through; }
 .day-time { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
 .day-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.day-list + .month-hint, .month-hint { margin: 12px 0 0; font-size: 12.5px; }
+.day-list + .month-hint, .month-hint { margin: 12px 0 0; font-size: 12.5px; line-height: 1.7; }
 
 @media (max-width: 640px) {
   .month-cell { min-height: 40px; padding: 4px 3px; font-size: 12px; border-radius: 7px; }
