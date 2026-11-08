@@ -939,11 +939,24 @@ test.describe('v0.10 系列编辑', () => {
     await nav.getByRole('button', { name: /^日程/ }).click()
     await page.getByRole('button', { name: '编辑任务' }).first().click()
 
+    // 先记下 once 模式下的日期部分
+    const originalDate = (await page.getByLabel('编辑时间').inputValue()).slice(0, 10)
+
     await page.getByLabel('编辑标题').fill('改名后的例会')
     await page.getByLabel('改整个系列（当前 + 未来未完成）').check()
+    // series 模式只能改时刻，不能改日期
+    await expect(page.getByLabel('编辑时间', { exact: true })).toHaveCount(0)
+    const clockInput = page.getByLabel('编辑时间（只改时刻）')
+    await expect(clockInput).toBeVisible()
+    await clockInput.fill('10:30')
     // 二次确认文案：明确将同步的未完成实例条数
     await expect(page.getByText(/将同步 \d+ 个未完成实例/)).toBeVisible()
     await page.getByRole('button', { name: '保存' }).first().click()
+
+    // 再打开一次：切回 once 模式时日期应保持原样
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+    const afterDate = (await page.getByLabel('编辑时间').inputValue()).slice(0, 10)
+    expect(afterDate).toBe(originalDate)
 
     await expect(page.locator('.task-row', { hasText: '改名后的例会' })).toBeVisible()
   })

@@ -210,13 +210,27 @@ export default function TaskRow({
               />
             </label>
             <label className="field block">
-              <span>时间</span>
-              <input
-                type="datetime-local"
-                value={draft.time}
-                onChange={(event) => setDraft({ ...draft, time: event.target.value })}
-                aria-label="编辑时间"
-              />
+              <span>{canEditSeries && scope === 'series' ? '时刻（日期不变）' : '时间'}</span>
+              {canEditSeries && scope === 'series' ? (
+                <input
+                  type="time"
+                  value={draft.time.slice(11, 16)}
+                  onChange={(event) => {
+                    const clock = event.target.value
+                    if (!clock) return
+                    const datePart = draft.time.slice(0, 10) || toDatetimeLocal(Date.now()).slice(0, 10)
+                    setDraft({ ...draft, time: `${datePart}T${clock}` })
+                  }}
+                  aria-label="编辑时间（只改时刻）"
+                />
+              ) : (
+                <input
+                  type="datetime-local"
+                  value={draft.time}
+                  onChange={(event) => setDraft({ ...draft, time: event.target.value })}
+                  aria-label="编辑时间"
+                />
+              )}
             </label>
             <div className="edit-inline">
               <label className="field block">
@@ -282,7 +296,28 @@ export default function TaskRow({
       <div className="task-right">
         {cd && <span className={`countdown tone-${cd.tone}`}>{cd.text}</span>}
         {!task.done && onEditOnce && (
-          <button type="button" className="icon-btn" onClick={() => setEditing((value) => !value)} aria-label="编辑任务" title="编辑任务">
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => {
+              setEditing((value) => {
+                if (value) return false
+                // 每次打开都从当前任务重新取草稿；范围默认「只改这一次」
+                setDraft({
+                  title: task.title,
+                  time: toDatetimeLocal(task.startAt ?? task.dueAt),
+                  channel: task.channel ?? '',
+                  location: task.location ?? '',
+                  kind: task.kind,
+                  tags: (task.tags ?? []).join(', '),
+                })
+                setScope('once')
+                return true
+              })
+            }}
+            aria-label="编辑任务"
+            title="编辑任务"
+          >
             ✎
           </button>
         )}
