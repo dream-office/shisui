@@ -232,6 +232,32 @@ function resolveDate(text: string, ref: Date): DateHit | null {
     }
   }
 
+  // 0-e) 每月 N 号（重复规则里的日期锚点）：给出「下一次」的日期，供规则引擎生成待办
+  m = new RegExp(`每\\s*(?:隔\\s*)?(${NUM})?\\s*个?\\s*月(?:的)?\\s*(${NUM})\\s*[号日]`).exec(text)
+  if (m) {
+    const day = cnToInt(m[2])
+    if (day && day >= 1 && day <= 31) {
+      const clamp = (year: number, month0: number) =>
+        Math.min(day, new Date(year, month0 + 1, 0).getDate())
+      let d = new Date(today.getFullYear(), today.getMonth(), clamp(today.getFullYear(), today.getMonth()))
+      if (startOfDay(d).getTime() < today.getTime()) {
+        const nextMonth0 = today.getMonth() + 1
+        const year = today.getFullYear() + Math.floor(nextMonth0 / 12)
+        const month0 = nextMonth0 % 12
+        d = new Date(year, month0, clamp(year, month0))
+      }
+      return {
+        date: d,
+        index: m.index,
+        length: m[0].length,
+        matched: m[0],
+        ambiguous: true,
+        hasDayPrecision: true,
+        note: `每月 ${day} 号`,
+      }
+    }
+  }
+
   // 1) 2026-11-18 / 2026年11月18日
   m = /(\d{4})\s*[-/年]\s*(\d{1,2})\s*[-/月]\s*(\d{1,2})\s*[日号]?/.exec(text)
   if (m) {
