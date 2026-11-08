@@ -250,3 +250,12 @@ describe('v0.7.0 「下周日」再钉一条周三视角', () => {
     expect(followingSunday.dateMs).toBe(day(11, 22))
   })
 })
+
+describe('v0.7.0 周六顺延', () => {
+  it('「本周六工作日」→ 周六顺延到周一 18:00', () => {
+    const hit = extractTime('本周六工作日提交', REF)!
+    expect(hit.dateMs).toBe(day(11, 9)) // 本周六 11-07 → 下周一 11-09
+    expect(hit.atMs).toBe(at(11, 9, 18, 0))
+    expect(hit.note).toContain('顺延')
+  })
+})

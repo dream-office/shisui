@@ -67,8 +67,8 @@ describe('dedupeParsedTasks', () => {
   it('二选一分组不同 → 不合并（本周/下周双候选）', () => {
     const due = 1_800_000_000_000
     const result = dedupeParsedTasks([
-      task('交周报', due, { choiceGroup: '本周日|2026-11-08', choiceLabel: '本周' }),
-      task('交周报', due, { choiceGroup: '本周日|2026-11-08', choiceLabel: '下周' }),
+      task('交周报', due, { choiceGroup: '本周日|2026-11-08', choiceLabel: '本周（今天）' }),
+      task('交周报', due, { choiceGroup: '本周日|2026-11-08', choiceLabel: '下周（7 天后）' }),
     ])
     expect(result.kept).toHaveLength(2)
     expect(result.duplicates).toHaveLength(0)

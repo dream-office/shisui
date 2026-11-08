@@ -2,6 +2,8 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 interface Props {
   children: ReactNode
+  /** 重试时通知外层清掉「armed」等一次性状态 */
+  onReset?: () => void
 }
 
 interface State {
@@ -25,10 +27,13 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   private retry = () => {
+    this.props.onReset?.()
     this.setState({ hasError: false, message: '' })
   }
 
   private goHome = () => {
+    // 清掉 query（错误边界自测开关藏在这里），再刷新
+    window.history.replaceState(null, '', window.location.pathname)
     window.location.hash = ''
     window.location.reload()
   }

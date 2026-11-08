@@ -9,6 +9,7 @@
  */
 import type { Confidence, ParsedTask, TaskKind } from './types.js'
 import { extractTime, setClock, startOfDay, type TimeHit } from './time.js'
+import { CHOICE_NEXT_WEEK, CHOICE_THIS_WEEK } from './choice.js'
 
 /**
  * 类型判定：从「最具体」排到「最宽泛」，先命中先得。
@@ -312,7 +313,7 @@ export function parseSegmentCandidates(segment: string, ref: Date, index: number
           ...thisWeek,
           id: `${thisWeek.id}@this-week`,
           choiceGroup: group,
-          choiceLabel: '本周',
+          choiceLabel: CHOICE_THIS_WEEK,
           confidence: 'low',
           reasons: [...thisWeek.reasons, note],
         },
@@ -320,7 +321,7 @@ export function parseSegmentCandidates(segment: string, ref: Date, index: number
           ...nextWeek,
           id: `${nextWeek.id}@next-week`,
           choiceGroup: group,
-          choiceLabel: '下周',
+          choiceLabel: CHOICE_NEXT_WEEK,
           confidence: 'low',
           reasons: [...nextWeek.reasons, note],
         },

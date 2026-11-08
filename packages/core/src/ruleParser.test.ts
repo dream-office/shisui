@@ -291,8 +291,8 @@ describe('v0.7.0 规则引擎：新时间表达与双候选', () => {
     expect(tasks[1].id).toMatch(/@next-week$/)
     expect(tasks[0].choiceGroup).toBe(tasks[1].choiceGroup)
     expect(tasks[0].choiceGroup).toContain('本周日|2026-11-08')
-    expect(tasks[0].choiceLabel).toBe('本周')
-    expect(tasks[1].choiceLabel).toBe('下周')
+    expect(tasks[0].choiceLabel).toBe('本周（今天）')
+    expect(tasks[1].choiceLabel).toBe('下周（7 天后）')
     expect(tasks[0].confidence).toBe('low')
     expect(tasks[0].reasons.join(' ')).toContain('周日当天，本周=今天 23:59；下周=7 天后')
 

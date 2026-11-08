@@ -6,8 +6,6 @@
  */
 import type { StoredTask } from './types.js'
 
-const DAY_MS = 86_400_000
-
 export interface Stats {
   weekStart: number
   weekEnd: number
@@ -39,7 +37,10 @@ function percent(numerator: number, denominator: number): number | null {
 
 export function computeStats(tasks: readonly StoredTask[], ref: number): Stats {
   const weekStart = startOfWeek(ref)
-  const weekEnd = weekStart + 7 * DAY_MS
+  // 用日历日推进而不是 +7*86400000：夏令时切换周加 7 天会落到 01:00（少/多一小时）
+  const endDate = new Date(weekStart)
+  endDate.setDate(endDate.getDate() + 7)
+  const weekEnd = endDate.getTime()
 
   const weekTasks = tasks.filter(
     (task) => task.dueAt !== null && task.dueAt >= weekStart && task.dueAt < weekEnd,

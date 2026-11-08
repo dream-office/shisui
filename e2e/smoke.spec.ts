@@ -475,3 +475,20 @@ test.describe('PWA', () => {
     expect(href ?? '').toContain('manifest.webmanifest')
   })
 })
+
+test.describe('错误边界（armed 开关）', () => {
+  test('D1.  armed 后出错误界面，点「重试」恢复', async ({ page }) => {
+    await page.goto('/?__boom=1')
+    await expect(page.getByRole('alert')).toContainText('界面出了点问题')
+    await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
+    await page.getByRole('button', { name: '重试' }).click()
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+  })
+
+  test('D2. 错误界面点「回首页」后正常', async ({ page }) => {
+    await page.goto('/?__boom=1')
+    await expect(page.getByRole('alert')).toContainText('界面出了点问题')
+    await page.getByRole('button', { name: '回首页' }).click()
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+  })
+})

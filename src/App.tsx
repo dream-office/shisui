@@ -9,6 +9,11 @@ import SettingsView from '@/ui/SettingsView'
 import StatsView from '@/ui/StatsView'
 import { isLLMReady } from '@/services/llm'
 
+/** 仅在 URL 显式带 ?__boom=1 时渲染：供 e2e 验证错误边界；默认完全不影响使用 */
+function ErrorProbe(): null {
+  throw new Error('__armed_error_for_e2e__')
+}
+
 const TABS = [
   { id: 'inbox', label: '收件' },
   { id: 'plan', label: '日程' },
@@ -24,6 +29,15 @@ export default function App() {
   const tasks = useApp((s) => s.tasks)
   const llmConfig = useApp((s) => s.llmConfig)
   const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null)
+  const [armed, setArmed] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('__boom') === '1',
+  )
+
+  // 错误边界自测开关：读取后立刻清掉 URL，保证刷新/回首页不会再次 armed
+  useEffect(() => {
+    if (!armed) return
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [armed])
 
   useEffect(() => {
     void hydrate()
@@ -69,7 +83,8 @@ export default function App() {
       </header>
 
       <main className="main">
-        <ErrorBoundary>
+        <ErrorBoundary onReset={() => setArmed(false)}>
+          {armed && <ErrorProbe />}
           {view === 'inbox' && <InboxView />}
           {view === 'plan' && <PlanView />}
           {view === 'calendar' && <MonthView />}

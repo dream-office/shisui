@@ -4,6 +4,10 @@
  */
 import type { ParsedTask } from './types.js'
 
+/** 二选一标签：用用户能直接看懂的说法，不靠展开 reasons 才能理解 */
+export const CHOICE_THIS_WEEK = '本周（今天）'
+export const CHOICE_NEXT_WEEK = '下周（7 天后）'
+
 /** 默认选中：普通任务全选；每个二选一组只选「本周」（没有本周就选第一个） */
 export function defaultChoiceSelection(tasks: readonly ParsedTask[]): string[] {
   const selected: string[] = []
@@ -15,7 +19,8 @@ export function defaultChoiceSelection(tasks: readonly ParsedTask[]): string[] {
     }
     if (groupSeen.has(task.choiceGroup)) continue
     const inGroup = tasks.filter((item) => item.choiceGroup === task.choiceGroup)
-    const preferred = inGroup.find((item) => item.choiceLabel === '本周') ?? inGroup[0]
+    const preferred =
+      inGroup.find((item) => item.choiceLabel === CHOICE_THIS_WEEK || item.choiceLabel === '本周') ?? inGroup[0]
     selected.push(preferred.id)
     groupSeen.add(task.choiceGroup)
   }

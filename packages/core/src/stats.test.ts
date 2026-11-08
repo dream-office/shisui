@@ -94,3 +94,18 @@ describe('computeStats 手改率（分母只算解析来源）', () => {
     expect(stats.editRate).toBeNull()
   })
 })
+
+
+describe('computeStats 夏令时边界', () => {
+  it('DST 切换周：weekEnd 是下周一 00:00（不是 01:00）', () => {
+    // 2026-03-04 周三；美国夏令时 2026-03-08 开始
+    const ref = new Date(2026, 2, 4, 10, 0, 0).getTime()
+    const stats = computeStats([], ref)
+    const end = new Date(stats.weekEnd)
+
+    expect(end.getDay()).toBe(1) // 周一
+    expect(end.getHours()).toBe(0)
+    expect(end.getMinutes()).toBe(0)
+    expect(stats.weekEnd).toBe(new Date(2026, 2, 9, 0, 0, 0, 0).getTime())
+  })
+})

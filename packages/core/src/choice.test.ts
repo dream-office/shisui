@@ -16,7 +16,7 @@ const REF: ParsedTask[] = [
     reasons: [],
     engine: 'rule',
     choiceGroup: '本周日|2026-11-08',
-    choiceLabel: '本周',
+    choiceLabel: '本周（今天）',
   },
   {
     id: 'next-week',
@@ -31,7 +31,7 @@ const REF: ParsedTask[] = [
     reasons: [],
     engine: 'rule',
     choiceGroup: '本周日|2026-11-08',
-    choiceLabel: '下周',
+    choiceLabel: '下周（7 天后）',
   },
   {
     id: 'plain',
