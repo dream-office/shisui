@@ -331,6 +331,8 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  作者签名: 'Author signature',
+
   '把散落的时间，一粒一粒捡起来。': 'Picking up the scattered moments, one grain at a time.',
   'dream-office 签名': 'dream-office signature',
   '关闭作者签名': 'Close signature',

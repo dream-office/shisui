@@ -1737,6 +1737,7 @@ em {
   font-size: 12px;
   color: var(--muted);
 }
+.signature-quote { margin: 0; }
 .signature-close {
   border: none;
   background: none;

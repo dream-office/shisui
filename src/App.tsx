@@ -183,13 +183,23 @@ export default function App() {
           }}
           aria-label={t('dream-office 签名')}
           title={t('dream-office 签名')}
+          aria-expanded={signatureOpen}
+          aria-controls="signature-note"
         >
           <span className="signature-mark" aria-hidden />
           dream-office
         </button>
         {signatureOpen && (
-          <p className="signature-line" role="status">
-            {t('把散落的时间，一粒一粒捡起来。')}
+          <div
+            id="signature-note"
+            className="signature-line"
+            role="dialog"
+            aria-modal="false"
+            aria-label={t('作者签名')}
+          >
+            <p className="signature-quote" aria-live="polite">
+              {t('把散落的时间，一粒一粒捡起来。')}
+            </p>
             <button
               ref={signatureCloseRef}
               type="button"
@@ -199,7 +209,7 @@ export default function App() {
             >
               ×
             </button>
-          </p>
+          </div>
         )}
       </footer>
 

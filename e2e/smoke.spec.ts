@@ -1190,6 +1190,8 @@ test.describe('v1.1 签名彩蛋', () => {
     const button = page.locator('.signature-btn')
     await expect(button).toBeVisible()
     await expect(button).toContainText('dream-office')
+    await expect(button).toHaveAttribute('aria-expanded', 'false')
+    await expect(button).toHaveAttribute('aria-controls', 'signature-note')
 
     // 点 1 次、2 次都不弹
     await button.click()
@@ -1202,6 +1204,9 @@ test.describe('v1.1 签名彩蛋', () => {
     const line = page.locator('.signature-line')
     await expect(line).toBeVisible()
     await expect(line).toContainText('把散落的时间，一粒一粒捡起来。')
+    await expect(line).toHaveAttribute('role', 'dialog')
+    await expect(line).toHaveAttribute('aria-modal', 'false')
+    await expect(button).toHaveAttribute('aria-expanded', 'true')
 
     // Esc 关闭，焦点回按钮
     await page.keyboard.press('Escape')
