@@ -216,6 +216,21 @@ test.describe('ICS 导入', () => {
   })
 })
 
+test.describe('分享目标', () => {
+  test('L. 带分享参数打开 → 输入框预填 + 提示可见 + URL 已清空', async ({ page }) => {
+    const shared = '明天下班前把报销单交给财务'
+    await page.goto(`/?title=${encodeURIComponent('部门群')}&text=${encodeURIComponent(shared)}`)
+
+    await expect(page.getByText('来自分享')).toBeVisible()
+    await expect(page.getByLabel('群消息原文')).toHaveValue(/把报销单交给财务/)
+    // replaceState 之后地址栏不应再有 query（刷新不会重复触发，也不留别人的分享内容）
+    expect(new URL(page.url()).search).toBe('')
+
+    await page.getByRole('button', { name: '知道了' }).click()
+    await expect(page.getByText('来自分享')).toBeHidden()
+  })
+})
+
 test.describe('PWA', () => {
   test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
     await page.goto('/')
@@ -253,6 +268,11 @@ test.describe('PWA', () => {
     expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '192x192')).toBe(true)
     expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '512x512')).toBe(true)
     expect(icons.some((icon) => icon.purpose === 'maskable' && icon.type === 'image/png')).toBe(true)
+
+    // 分享目标：GET + title/text/url 三个参数（Chrome/Android 生效；iOS 不支持，见 README）
+    const withShare = manifest as typeof manifest & { share_target?: { method?: string; params?: Record<string, string> } }
+    expect(withShare.share_target?.method).toBe('GET')
+    expect(withShare.share_target?.params).toEqual({ title: 'title', text: 'text', url: 'url' })
 
     // apple-touch-icon 必须是 PNG，且实际可访问
     await page.goto('/')

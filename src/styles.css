@@ -1396,3 +1396,21 @@ em {
 .ics-chip-skip { background: var(--line); color: var(--muted); }
 .ics-actions { margin-top: 12px; display: flex; gap: 10px; }
 .ics-result { margin: 12px 0 0; font-size: 13px; color: var(--ok); }
+/* ── 分享目标提示 ──────────────────────────────── */
+.share-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.share-banner .btn {
+  margin-left: auto;
+}

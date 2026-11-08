@@ -131,6 +131,34 @@ describe('importIcs', () => {
     expect(task.title).toBe('带提醒的事')
     expect(task.rawText).not.toContain('提醒我')
   })
+
+  it('被截断的文件给出可读 warning，而不是返回空结果', () => {
+    const truncated = 'BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nSUMMARY:半截'
+    const result = importIcs(truncated)
+    expect(result.tasks).toHaveLength(0)
+    expect(result.warnings[0]).toContain('END:VEVENT')
+  })
+
+  it('定时事件没有 DTEND 时按 30 分钟计（与导出规则对称）', () => {
+    const ics = wrap(event(['UID:no-end', 'SUMMARY:没有结束时间', 'DTSTART:20261120T010000Z']))
+    const task = importIcs(ics, { makeId }).tasks[0]
+    expect(task.startAt).toBe(Date.UTC(2026, 10, 20, 1, 0, 0))
+    expect(task.dueAt).toBe(Date.UTC(2026, 10, 20, 1, 30, 0))
+    expect(task.reasons.some((reason) => reason.includes('30 分钟'))).toBe(true)
+  })
+
+  it('同文件里坏事件跳过、好事件照常导入', () => {
+    const ics = wrap(
+      event(['UID:bad', 'SUMMARY:坏时区', 'DTSTART;TZID=Mars/Olympus:20261120T090000']),
+      event(['UID:good', 'SUMMARY:好事件', 'DTSTART:20261120T010000Z']),
+    )
+    const result = importIcs(ics, { makeId })
+
+    expect(result.tasks).toHaveLength(1)
+    expect(result.tasks[0].title).toBe('好事件')
+    expect(result.skipped).toBe(1)
+    expect(result.warnings).toHaveLength(1)
+  })
 })
 
 describe('mergeIcsImport（去重）', () => {

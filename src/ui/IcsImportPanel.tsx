@@ -117,6 +117,9 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
             <strong>{fileName}</strong> · 新增 <b>{plan.toInsert.length}</b> / 更新 <b>{plan.toUpdate.length}</b> / 跳过{' '}
             <b>{plan.skipped.length}</b>
           </p>
+          {warnings.some((warning) => warning.includes('重复事件')) && (
+            <p className="ics-note">含重复事件（RRULE）：只导入首个实例，后续不自动展开。</p>
+          )}
           <ul>
             {parsed.slice(0, 10).map((task) => {
               const key = `${task.title}|${task.startAt ?? task.dueAt}`

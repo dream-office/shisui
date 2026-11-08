@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import CandidateCard from './CandidateCard'
@@ -7,12 +7,37 @@ import IcsImportPanel from './IcsImportPanel'
 import ManualAddForm from './ManualAddForm'
 import { useNow } from './useNow'
 
+/**
+ * 读取 PWA 分享目标传进来的参数（Chrome/Android 支持；iOS 不支持，见 README）。
+ * 清掉 query 用 replaceState：避免刷新重复触发、也避免把别人的分享内容留在地址栏。
+ */
+function takeSharedText(): string | null {
+  if (typeof window === 'undefined') return null
+  const params = new URLSearchParams(window.location.search)
+  const text = params.get('text') ?? ''
+  const title = params.get('title') ?? ''
+  const url = params.get('url') ?? ''
+  const composed = [title, text, url].filter((part) => part.trim().length > 0).join('\n')
+  if (!composed) return null
+  window.history.replaceState(null, '', window.location.pathname)
+  return composed
+}
+
 export default function InboxView() {
   const [raw, setRaw] = useState('')
   const [manualOpen, setManualOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [icsOpen, setIcsOpen] = useState(false)
+  const [sharedFrom, setSharedFrom] = useState<string | null>(null)
   const history = useApp((s) => s.history)
+
+  // 启动时只取一次：分享过来的内容填进输入框，并提示来源
+  useEffect(() => {
+    const shared = takeSharedText()
+    if (!shared) return
+    setRaw(shared)
+    setSharedFrom('分享内容')
+  }, [])
   const candidates = useApp((s) => s.candidates)
   const parsing = useApp((s) => s.parsing)
   const stage = useApp((s) => s.stage)
@@ -47,6 +72,15 @@ export default function InboxView() {
           项目群、部门群、班级群、家长群，说的是同一件事：<strong>有个截止时间，别错过</strong>。
         </p>
       </section>
+
+      {sharedFrom && (
+        <div className="share-banner" role="status">
+          <span>来自分享：内容已填入下面的输入框，点「开始解析」就能变成待办。</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSharedFrom(null)}>
+            知道了
+          </button>
+        </div>
+      )}
 
       <section className="composer card">
         <div className="composer-head">

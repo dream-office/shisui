@@ -264,6 +264,9 @@ function collectEvents(lines: string[]): RawEvent[] {
   return events
 }
 
+/** 带时刻但没有结束时间时，与导出规则对称：按 30 分钟计 */
+const DEFAULT_DURATION_MS = 30 * 60 * 1000
+
 /**
  * 解析 ICS 文本。永远不抛异常：坏文件返回空结果 + warning，UI 据此给出可读错误。
  */
@@ -274,6 +277,13 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
 
   if (!text || !/BEGIN:VCALENDAR/i.test(text)) {
     return { tasks: [], warnings: ['这不是一个 iCalendar 文件（缺少 BEGIN:VCALENDAR）'], skipped: 0 }
+  }
+  if (/BEGIN:VEVENT/i.test(text) && !/END:VEVENT/i.test(text)) {
+    return {
+      tasks: [],
+      warnings: ['文件不完整：有 BEGIN:VEVENT 却没有 END:VEVENT，可能被截断了'],
+      skipped: 1,
+    }
   }
 
   const events = collectEvents(unfoldIcsLines(text))
@@ -319,6 +329,7 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
 
     const reasons = ['从日历文件按标准字段导入']
     if (event.hasRule) reasons.push('重复事件仅导入首次')
+    if (!allDay && start && !end) reasons.push('没有结束时间，按 30 分钟计')
 
     const rawLines = [`[ICS 导入] ${title}`]
     if (event.description.trim()) rawLines.push(event.description.trim())
@@ -327,11 +338,15 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
     const startMs = start?.ms ?? null
     const endMs = allDay ? startMs : dueAt
     const sourceUid = event.uid ?? syntheticIcsUid(title, startMs, endMs)
+    // 只有开始时间（无 DTEND）的定时事件：按 30 分钟计，与导出规则对称
+    const effectiveDueAt = allDay
+      ? startMs
+      : dueAt ?? (startAt !== null ? startAt + DEFAULT_DURATION_MS : null)
 
     tasks.push({
       id: makeId(index, event.uid),
       title,
-      dueAt: allDay ? startMs : dueAt,
+      dueAt: effectiveDueAt,
       startAt,
       kind: kindFor({ start, end }),
       channel: null,
