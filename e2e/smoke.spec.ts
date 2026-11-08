@@ -1252,3 +1252,97 @@ test.describe('v1.1 签名彩蛋', () => {
     await expect(page.locator('.signature-btn')).toBeVisible()
   })
 })
+
+
+test.describe('v1.1.2 B 版空态与关于', () => {
+  test('B1. 空态：Inbox / Plan / Calendar / Stats 有穗标记 + 文案 + 操作入口', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('.sprig-mark').first()).toBeVisible()
+    await expect(page.getByText('从一条群通知开始')).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.empty .sprig-mark')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '日程还是空的' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '去贴通知' })).toBeVisible()
+
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    await expect(page.locator('.month-day-empty .sprig-mark')).toBeVisible()
+    await expect(page.getByText('这一天先空着')).toBeVisible()
+    await expect(page.locator('.month-day-empty').getByRole('button', { name: '去收件' })).toBeVisible()
+
+    await nav.getByRole('button', { name: /^统计/ }).click()
+    await expect(page.locator('.sprig-mark')).toBeVisible()
+    await expect(page.getByText('还没有数据')).toBeVisible()
+  })
+
+  test('B2. 专注空态：完成最后一条后显示穗标记 + 退出入口', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('专注空态测试')
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    await page.locator('.manual input[type="datetime-local"]').fill(
+      `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:30`,
+    )
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '专注模式' }).click()
+    await page.locator('.focus').getByRole('button', { name: '完成', exact: true }).click()
+    await expect(page.locator('.focus .sprig-mark')).toBeVisible()
+    await expect(page.getByText('今天先到这里')).toBeVisible()
+    await expect(page.locator('.focus').getByRole('button', { name: '退出专注' })).toBeVisible()
+  })
+
+  test('B3. 关于块：版本/作者/签名/源码链接，中英双语', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
+    const about = page.locator('.about-signature')
+    await expect(page.getByText('拾穗 v1.1.2 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('作者：dream-office')).toBeVisible()
+    await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
+    await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(
+      'href', 'https://github.com/dream-office/shisui',
+    )
+
+    await page.getByRole('button', { name: 'English' }).click()
+    await expect(page.getByText('Author: dream-office')).toBeVisible()
+    await expect(about).toContainText('Picking up the scattered moments, one grain at a time.')
+    await expect(page.getByRole('link', { name: 'Source (GitHub)' })).toBeVisible()
+  })
+
+  test('B4. reduced-motion 关闭动效；320/360 不溢出', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/')
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^日程/ }).click()
+    const animation = await page.locator('.empty .empty-state').evaluate(
+      (el) => getComputedStyle(el).animationName,
+    )
+    expect(animation).toBe('none')
+
+    // 普通动效时应为 rise-in
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    await page.waitForTimeout(250)
+    const animated = await page.locator('.empty .empty-state').evaluate(
+      (el) => getComputedStyle(el).animationName,
+    )
+    expect(animated).toBe('rise-in')
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(1)
+    await expect(page.locator('.empty .sprig-mark')).toBeVisible()
+
+    await page.setViewportSize({ width: 360, height: 760 })
+    const overflow360 = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow360).toBeLessThanOrEqual(1)
+  })
+})

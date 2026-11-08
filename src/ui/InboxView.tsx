@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { appendClipboardText } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
@@ -8,6 +8,7 @@ import CandidateCard from './CandidateCard'
 import HistoryPanel from './HistoryPanel'
 import IcsImportPanel from './IcsImportPanel'
 import ManualAddForm from './ManualAddForm'
+import EmptyState from './EmptyState'
 import { useNow } from './useNow'
 
 /**
@@ -67,6 +68,7 @@ export default function InboxView() {
   const [sharedFrom, setSharedFrom] = useState<string | null>(null)
   const history = useApp((s) => s.history)
   const candidates = useApp((s) => s.candidates)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const batchMode = useApp((s) => s.batchMode)
 
   // 「本周日」当天会产出本周/下周两个候选：同组默认选「本周」，UI 里可切换
@@ -167,6 +169,7 @@ export default function InboxView() {
           <span className="muted">{t('{n} 字', { n: raw.length })}</span>
         </div>
         <textarea
+          ref={textareaRef}
           id="notice"
           className="composer-input"
           value={raw}
@@ -309,6 +312,16 @@ export default function InboxView() {
         <div className="toast">
           {t('已收录 {n} 条，去「日程」看看有没有撞车', { n: accepted })}
         </div>
+      )}
+
+      {candidates.length === 0 && !parsing && (
+        <section className="card">
+          <EmptyState
+            title={t('从一条群通知开始')}
+            body={t('贴一段群消息，拾穗会替你拆成待办。')}
+            action={{ label: t('输入群消息'), onClick: () => textareaRef.current?.focus() }}
+          />
+        </section>
       )}
 
       {candidates.length === 0 && !parsing && (

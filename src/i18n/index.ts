@@ -331,6 +331,23 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '输入群消息': 'Type a group message',
+  '从一条群通知开始': 'Start with a group notice',
+  '贴一段群消息，拾穗会替你拆成待办。': 'Paste a group message and Shisui will break it into to-dos.',
+  '这一天先空着': 'Nothing on this day yet',
+  '把其他日子的任务拖过来，或去收件贴一条新的。': 'Drag tasks here from another day, or add a new one in Inbox.',
+  '去收件': 'Go to Inbox',
+  '还没有数据': 'No data yet',
+  '收录第一条待办后，这里会显示你的完成率与解析质量。':
+    'Accept your first to-do and your completion and parsing quality will show up here.',
+  '今天先到这里': 'That is all for now',
+  '没有未完成的任务了，休息一下。': 'No open tasks — take a break.',
+  '数据只存本地，不上传服务器。': 'Data stays local and is never uploaded.',
+  '作者：dream-office': 'Author: dream-office',
+  'dream-office · 把散落的时间，一粒一粒捡起来。':
+    'dream-office · Picking up the scattered moments, one grain at a time.',
+  '源码（GitHub）': 'Source (GitHub)',
+
   作者签名: 'Author signature',
 
   '把散落的时间，一粒一粒捡起来。': 'Picking up the scattered moments, one grain at a time.',

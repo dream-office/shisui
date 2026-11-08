@@ -4,6 +4,7 @@ import { buildMonthGrid, spanDays, startOfDay } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
+import EmptyState from './EmptyState'
 
 import { dayHeadingI18n, monthLabelI18n, weekdayNarrowI18n } from '@/i18n'
 
@@ -30,6 +31,7 @@ function formatTime(task: StoredTask): string {
  */
 export default function MonthView() {
   const tasks = useApp((s) => s.tasks)
+  const setView = useApp((s) => s.setView)
   const moveTaskToDay = useApp((s) => s.moveTaskToDay)
   const nowMs = useNow(60_000)
   const now = useMemo(() => new Date(nowMs), [nowMs])
@@ -141,7 +143,14 @@ export default function MonthView() {
           <span className="month-day-count">{t('{n} 件', { n: selectedTasks.length })}</span>
         </h3>
         {selectedTasks.length === 0 ? (
-          <p className="muted month-day-empty">{t('这天没有事。把其他日子的任务拖到这一格就能挪过来。')}</p>
+          <div className="month-day-empty">
+            <EmptyState
+              compact
+              title={t('这一天先空着')}
+              body={t('把其他日子的任务拖过来，或去收件贴一条新的。')}
+              action={{ label: t('去收件'), onClick: () => setView('inbox') }}
+            />
+          </div>
         ) : (
           <ul className="day-list">
             {selectedTasks.map((task) => (
