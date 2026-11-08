@@ -1832,12 +1832,16 @@ em {
   top: calc(100% + 6px);
   z-index: 30;
   width: min(260px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 8px;
   background: var(--surface, #fff);
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(21, 23, 43, 0.16);
 }
+.more-menu.is-up { top: auto; bottom: calc(100% + 6px); }
 .more-group-title {
   margin: 6px 8px 4px;
   font-size: 11px;

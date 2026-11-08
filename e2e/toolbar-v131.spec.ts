@@ -51,21 +51,33 @@ test.describe('v1.3.1 收件工具栏', () => {
     await expect(page.locator('.ics-import')).toBeVisible()
   })
 
-  test('M3. 360/320 菜单不溢出，右对齐可点', async ({ page }) => {
-    for (const width of [360, 320]) {
-      await page.setViewportSize({ width, height: 800 })
+  test('M3. 多视口：菜单完整在 viewport 内，「识别图片」可点击', async ({ page }) => {
+    for (const [width, height] of [
+      [1280, 900],
+      [1024, 768],
+      [800, 600],
+      [360, 640],
+      [320, 568],
+    ]) {
+      await page.setViewportSize({ width, height })
       await page.goto('/')
       await page.getByRole('button', { name: '更多 ▾' }).click()
-      const box = await page.getByRole('menu').boundingBox()
-      expect(box).not.toBeNull()
-      expect(box!.x).toBeGreaterThanOrEqual(0)
-      expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1)
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      )
-      expect(overflow).toBeLessThanOrEqual(1)
-      await page.getByRole('menuitem', { name: '学校通知示例' }).click()
-      await expect(page.locator('textarea')).not.toHaveValue('')
+      const menu = page.getByRole('menu')
+      await expect(menu).toBeVisible()
+      const box = await menu.boundingBox()
+      expect(box, `${width}x${height}`).not.toBeNull()
+      expect(box!.y, `${width}x${height} top`).toBeGreaterThanOrEqual(0)
+      expect(box!.y + box!.height, `${width}x${height} bottom`).toBeLessThanOrEqual(height + 1)
+      expect(box!.x, `${width}x${height} left`).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width, `${width}x${height} right`).toBeLessThanOrEqual(width + 1)
+
+      const last = page.getByRole('menuitem', { name: '识别图片' })
+      await expect(last).toBeVisible()
+      await expect(last).toBeEnabled()
+      const fileChooser = page.waitForEvent('filechooser', { timeout: 3000 }).catch(() => null)
+      await last.click()
+      expect(await fileChooser, `${width}x${height} file chooser`).not.toBeNull()
+      await expect(page.getByRole('menu')).toHaveCount(0)
     }
   })
 })
