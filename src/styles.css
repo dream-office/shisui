@@ -1452,9 +1452,9 @@ em {
 .month-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--accent); }
 .month-dot.is-done { background: var(--line-strong); }
 .month-count { font-size: 10px; color: var(--muted); }
-.month-day h3 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
+.month-day h3 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: baseline; gap: 10px; flex-wrap: nowrap; }
 .month-day-title { font-weight: 600; }
-.month-day-count { font-size: 12.5px; }
+.month-day-count { background: var(--surface-2); border-radius: 999px; padding: 2px 9px; font-size: 12px; color: var(--muted); font-weight: 500; white-space: nowrap; }
 .month-day-empty { line-height: 1.7; margin: 0 0 10px; }
 .month-day-empty:last-child { margin-bottom: 0; }
 .day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1516,7 +1516,7 @@ em {
 .stats-head h2 { margin: 0; font-size: 18px; }
 .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 .metric-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.metric { display: flex; flex-direction: column; height: 100%; }
+.metric { display: flex; flex-direction: column; height: 100%; padding: 16px 18px; min-height: 128px; }
 .metric-label { font-size: 13px; color: var(--muted); }
 .metric-value { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1; }
 .metric-track { margin: 10px 0; height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; flex: none; }
