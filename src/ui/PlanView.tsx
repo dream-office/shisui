@@ -1,8 +1,10 @@
 import { useMemo } from 'react'
 import { startOfDay } from 'shisui-core'
 import { scanConflicts, weeklyLoad } from 'shisui-core'
+import { tasksToIcs } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
+import { downloadTextFile } from '@/services/download'
 import TaskRow, { dayHeading } from './TaskRow'
 import { useNow } from './useNow'
 
@@ -42,6 +44,12 @@ export default function PlanView() {
   const maxLoad = Math.max(1, ...load)
   const today = startOfDay(ref).getTime()
 
+  const exportIcs = () => {
+    if (tasks.length === 0) return
+    const stamp = new Date().toISOString().slice(0, 10)
+    downloadTextFile(tasksToIcs(tasks, { calendarName: '拾穗日程' }), `shisui-${stamp}.ics`, 'text/calendar;charset=utf-8')
+  }
+
   if (tasks.length === 0) {
     return (
       <div className="empty card">
@@ -56,6 +64,13 @@ export default function PlanView() {
 
   return (
     <div className="plan">
+      <div className="plan-toolbar">
+        <button type="button" className="btn btn-sm" onClick={exportIcs}>
+          导出 .ics
+        </button>
+        <span className="muted">导出后可在系统日历 / Google Calendar 里导入或订阅</span>
+      </div>
+
       <section className="stats">
         <div className="stat card">
           <span className="stat-label">待办</span>

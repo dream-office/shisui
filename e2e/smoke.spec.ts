@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { expect, test, type ConsoleMessage, type Page, type Request } from '@playwright/test'
 
 /**
@@ -28,6 +29,11 @@ test.describe('首屏', () => {
     await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
     await expect(page.getByText('群里散落的截止时间，替你捡起来')).toBeVisible()
     await expect(page.getByText('数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器')).toBeVisible()
+
+    // AGPL §13：通过网络使用本应用的人必须能拿到源码入口，页脚不许被删
+    const sourceLink = page.getByRole('link', { name: /源码/ })
+    await expect(sourceLink).toBeVisible()
+    await expect(sourceLink).toHaveAttribute('href', 'https://github.com/dream-office/shisui')
 
     // 给 React 的 effect（hydrate）留一点时间，让启动期错误先冒出来
     await page.waitForTimeout(500)
@@ -126,5 +132,84 @@ test.describe('历史', () => {
     await page.getByRole('button', { name: /^历史/ }).click()
     await expect(page.getByRole('heading', { name: /导入历史/ })).toBeVisible()
     await expect(page.getByRole('button', { name: '重新解析' }).first()).toBeVisible()
+  })
+})
+
+test.describe('ICS 导出', () => {
+  test('G. 导出的 .ics 含 VCALENDAR / VEVENT，且标题转义正确', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('交报告, 记得盖章')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: '导出 .ics' }).click(),
+    ])
+
+    expect(download.suggestedFilename()).toMatch(/^shisui-\d{4}-\d{2}-\d{2}\.ics$/)
+    const filePath = await download.path()
+    expect(filePath).not.toBeNull()
+    const content = await readFile(filePath as string, 'utf-8')
+
+    expect(content).toContain('BEGIN:VCALENDAR')
+    expect(content).toContain('BEGIN:VEVENT')
+    expect(content).toContain('SUMMARY:交报告\\, 记得盖章') // 逗号必须被转义
+    expect(content).toContain('END:VCALENDAR')
+    expect(content.includes('\r\n')).toBe(true) // ICS 用 CRLF
+  })
+})
+
+test.describe('PWA', () => {
+  test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+
+    // 等 Service Worker 激活并接管
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready
+    })
+
+    await context.setOffline(true)
+    try {
+      await page.reload()
+      await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible({ timeout: 15_000 })
+    } finally {
+      await context.setOffline(false)
+    }
+  })
+
+  test('I. manifest 可访问且声明正确', async ({ page }) => {
+    const response = await page.request.get('/manifest.webmanifest')
+    expect(response.status()).toBe(200)
+
+    const manifest = (await response.json()) as {
+      name?: string
+      start_url?: string
+      icons?: { src: string; sizes: string; type: string; purpose?: string }[]
+    }
+    expect(manifest.name ?? '').toContain('拾穗')
+    expect(manifest.start_url).toBe('./')
+    expect(Array.isArray(manifest.icons) && manifest.icons.length > 0).toBe(true)
+
+    // iOS / 部分 Android 不认 SVG 图标，必须有 PNG（192/512 与 maskable）
+    const icons = manifest.icons ?? []
+    expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '192x192')).toBe(true)
+    expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '512x512')).toBe(true)
+    expect(icons.some((icon) => icon.purpose === 'maskable' && icon.type === 'image/png')).toBe(true)
+
+    // apple-touch-icon 必须是 PNG，且实际可访问
+    await page.goto('/')
+    const appleIcon = await page.getAttribute('link[rel="apple-touch-icon"]', 'href')
+    expect(appleIcon ?? '').toMatch(/\.png$/)
+    const appleResponse = await page.request.get(appleIcon as string)
+    expect(appleResponse.status()).toBe(200)
+    expect(appleResponse.headers()['content-type'] ?? '').toContain('image/png')
+
+    const href = await page.getAttribute('link[rel="manifest"]', 'href')
+    expect(href ?? '').toContain('manifest.webmanifest')
   })
 })

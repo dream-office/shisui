@@ -32,8 +32,8 @@
 
 ### v0.3 · 与真实日程打通
 
-- [ ] 导出 ICS（订阅到系统日历 / Google Calendar）
-- [ ] PWA：可安装、离线打开
+- [x] 导出 ICS（订阅到系统日历 / Google Calendar）
+- [x] PWA：可安装、离线打开
 - [ ] 统计页：本周完成率、解析准确率（基于 `editedFields` 手改率）
 - [ ] 通知图片 OCR（贴截图也能解析）
 

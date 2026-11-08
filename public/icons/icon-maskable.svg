@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="拾穗">
+  <!-- maskable：主体缩到中间 ~70%，避开各平台的圆形/方形裁切 -->
+  <rect width="512" height="512" fill="#4a45d6" />
+  <text x="256" y="330" font-size="220" text-anchor="middle" fill="#ffffff"
+        font-family="'Noto Serif SC','Songti SC','SimSun',serif">穗</text>
+</svg>
