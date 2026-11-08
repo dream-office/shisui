@@ -26,6 +26,22 @@ function takeSharedText(): string | null {
 
 export default function InboxView() {
   const [raw, setRaw] = useState('')
+  const [pasteError, setPasteError] = useState<string | null>(null)
+
+  /** iOS 没有系统分享目标：用户复制内容后点这里读取剪贴板，追加到输入末尾（不覆盖） */
+  const pasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (!text.trim()) {
+        setPasteError('剪贴板里没有文字，先复制群消息再点一次')
+        return
+      }
+      setRaw((prev) => (prev.trim().length > 0 ? `${prev}\n${text}` : text))
+      setPasteError(null)
+    } catch {
+      setPasteError('浏览器不允许读取剪贴板，请长按输入框手动粘贴')
+    }
+  }
   const [manualOpen, setManualOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [icsOpen, setIcsOpen] = useState(false)
@@ -132,9 +148,17 @@ export default function InboxView() {
           rows={7}
           spellCheck={false}
         />
+        {pasteError && (
+          <p className="import-error" role="alert">
+            {pasteError}
+          </p>
+        )}
         <div className="composer-actions">
           <button type="button" className="btn btn-primary" onClick={handleParse} disabled={parsing || !raw.trim()}>
             {parsing ? '解析中…' : '开始解析'}
+          </button>
+          <button type="button" className="btn" onClick={() => void pasteFromClipboard()} disabled={parsing}>
+            粘贴分享内容
           </button>
           <button type="button" className="btn" onClick={() => setRaw(SAMPLE_WORK)} disabled={parsing}>
             工作群示例

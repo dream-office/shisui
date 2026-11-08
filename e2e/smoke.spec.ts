@@ -362,7 +362,7 @@ test.describe('月视图', () => {
     await source.dragTo(target)
 
     const dayCard = page.locator('.month-day')
-    await expect(dayCard).toContainText('12月1日')
+    await expect(dayCard).toContainText('12 月 1 日')
     await expect(dayCard).toContainText('月底跨月')
   })
 })
@@ -1006,5 +1006,26 @@ test.describe('v0.10 加密备份', () => {
     await expect(page.getByText(/已恢复 1 条任务/)).toBeVisible()
     await nav.getByRole('button', { name: /^日程/ }).click()
     await expect(page.getByText('加密备份里的任务')).toBeVisible()
+  })
+})
+
+
+test.describe('v0.10 iOS 剪贴板替代', () => {
+  test('Z9. 粘贴分享内容：追加到输入末尾，不覆盖', async ({ page }) => {
+    await page.goto('/')
+    // 模拟 iOS 场景：剪贴板里有群消息，输入框已有内容
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { readText: async () => '周一9点开会' },
+      })
+    })
+    await page.getByLabel('群消息原文').fill('已有内容')
+
+    await page.getByRole('button', { name: '粘贴分享内容' }).click()
+    const value = await page.getByLabel('群消息原文').inputValue()
+    expect(value).toContain('已有内容')
+    expect(value).toContain('周一9点开会')
+    expect(value.indexOf('已有内容')).toBeLessThan(value.indexOf('周一9点开会'))
   })
 })

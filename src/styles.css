@@ -1416,7 +1416,8 @@ em {
 }
 /* ── 月视图 ────────────────────────────────────── */
 .month-view { display: flex; flex-direction: column; gap: 14px; }
-.month-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.month-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; row-gap: 6px; }
+.month-toolbar > * { flex: none; }
 .month-title { margin: 0 auto 0 4px; font-size: 17px; }
 .month-grid {
   display: grid;
@@ -1445,12 +1446,17 @@ em {
 .month-cell.is-outside { color: var(--muted); background: var(--surface-2); }
 .month-cell.is-today { border-color: var(--accent); border-width: 2px; }
 .month-cell.is-selected { background: var(--accent-soft); border-color: var(--accent); }
-.month-daynum { font-variant-numeric: tabular-nums; line-height: 1.1; }
+.month-daynum { font-variant-numeric: tabular-nums; line-height: 1.25; font-weight: 600; }
+.month-cell.is-outside .month-daynum { font-weight: 400; }
 .month-dots { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
 .month-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--accent); }
 .month-dot.is-done { background: var(--line-strong); }
 .month-count { font-size: 10px; color: var(--muted); }
-.month-day h3 { margin: 0 0 10px; font-size: 15px; }
+.month-day h3 { margin: 0 0 10px; font-size: 15px; display: flex; align-items: baseline; gap: 8px; }
+.month-day-title { font-weight: 600; }
+.month-day-count { font-size: 12.5px; }
+.month-day-empty { line-height: 1.7; margin: 0 0 10px; }
+.month-day-empty:last-child { margin-bottom: 0; }
 .day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .day-task {
   display: flex;
@@ -1508,13 +1514,14 @@ em {
 .stats-view { display: flex; flex-direction: column; gap: 14px; }
 .stats-head { display: flex; align-items: baseline; gap: 10px; }
 .stats-head h2 { margin: 0; font-size: 18px; }
-.metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 .metric-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.metric { display: flex; flex-direction: column; height: 100%; }
 .metric-label { font-size: 13px; color: var(--muted); }
-.metric-value { font-size: 22px; font-variant-numeric: tabular-nums; }
-.metric-track { margin-top: 10px; height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.metric-value { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1; }
+.metric-track { margin: 10px 0; height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; flex: none; }
 .metric-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.3s ease; }
-.metric-hint { margin: 8px 0 0; font-size: 12.5px; line-height: 1.6; }
+.metric-hint { margin: 0; padding-top: 10px; margin-top: auto; font-size: 12.5px; line-height: 1.6; }
 
 /* ── 错误边界 ─────────────────────────────────── */
 .error-boundary { margin-top: 16px; }
@@ -1611,3 +1618,8 @@ em {
 .scope-choice label { font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
 .edit-actions { display: flex; gap: 8px; margin-top: 8px; }
 .edit-hint { flex-basis: 100%; margin: 2px 0 0; font-size: 12px; }
+
+
+@media (max-width: 480px) {
+  .metric-grid { grid-template-columns: 1fr; }
+}

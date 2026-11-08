@@ -6,6 +6,9 @@
  *
  * 密码只存在于本次调用的内存里，不落盘、不进日志。
  * 解密失败（密码错/密文被改）统一抛 WRONG_PASSWORD，不泄露具体哪一步失败。
+ *
+ * 注意：core 包不依赖 DOM lib（node 里也要能跑），所以这里只声明用到的最小类型，
+ * base64 用纯 TS 实现，UTF-8 编解码走全局 TextEncoder/TextDecoder（存在性检查）。
  */
 
 export const ENCRYPTED_FORMAT = 'shisui-backup-encrypted'
@@ -40,25 +43,102 @@ export interface EncryptedEnvelope {
   data: string
 }
 
-function cryptoApi(): Crypto {
-  const api = globalThis.crypto
+interface CryptoKeyLike {
+  readonly type: string
+}
+
+interface SubtleLike {
+  importKey(
+    format: 'raw',
+    keyData: ArrayBuffer,
+    algorithm: string,
+    extractable: boolean,
+    usages: string[],
+  ): Promise<CryptoKeyLike>
+  deriveKey(
+    algorithm: { name: string; salt: ArrayBuffer; iterations: number; hash: string },
+    baseKey: CryptoKeyLike,
+    derivedKeyType: { name: string; length: number },
+    extractable: boolean,
+    usages: string[],
+  ): Promise<CryptoKeyLike>
+  encrypt(algorithm: { name: string; iv: ArrayBuffer }, key: CryptoKeyLike, data: ArrayBuffer): Promise<ArrayBuffer>
+  decrypt(algorithm: { name: string; iv: ArrayBuffer }, key: CryptoKeyLike, data: ArrayBuffer): Promise<ArrayBuffer>
+}
+
+interface CryptoLike {
+  subtle: SubtleLike
+  getRandomValues<T extends Uint8Array>(array: T): T
+}
+
+interface TextEncoderLike {
+  encode(input: string): Uint8Array
+}
+
+interface TextDecoderLike {
+  decode(input: ArrayBuffer | Uint8Array): string
+}
+
+const globals = globalThis as unknown as {
+  crypto?: CryptoLike
+  TextEncoder?: new () => TextEncoderLike
+  TextDecoder?: new () => TextDecoderLike
+}
+
+function cryptoApi(): CryptoLike {
+  const api = globals.crypto
   if (!api || !api.subtle) {
     throw new BackupCryptoError('CRYPTO_UNAVAILABLE', '当前环境不支持 Web Crypto，无法加密备份')
   }
   return api
 }
 
+function utf8Encode(text: string): Uint8Array {
+  const Encoder = globals.TextEncoder
+  if (!Encoder) throw new BackupCryptoError('CRYPTO_UNAVAILABLE', '当前环境缺少 TextEncoder')
+  return new Encoder().encode(text)
+}
+
+function utf8Decode(bytes: Uint8Array): string {
+  const Decoder = globals.TextDecoder
+  if (!Decoder) throw new BackupCryptoError('CRYPTO_UNAVAILABLE', '当前环境缺少 TextDecoder')
+  return new Decoder().decode(bytes)
+}
+
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary)
+  let out = ''
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b0 = bytes[i]
+    const b1 = i + 1 < bytes.length ? bytes[i + 1] : 0
+    const b2 = i + 2 < bytes.length ? bytes[i + 2] : 0
+    out += BASE64_ALPHABET[b0 >> 2]
+    out += BASE64_ALPHABET[((b0 & 3) << 4) | (b1 >> 4)]
+    out += i + 1 < bytes.length ? BASE64_ALPHABET[((b1 & 15) << 2) | (b2 >> 6)] : '='
+    out += i + 2 < bytes.length ? BASE64_ALPHABET[b2 & 63] : '='
+  }
+  return out
 }
 
 function base64ToBytes(text: string): Uint8Array {
-  const binary = atob(text)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-  return bytes
+  const clean = text.replace(/=+$/, '')
+  const out = new Uint8Array(Math.floor((clean.length * 3) / 4))
+  let buffer = 0
+  let bits = 0
+  let index = 0
+  for (const char of clean) {
+    const value = BASE64_ALPHABET.indexOf(char)
+    if (value < 0) throw new BackupCryptoError('BAD_ENVELOPE', 'base64 内容不合法')
+    buffer = (buffer << 6) | value
+    bits += 6
+    if (bits >= 8) {
+      bits -= 8
+      out[index] = (buffer >> bits) & 0xff
+      index += 1
+    }
+  }
+  return out
 }
 
 function asArrayBuffer(bytes: Uint8Array): ArrayBuffer {
@@ -92,12 +172,23 @@ export function validateEncryptedEnvelope(raw: unknown): { ok: boolean; errors: 
   if (kdf.iterations !== PBKDF2_ITERATIONS) {
     return { ok: false, errors: [`迭代次数不支持（${String(kdf.iterations)}）`], envelope: null }
   }
-  const salt = typeof kdf.salt === 'string' ? base64ToBytes(kdf.salt) : null
-  const iv = typeof data.iv === 'string' ? base64ToBytes(data.iv) : null
-  if (!salt || salt.length !== SALT_BYTES) return { ok: false, errors: ['salt 长度不对'], envelope: null }
-  if (!iv || iv.length !== IV_BYTES) return { ok: false, errors: ['iv 长度不对'], envelope: null }
+  if (typeof kdf.salt !== 'string') return { ok: false, errors: ['缺少 salt'], envelope: null }
+  if (typeof data.iv !== 'string') return { ok: false, errors: ['缺少 iv'], envelope: null }
+  if (typeof data.data !== 'string' || data.data.length === 0) {
+    return { ok: false, errors: ['缺少密文'], envelope: null }
+  }
+
+  let salt: Uint8Array
+  let iv: Uint8Array
+  try {
+    salt = base64ToBytes(kdf.salt)
+    iv = base64ToBytes(data.iv)
+  } catch {
+    return { ok: false, errors: ['salt/iv 不是合法 base64'], envelope: null }
+  }
+  if (salt.length !== SALT_BYTES) return { ok: false, errors: ['salt 长度不对'], envelope: null }
+  if (iv.length !== IV_BYTES) return { ok: false, errors: ['iv 长度不对'], envelope: null }
   if (data.cipher !== 'AES-GCM') return { ok: false, errors: ['不支持的加密算法'], envelope: null }
-  if (typeof data.data !== 'string' || data.data.length === 0) return { ok: false, errors: ['缺少密文'], envelope: null }
 
   return {
     ok: true,
@@ -105,18 +196,19 @@ export function validateEncryptedEnvelope(raw: unknown): { ok: boolean; errors: 
     envelope: {
       format: ENCRYPTED_FORMAT,
       encryptedVersion: ENCRYPTED_VERSION,
-      kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: PBKDF2_ITERATIONS, salt: kdf.salt as string },
+      kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: PBKDF2_ITERATIONS, salt: kdf.salt },
       cipher: 'AES-GCM',
-      iv: data.iv as string,
-      data: data.data as string,
+      iv: data.iv,
+      data: data.data,
     },
   }
 }
 
-async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKeyLike> {
   const api = cryptoApi()
-  const encoder = new TextEncoder()
-  const baseKey = await api.subtle.importKey('raw', asArrayBuffer(encoder.encode(password)), 'PBKDF2', false, ['deriveKey'])
+  const baseKey = await api.subtle.importKey('raw', asArrayBuffer(utf8Encode(password)), 'PBKDF2', false, [
+    'deriveKey',
+  ])
   return api.subtle.deriveKey(
     { name: 'PBKDF2', salt: asArrayBuffer(salt), iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
     baseKey,
@@ -142,7 +234,7 @@ export async function encryptBackup(plaintext: string, password: string): Promis
   const ciphertext = await api.subtle.encrypt(
     { name: 'AES-GCM', iv: asArrayBuffer(iv) },
     key,
-    asArrayBuffer(new TextEncoder().encode(plaintext)),
+    asArrayBuffer(utf8Encode(plaintext)),
   )
 
   return {
@@ -172,7 +264,7 @@ export async function decryptBackup(raw: unknown, password: string): Promise<str
       key,
       asArrayBuffer(base64ToBytes(envelope.data)),
     )
-    return new TextDecoder().decode(plaintext)
+    return utf8Decode(new Uint8Array(plaintext))
   } catch {
     throw new BackupCryptoError('WRONG_PASSWORD', '密码错误，或文件已损坏')
   }

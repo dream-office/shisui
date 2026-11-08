@@ -136,11 +136,15 @@ export default function MonthView() {
 
       <section className="month-day card">
         <h3>
-          {new Date(selected).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
-          <span className="muted">（{selectedTasks.length} 件）</span>
+          <span className="month-day-title">
+            {`${new Date(selected).getMonth() + 1} 月 ${new Date(selected).getDate()} 日 · ${
+              ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][new Date(selected).getDay()]
+            }`}
+          </span>
+          <span className="month-day-count muted">{selectedTasks.length} 件</span>
         </h3>
         {selectedTasks.length === 0 ? (
-          <p className="muted">这天没有事。把其他日子的任务拖到这一格就能挪过来。</p>
+          <p className="muted month-day-empty">这天没有事。把其他日子的任务拖到这一格就能挪过来。</p>
         ) : (
           <ul className="day-list">
             {selectedTasks.map((task) => (
