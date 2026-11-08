@@ -1313,6 +1313,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await expect(page.getByText('Author: dream-office')).toBeVisible()
     await expect(about).toContainText('Picking up the scattered moments, one grain at a time.')
     await expect(page.getByRole('link', { name: 'Source (GitHub)' })).toBeVisible()
+    await expect(page.getByText('no upload. The only network call', { exact: false })).toBeVisible()
   })
 
   test('B4. reduced-motion 关闭动效；320/360 不溢出', async ({ page }) => {

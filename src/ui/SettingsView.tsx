@@ -329,7 +329,7 @@ export default function SettingsView() {
         <h3>{t('关于拾穗')}</h3>
         <p className="muted">拾穗 v{appVersion} · AGPL-3.0-or-later</p>
         <p className="muted">
-          {t('默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。')}
+          {t('默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。')}{' '}
           {t('唯一会出网的情况是你自己配置了 AI 接口并触发解析。')}
         </p>
         <p className="muted about-author">{t('作者：dream-office')}</p>
