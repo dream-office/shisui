@@ -1,6 +1,6 @@
 
 import { describe, expect, it } from 'vitest'
-import { buildMessages, parseLLMResponse } from './llm'
+import { buildImageMessages, buildMessages, parseLLMResponse } from './llm'
 
 const REF = new Date(2026, 10, 4, 22, 7)
 
@@ -68,5 +68,16 @@ describe('v1.1.3 LLM 后处理', () => {
     expect(system).toContain('例4')
     expect(system).toContain('URL / 网址不是 channel')
     expect(system).toContain('一条通知可能有多件事')
+  })
+})
+
+
+describe('v1.3 图片识图 messages', () => {
+  it('system 复用抽取规则，user 带 image_url', () => {
+    const messages = buildImageMessages('data:image/jpeg;base64,abc', REF)
+    expect(messages[0].role).toBe('system')
+    expect(messages[0].content).toContain('按不同行动/对象拆成多条')
+    const user = messages[1].content as Array<{ type: string; image_url?: { url: string } }>
+    expect(user.some((part) => part.type === 'image_url' && part.image_url?.url === 'data:image/jpeg;base64,abc')).toBe(true)
   })
 })

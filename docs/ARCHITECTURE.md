@@ -13,7 +13,7 @@ src/
   state/store.ts     zustand 状态编排：解析→确认→落库、批量、撤销、专注、语言
   data/db.ts         Dexie（IndexedDB v4；url/note 字段）
   data/repo.ts       数据访问（事务、系列编辑、备份 replace、撤销写回）
-  services/          PWA、下载、LLM 调用（可选）
+  services/          PWA、下载、LLM 调用（可选）、文档导入（PDF/DOCX）、本地 OCR、图片识图
   i18n/              自建 i18n（字典、Intl 时间格式、t()）
 packages/core/       MIT 纯函数层（解析/时间/重复/ICS/备份/冲突/统计）
 ```

@@ -180,7 +180,7 @@ test.describe('ICS 导入', () => {
 
   async function pickFile(page: Page) {
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'test.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from(ICS_TEXT, 'utf-8'),
@@ -208,7 +208,7 @@ test.describe('ICS 导入', () => {
   test('K. 坏文件给出可读错误，不崩', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'bad.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from('这不是日历文件', 'utf-8'),
@@ -233,7 +233,7 @@ test.describe('ICS 导入', () => {
 
     await page.goto('/')
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'rrule.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from(rruleIcs, 'utf-8'),
@@ -547,7 +547,7 @@ test.describe('多日区间', () => {
   test('T. 导入多日全天：日程显示区间，月历覆盖每一天', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'multi.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from(ICS_MULTI, 'utf-8'),
@@ -698,7 +698,7 @@ test.describe('跨月区间', () => {
   test('V. 20 日 → 次月 2 日：列表显示区间、月历两个月都有标记', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'cross.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from(ICS_CROSS, 'utf-8'),
@@ -781,7 +781,7 @@ test.describe('多日区间整段拖拽', () => {
   test('Y. 整段拖拽 20→22：区间整体平移、长度不变', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '导入 .ics' }).click()
-    await page.locator('input[type="file"]').setInputFiles({
+    await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'span.ics',
       mimeType: 'text/calendar',
       buffer: Buffer.from(ICS_SPAN, 'utf-8'),
@@ -1304,7 +1304,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await nav.getByRole('button', { name: /^设置/ }).click()
     await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
     const about = page.locator('.about-signature')
-    await expect(page.getByText('拾穗 v1.2.0 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('拾穗 v1.3.0 · AGPL-3.0-or-later')).toBeVisible()
     await expect(page.getByText('作者：dream-office')).toBeVisible()
     await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(

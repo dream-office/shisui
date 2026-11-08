@@ -331,6 +331,69 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  导入文档: 'Import document',
+  识别图片: 'Recognize image',
+  'PDF / DOCX / TXT / MD · 图片 png/jpg/webp': 'PDF / DOCX / TXT / MD · images png/jpg/webp',
+  图片识别: 'Image recognition',
+  '文档在本机解析；图片可选择本地 OCR（不上传）或 AI 识图（发送到你配置的 API）。':
+    'Documents are parsed on this device. Images can use local OCR (no upload) or AI vision (sent to your configured API).',
+  图片识别方式: 'Image recognition mode',
+  '每次询问（默认）': 'Ask every time (default)',
+  '本地 OCR（离线）': 'Local OCR (offline)',
+  'AI 识图（发送到 API）': 'AI vision (send to API)',
+  关闭图片识别: 'Turn off image recognition',
+  '未配置 AI 接口': 'AI endpoint not configured',
+  '本地 OCR 首次使用需确认声明并加载约 5–10MB 语言包；缓存后可离线。AI 每次上传前都会再次确认。':
+    'Local OCR asks for consent on first use and downloads about 5–10MB of language data; it then works offline. AI asks for confirmation before every upload.',
+  图片识别已关闭: 'Image recognition is turned off',
+  '未配置 AI 接口，无法使用 AI 识图': 'AI endpoint is not configured; AI vision is unavailable',
+  '正在读取文档…': 'Reading document…',
+  '文档已导入：{name}': 'Document imported: {name}',
+  '文档已导入并截断到 5 万字：{name}': 'Document imported and truncated to 50k characters: {name}',
+  '正在本地识别（首次需加载语言包，约 5–10MB，请稍候）…':
+    'Running local OCR (first use downloads about 5–10MB of language data)…',
+  '正在本地识别…': 'Running local OCR…',
+  '本地识别完成，已填入收件框': 'Local OCR finished — text is in the Inbox box',
+  '本地识别完成，文本已截断到 5 万字': 'Local OCR finished; text truncated to 50k characters',
+  '正在调用 AI 识图…': 'Calling AI vision…',
+  图片识别完成: 'Image recognition finished',
+  '图片识别完成，请核对候选': 'Image recognition finished — review the candidates',
+  '图片里没有识别出可用的待办': 'No usable to-dos found in the image',
+  '选择图片识别方式': 'Choose how to recognize this image',
+  '本地 OCR 不上传；AI 识图会把图片发送到你配置的服务。':
+    'Local OCR never uploads; AI vision sends the image to your configured service.',
+  本地识别说明: 'About local OCR',
+  '在设备本地运行，不上传图片或识别结果。': 'Runs on your device; images and results are never uploaded.',
+  '首次使用需下载语言包（约 5–10MB），缓存后可离线。':
+    'First use downloads language data (about 5–10MB); it is cached for offline use afterwards.',
+  '占用内存；单页识别约 2–8 秒（桌面）/ 5–15 秒（手机），低端设备可能卡顿。':
+    'Uses memory; about 2–8s per page on desktop, 5–15s on phones, and may lag on low-end devices.',
+  '手写、暗光、复杂排版识别率有限，请人工核对后再收录。':
+    'Handwriting, low light and complex layouts reduce accuracy — please review before accepting.',
+  同意并开始识别: 'Agree and start',
+  确认发送图片: 'Confirm sending the image',
+  '图片将发送到你配置的 AI 服务，用于识别文字并抽取待办。':
+    'The image will be sent to your configured AI service to recognize text and extract to-dos.',
+  我确认发送这张图片: 'I confirm sending this image',
+  发送并识别: 'Send and recognize',
+  '正在识别…': 'Recognizing…',
+  '图片识别到 {n} 条': 'Found {n} items from the image',
+  '该格式暂不支持': 'This file type is not supported',
+  '旧版 Office 格式暂不支持，请另存为 .docx / .txt / .md 后再导入':
+    'Legacy Office formats are not supported — save as .docx / .txt / .md first',
+  '文件太大（文档最大 20MB，图片最大 10MB）': 'File too large (documents up to 20MB, images up to 10MB)',
+  '文件里没有可识别的文字': 'No recognizable text in the file',
+  '扫描版 PDF 暂时不支持，请拍照或截图后用图片识别':
+    'Scanned PDFs are not supported yet — take a photo or screenshot and use image recognition',
+  'PDF 读取失败，请确认文件没有加密或损坏': 'Failed to read PDF — check that it is not encrypted or damaged',
+  'DOCX 读取失败，请确认文件没有损坏': 'Failed to read DOCX — check that it is not damaged',
+  '文件读取失败，请重试': 'Failed to read the file — please retry',
+  '本地识别失败，请重试或换一张更清晰的图片': 'Local OCR failed — retry or use a clearer image',
+  '当前模型可能不支持图片识别，请换支持视觉的模型':
+    'This model may not support image input — use a vision-capable model',
+  'AI 识图失败，请检查网络与接口配置': 'AI vision failed — check your network and endpoint settings',
+  '操作失败，请重试': 'Something went wrong — please retry',
+
   打开链接: 'Open link',
   备注: 'Note',
 
