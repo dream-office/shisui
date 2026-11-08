@@ -111,3 +111,151 @@ describe('extractTime 相对时间归一化', () => {
     expect(extractTime('大家注意查收群文件', REF)).toBeNull()
   })
 })
+
+/** v0.7.0 新增的时间表达：月底 / 下个月初 / 学期末 / 工作日 / 周界 */
+describe('v0.7.0 时间表达补充', () => {
+  const SUN = new Date(2026, 10, 8, 10, 0, 0) // 周日 10:00
+  const MON_MORNING = new Date(2026, 10, 9, 9, 0, 0) // 周一 09:00
+  const MON_EVENING = new Date(2026, 10, 9, 19, 30, 0) // 周一 19:30
+  const MAY = new Date(2026, 4, 10, 10, 0, 0) // 2026-05-10
+
+  it('月底前 → 本月最后一天（时刻由规则引擎补 23:59）', () => {
+    const hit = extractTime('月底前把报销单交了', REF)!
+    expect(hit.dateMs).toBe(day(11, 30))
+    expect(hit.hasClock).toBe(false)
+    expect(hit.isDeadline).toBe(true)
+    expect(hit.note).toContain('月底')
+    expect(hit.ambiguous).toBe(true)
+  })
+
+  it('下个月初 → 次月 1 日 23:59', () => {
+    const hit = extractTime('下个月初统一提交', REF)!
+    expect(hit.dateMs).toBe(day(12, 1))
+    expect(hit.note).toContain('次月 1 日')
+    expect(hit.ambiguous).toBe(true)
+  })
+
+  it('本学期末 → 最近的 1/15 或 7/15（11 月看到的应是次年 1-15）', () => {
+    const hit = extractTime('本学期末交实习报告', REF)!
+    expect(hit.dateMs).toBe(new Date(2027, 0, 15, 0, 0, 0, 0).getTime())
+    expect(hit.note).toContain('2027-01-15')
+  })
+
+  it('本学期末在 5 月看到 → 当年 7-15', () => {
+    const hit = extractTime('本学期末交实习报告', MAY)!
+    expect(hit.dateMs).toBe(new Date(2026, 6, 15, 0, 0, 0, 0).getTime())
+  })
+
+  it('工作日单独出现（周日）→ 下一个工作日 18:00', () => {
+    const hit = extractTime('工作日把材料交一下', SUN)!
+    expect(hit.dateMs).toBe(day(11, 9))
+    expect(hit.atMs).toBe(at(11, 9, 18, 0))
+    expect(hit.hasClock).toBe(true)
+    expect(hit.note).toContain('下一个工作日')
+    expect(hit.ambiguous).toBe(true)
+  })
+
+  it('工作日单独出现（周一 09:00，未到 18 点）→ 今天 18:00', () => {
+    const hit = extractTime('工作日提交', MON_MORNING)!
+    expect(hit.dateMs).toBe(day(11, 9))
+    expect(hit.atMs).toBe(at(11, 9, 18, 0))
+    expect(hit.note).toContain('今天 18:00')
+  })
+
+  it('工作日单独出现（周一 19:30，已过 18 点）→ 下一个工作日 18:00', () => {
+    const hit = extractTime('工作日提交', MON_EVENING)!
+    expect(hit.dateMs).toBe(day(11, 10))
+    expect(hit.atMs).toBe(at(11, 10, 18, 0))
+    expect(hit.note).toContain('已过 18:00')
+  })
+
+  it('3 个工作日内 → 跳过周末数 3 个工作日', () => {
+    // REF = 周三 11-04 → 周四(1) 周五(2) 周一(3) = 11-09
+    const hit = extractTime('3个工作日内回复', REF)!
+    expect(hit.dateMs).toBe(day(11, 9))
+    expect(hit.note).toContain('工作日')
+    expect(hit.isDeadline).toBe(true)
+  })
+
+  it('本周日恰好是周日当天 → 返回 weekBoundary 双候选', () => {
+    const hit = extractTime('本周日交周报', SUN)!
+    expect(hit.weekBoundary).toEqual({ thisWeek: day(11, 8), nextWeek: day(11, 15) })
+  })
+
+  it('本周日不在周日当天 → 不产生双候选', () => {
+    const hit = extractTime('本周日交周报', REF)!
+    expect(hit.weekBoundary).toBeUndefined()
+    expect(hit.dateMs).toBe(day(11, 8))
+  })
+})
+
+describe('v0.7.0 补充口径', () => {
+  it('学期末当天（7-15）→ 就是今天，不跳到下一学期', () => {
+    const midJuly = new Date(2026, 6, 15, 10, 0, 0)
+    const hit = extractTime('本学期末交报告', midJuly)!
+    expect(hit.dateMs).toBe(new Date(2026, 6, 15, 0, 0, 0, 0).getTime())
+    expect(hit.note).toContain('2026-07-15')
+  })
+
+  it('学期末当天（1-15）→ 就是今天', () => {
+    const midJan = new Date(2027, 0, 15, 9, 0, 0)
+    const hit = extractTime('本学期末交报告', midJan)!
+    expect(hit.dateMs).toBe(new Date(2027, 0, 15, 0, 0, 0, 0).getTime())
+  })
+
+  it('「下周三工作日」→ 周三 18:00（工作日顺延规则不触发）', () => {
+    const hit = extractTime('下周三工作日把材料交了', REF)!
+    expect(hit.dateMs).toBe(day(11, 11))
+    expect(hit.atMs).toBe(at(11, 11, 18, 0))
+    expect(hit.note).toContain('按工作日 18:00 理解')
+  })
+
+  it('日期落在周末时顺延到下一个工作日 18:00', () => {
+    // REF = 周三 11-04，本周日 = 11-08（周日）→ 顺延到 11-09 周一
+    const hit = extractTime('本周日工作日提交', REF)!
+    expect(hit.dateMs).toBe(day(11, 9))
+    expect(hit.atMs).toBe(at(11, 9, 18, 0))
+    expect(hit.note).toContain('顺延')
+  })
+})
+describe('v0.7.0 「下周日」口径（下一周的周日）', () => {
+  it('今天周一 11-09 → 本周日 11-15，下周日 11-22', () => {
+    const monday = new Date(2026, 10, 9, 9, 0, 0)
+    const thisSunday = extractTime('本周日交报告', monday)!
+    const nextSunday = extractTime('下周日交报告', monday)!
+    expect(thisSunday.dateMs).toBe(day(11, 15))
+    expect(nextSunday.dateMs).toBe(day(11, 22))
+  })
+
+  it('今天就是周日 → 下周日 = 今天 + 7 天', () => {
+    const sunday = new Date(2026, 10, 8, 10, 0, 0)
+    const nextSunday = extractTime('下周日交报告', sunday)!
+    expect(nextSunday.dateMs).toBe(day(11, 15))
+  })
+
+  it('光说「周日」仍是最近的周日（不是下一周）', () => {
+    const monday = new Date(2026, 10, 9, 9, 0, 0)
+    const hit = extractTime('周日交报告', monday)!
+    expect(hit.dateMs).toBe(day(11, 15))
+  })
+})
+describe('v0.7.0 「下周日」再钉一条周三视角', () => {
+  it('今天周三 11-04 → 本周日 11-08、下周日 11-15', () => {
+    const wednesday = new Date(2026, 10, 4, 9, 0, 0)
+    const thisSunday = extractTime('本周日交报告', wednesday)!
+    const nextSunday = extractTime('下周日交报告', wednesday)!
+    const followingSunday = extractTime('下下周日交报告', wednesday)!
+    expect(thisSunday.dateMs).toBe(day(11, 8))
+    expect(nextSunday.dateMs).toBe(day(11, 15))
+    expect(followingSunday.dateMs).toBe(day(11, 22))
+  })
+})
+
+describe('v0.7.0 周六顺延', () => {
+  it('「本周六工作日」→ 周六顺延到周一 18:00', () => {
+    const hit = extractTime('本周六工作日提交', REF)!
+    expect(hit.dateMs).toBe(day(11, 9)) // 本周六 11-07 → 下周一 11-09
+    expect(hit.atMs).toBe(at(11, 9, 18, 0))
+    expect(hit.note).toContain('顺延')
+  })
+})

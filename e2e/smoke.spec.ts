@@ -363,6 +363,63 @@ test.describe('月视图', () => {
   })
 })
 
+test.describe('批量粘贴', () => {
+  test('P. 多段粘贴 → 批量预览 → 全选/全不选 → 收录选中', async ({ page }) => {
+    await page.goto('/')
+    const text = ['本周五23:59前交实验报告', '下周三下午2点3楼会议室开会'].join('\n\n')
+    await page.getByLabel('群消息原文').fill(text)
+    await page.getByRole('button', { name: '开始解析' }).click()
+
+    await expect(page.getByRole('heading', { name: /批量预览/ })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/已选 2/)).toBeVisible()
+
+    await page.getByRole('button', { name: '全不选' }).click()
+    await expect(page.getByText(/已选 0/)).toBeVisible()
+
+    await page.getByRole('button', { name: '全选' }).click()
+    await page.getByRole('button', { name: /收录选中/ }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByRole('main')).toContainText('实验报告')
+  })
+})
+
+test.describe('统计', () => {
+  test('Q. 统计页显示两个指标；无数据时显示「—」而不是 0%', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^统计/ }).click()
+
+    await expect(page.getByText('本周完成率')).toBeVisible()
+    await expect(page.getByText('解析手改率')).toBeVisible()
+    await expect(page.getByText('全部在本地计算')).toBeVisible()
+    await expect(page.locator('.metric-value').first()).toHaveText('—')
+  })
+})
+
+test.describe('窄屏', () => {
+  test('R. 320px 下收件/日程/月历/统计都不横向溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 })
+    await page.goto('/')
+
+    const checkWidth = async () => {
+      const size = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth,
+      }))
+      expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
+    }
+
+    await checkWidth()
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    for (const label of [/^日程/, /^月历/, /^统计/]) {
+      await nav.getByRole('button', { name: label }).click()
+      await checkWidth()
+    }
+  })
+})
+
 test.describe('PWA', () => {
   test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
     await page.goto('/')
@@ -416,5 +473,22 @@ test.describe('PWA', () => {
 
     const href = await page.getAttribute('link[rel="manifest"]', 'href')
     expect(href ?? '').toContain('manifest.webmanifest')
+  })
+})
+
+test.describe('错误边界（armed 开关）', () => {
+  test('D1.  armed 后出错误界面，点「重试」恢复', async ({ page }) => {
+    await page.goto('/?__boom=1')
+    await expect(page.getByRole('alert')).toContainText('界面出了点问题')
+    await expect(page.getByRole('button', { name: '重试' })).toBeVisible()
+    await page.getByRole('button', { name: '重试' }).click()
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+  })
+
+  test('D2. 错误界面点「回首页」后正常', async ({ page }) => {
+    await page.goto('/?__boom=1')
+    await expect(page.getByRole('alert')).toContainText('界面出了点问题')
+    await page.getByRole('button', { name: '回首页' }).click()
+    await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
   })
 })
