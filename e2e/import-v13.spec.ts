@@ -53,7 +53,22 @@ test.describe('v1.3 图片识别', () => {
     await imageInput(page).setInputFiles(join(FIX, 'photo.png'))
     await expect(page.getByRole('dialog', { name: '选择图片识别方式' })).toBeVisible()
     await page.getByRole('button', { name: '本地 OCR（离线）' }).click()
-    await expect(page.getByRole('dialog', { name: '本地识别说明' })).toBeVisible()
+    const dialog = page.getByRole('dialog', { name: '本地识别说明' })
+    await expect(dialog).toBeVisible()
+    const contrast = await dialog.locator('.import-notice-list li').first().evaluate((el) => {
+      const parse = (value: string) => value.match(/\d+/g)!.map(Number)
+      const luminance = ([r, g, b]: number[]) => {
+        const channel = (v: number) => {
+          const s = v / 255
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+        }
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
+      }
+      const fg = luminance(parse(getComputedStyle(el).color))
+      const bg = luminance(parse(getComputedStyle(el.closest('.import-modal')!).backgroundColor))
+      return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
+    })
+    expect(contrast).toBeGreaterThanOrEqual(4.5)
     expect(requests.filter((url) => url.includes('/tessdata/'))).toHaveLength(0)
 
     await page.getByRole('button', { name: '同意并开始识别' }).click()

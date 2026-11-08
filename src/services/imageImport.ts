@@ -56,6 +56,7 @@ export async function recognizeLocalImage(
     corePath: coreUrl,
     langPath,
     workerBlobURL: false,
+    gzip: false,
     logger: (message) => onProgress?.(message.status, message.progress),
   })
   try {

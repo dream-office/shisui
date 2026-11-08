@@ -11,11 +11,11 @@
 | mammoth | 1.13.0 | browser.min 396KB | 99KB | BSD-2-Clause | 动态 import UMD 浏览器包 |
 | tesseract.js | 7.0.0 | main 62KB + worker 109KB | 10KB + 33KB | Apache-2.0 | 动态 import；worker `?url` |
 | tesseract.js-core | 7.0.0 | wasm 2.79MB（simd-lstm） | 1.04MB | Apache-2.0 | 首次 OCR 时加载，`?url` 本地 |
-| @tesseract.js-data/chi_sim（best_int） | 4.0.0 | 1.68MB | —（已 gz） | Apache-2.0 | 首次 OCR 确认后从本站 `/tessdata/` 加载 |
-| @tesseract.js-data/eng（best_int） | 4.0.0 | 2.88MB | —（已 gz） | Apache-2.0 | 同上 |
+| chi_sim（best_int） | 4.0.0 | 2.36MB | — | Apache-2.0 | 首次 OCR 确认后从本站 `/tessdata/` 加载（未 gzip，避免误判为备份文件） |
+| eng（best_int） | 4.0.0 | 4.96MB | — | Apache-2.0 | 同上 |
 
 - **首屏**：所有重依赖动态 import，主 chunk 预计仅增加 UI/服务入口约 **2–4KB gzip**（目标 +30KB 内，实测见交付报告）。
-- **按需加载**：PDF ≈ 503KB gzip；DOCX ≈ 99KB；OCR 首次 ≈ **5.7MB**（worker+wasm+chi_sim+eng，浏览器缓存后离线）。
+- **按需加载**：PDF ≈ 503KB gzip；DOCX ≈ 99KB；OCR 首次 ≈ **8.4MB**（worker+wasm+chi_sim+eng，浏览器缓存后离线）。
 - 许可文件复制到 `public/licenses/`：`tesseract.js-Apache-2.0.txt`、`tessdata-Apache-2.0.txt`、`pdfjs-Apache-2.0.txt`、`mammoth-BSD.txt`。
 
 ## 2. 模块
