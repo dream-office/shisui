@@ -1,6 +1,8 @@
 # 架构说明（v1.0）
 
 > 目标：**零后端、本地优先**。全部解析/存储在浏览器完成；唯一可能出网的是用户自己配置的 AI 接口。
+>
+> 当前版本：**app 1.2.0 / core 1.1.0**（DB v4）。
 
 ## 分层
 
@@ -19,7 +21,7 @@ packages/core/       MIT 纯函数层（解析/时间/重复/ICS/备份/冲突/�
 ## 关键约定
 
 - **core 不依赖 DOM / IO**：可在 node 与浏览器复用；展示层文案不进 core（冲突提示等核心生成的字符串保留中文，v1.x 再抽）
-- **DB 无隐式迁移**：schema 变更必须升 version 并写迁移；v1.0 冻结 [DATA-FORMAT.md](DATA-FORMAT.md)，v1.2 起 DB v4（url/note）
+- **DB 无隐式迁移**：schema 变更必须升 version 并写迁移；v1.0 冻结 [DATA-FORMAT.md](DATA-FORMAT.md)，v1.2 起 DB v4（url/note），core 同步 1.1.0
 - **隐私**：无账号、无上传；AI Key 只存 localStorage，备份不含 Key
 - **错误边界**：渲染异常不白屏；提供重试/回首页
 - **无障碍**：帮助弹层 `role=dialog` + `aria-modal`，Esc 关闭、焦点回按钮；按钮/输入都有可读标签
