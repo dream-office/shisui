@@ -1310,6 +1310,12 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(
       'href', 'https://github.com/dream-office/shisui',
     )
+    const licenseLink = page.getByRole('link', { name: '第三方许可' })
+    await expect(licenseLink).toBeVisible()
+    const licenseHref = await licenseLink.getAttribute('href')
+    expect(licenseHref).toContain('licenses/THIRD_PARTY_NOTICES.md')
+    const licenseResponse = await page.request.get(new URL(licenseHref!, page.url()).href)
+    expect(licenseResponse.status()).toBe(200)
 
     await page.getByRole('button', { name: 'English' }).click()
     await expect(page.getByText('Author: dream-office')).toBeVisible()

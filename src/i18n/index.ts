@@ -331,6 +331,8 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  第三方许可: 'Third-party licenses',
+
   '设备内存较低，建议改用 AI 识图（不强制）。':
     'This device has limited memory — AI vision may work better (not enforced).',
 

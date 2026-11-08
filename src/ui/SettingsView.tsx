@@ -366,9 +366,13 @@ export default function SettingsView() {
         </p>
         <p className="muted about-author">{t('作者：dream-office')}</p>
         <p className="about-signature">{t('dream-office · 把散落的时间，一粒一粒捡起来。')}</p>
-        <p className="muted">
+        <p className="muted about-links">
           <a href="https://github.com/dream-office/shisui" target="_blank" rel="noreferrer">
             {t('源码（GitHub）')}
+          </a>
+          {' · '}
+          <a href="./licenses/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">
+            {t('第三方许可')}
           </a>
         </p>
       </section>
