@@ -8,6 +8,7 @@
 
 export interface TaskLike {
   dueAt?: number | null
+  rrule?: string | null
   startAt?: number | null
   endAt?: number | null
   allDay?: boolean
@@ -26,6 +27,7 @@ export function isLocalMidnight(ms: number): boolean {
 export type MigratedTask<T> = T & {
   endAt: number | null
   allDay: boolean
+  rrule: string | null
   seriesId: string | null
   recurrenceIndex: number
   skipped: boolean
@@ -38,6 +40,7 @@ export function migrateTaskV2toV3<T extends TaskLike>(task: T): MigratedTask<T> 
     ...task,
     endAt: task.endAt ?? null,
     allDay,
+    rrule: task.rrule ?? null,
     seriesId: task.seriesId ?? null,
     recurrenceIndex: task.recurrenceIndex ?? 0,
     skipped: task.skipped ?? false,

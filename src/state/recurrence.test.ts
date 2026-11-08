@@ -76,6 +76,52 @@ describe('store 完成语义：月末锚定从 series 读', () => {
     expect(tasks.filter((task) => task.done)).toHaveLength(3)
   })
 
+  it('结束系列：删未来未完成、保留已完成历史', async () => {
+    const { parseNotice } = await import('shisui-core')
+    const { useApp } = await import('./store')
+    const repo = await import('@/data/repo')
+
+    const parsed = parseNotice('每周五9点例会', new Date(2026, 10, 6, 8, 0, 0))
+    const candidate = parsed.tasks[0]
+    useApp.setState({ candidates: [candidate] })
+    await useApp.getState().acceptCandidates([candidate.id])
+
+    let tasks = await repo.listTasks()
+    const first = tasks[0]
+    await useApp.getState().completeTask(first.id) // 生成 index=1（未完成）
+    tasks = await repo.listTasks()
+    expect(tasks.filter((task) => !task.done)).toHaveLength(1)
+
+    // 对第一条（index=0）结束系列 → 删除未来未完成的 index=1
+    await useApp.getState().endSeries(first.id)
+    tasks = await repo.listTasks()
+    expect(tasks.filter((task) => !task.done)).toHaveLength(0)
+    expect(tasks.filter((task) => task.done)).toHaveLength(1) // 已完成历史保留
+    const series = (await repo.listSeries())[0]
+    expect(series.endedAt).not.toBeNull()
+    expect(series.endedAt!).toBeGreaterThan(0)
+  })
+
+  it('结束系列：已跳过的历史保留', async () => {
+    const { parseNotice } = await import('shisui-core')
+    const { useApp } = await import('./store')
+    const repo = await import('@/data/repo')
+
+    const parsed = parseNotice('每周五9点例会', new Date(2026, 10, 6, 8, 0, 0))
+    const candidate = parsed.tasks[0]
+    useApp.setState({ candidates: [candidate] })
+    await useApp.getState().acceptCandidates([candidate.id])
+
+    const first = (await repo.listTasks())[0]
+    await useApp.getState().skipTask(first.id) // 标 skipped + 生成下一条
+    await useApp.getState().endSeries(first.id)
+
+    const tasks = await repo.listTasks()
+    expect(tasks.filter((task) => task.done)).toHaveLength(0)
+    expect(tasks.filter((task) => task.skipped)).toHaveLength(1) // 已跳过的保留
+    expect(tasks.filter((task) => !task.done && !task.skipped)).toHaveLength(0)
+  })
+
   it('完成 → 取消 → 再完成：不重复生成（幂等）', async () => {
     const { parseNotice } = await import('shisui-core')
     const { useApp } = await import('./store')

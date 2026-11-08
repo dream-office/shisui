@@ -16,6 +16,7 @@ describe('migrateTaskV2toV3', () => {
     const v2 = { id: 't1', title: '交报告', dueAt: at(2026, 11, 20, 18), startAt: null, done: false }
     const v3 = migrateTaskV2toV3(v2)
     expect(v3.endAt).toBeNull()
+    expect(v3.rrule).toBeNull()
     expect(v3.allDay).toBe(false)
     expect(v3.seriesId).toBeNull()
     expect(v3.recurrenceIndex).toBe(0)

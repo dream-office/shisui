@@ -151,7 +151,7 @@ export const useApp = create<AppState>((set, get) => ({
     }
 
     const at = new Date(primary)
-    const allDay = at.getHours() === 0 && at.getMinutes() === 0 && at.getSeconds() === 0
+    const allDay = task.allDay === true || (at.getHours() === 0 && at.getMinutes() === 0 && at.getSeconds() === 0)
     const oldDayStart = new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime()
     const delta = allDay
       ? targetDayStart - oldDayStart
@@ -164,6 +164,8 @@ export const useApp = create<AppState>((set, get) => ({
     const patch: Partial<StoredTask> = {}
     if (task.startAt !== null) patch.startAt = task.startAt + delta
     if (task.dueAt !== null) patch.dueAt = task.dueAt + delta
+    // 整段拖拽：结束时刻同步平移，区间长度不变（[start, end) 半开区间）
+    if (task.endAt !== null && task.endAt !== undefined) patch.endAt = task.endAt + delta
     await repo.updateTask(id, { ...patch, editedField: 'dueAt' })
     set({ tasks: await repo.listTasks() })
   },

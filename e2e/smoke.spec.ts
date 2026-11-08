@@ -512,6 +512,15 @@ test.describe('重复任务', () => {
     await expect(page.getByText(/已完成 1 件/)).toBeVisible({ timeout: 15_000 })
     // 完成后的下一条也带重复标记（已完成那条在折叠区，仍在 DOM 里）
     await expect(page.locator('.series-tag').first()).toBeVisible()
+
+    // 幂等：完成 → 取消 → 再完成，下一条不会被生成两次
+    await page.locator('.done-block summary').click()
+    await page.getByRole('button', { name: '标记为未完成' }).first().click()
+    await expect(page.getByText(/已完成 \d+ 件/)).toHaveCount(0)
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible()
+    // 只有一条未完成的下一条，没有翻倍
+    await expect(page.locator('.task-row:not(.is-done)')).toHaveCount(1)
   })
 })
 
@@ -723,5 +732,69 @@ test.describe('跳过这一次', () => {
     await expect(page.locator('.series-tag')).toHaveCount(2)
     // 跳过不等于完成
     await expect(page.getByText(/已完成 1 件/)).toHaveCount(0)
+  })
+})
+
+
+test.describe('结束重复', () => {
+  test('X. 结束系列：不再生成下一条，历史保留', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag').first()).toBeVisible()
+
+    await page.getByRole('button', { name: '结束重复' }).first().click()
+    // 结束后再完成：不生成下一条
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.task-row:not(.is-done)')).toHaveCount(0)
+  })
+})
+
+test.describe('多日区间整段拖拽', () => {
+  const ICS_SPAN = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:span-drag@example.com',
+    'SUMMARY:跨天项目',
+    'DTSTART:20261120T010000Z',
+    'DTEND:20261122T030000Z',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  test('Y. 整段拖拽 20→22：区间整体平移、长度不变', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'span.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_SPAN, 'utf-8'),
+    })
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '确认导入' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (d: number) => new Date(2026, 10, d).getTime()
+    const targetCell = page.locator(`.month-cell[data-day="${day(22)}"]`)
+    await expect(targetCell).toHaveCount(1)
+    // 月历格子里只有圆点；任务列表在下方「当天」面板，先选中 20 日再拖
+    await page.locator(`.month-cell[data-day="${day(20)}"]`).click()
+    const source = page.locator('.month-day .day-task', { hasText: '跨天项目' }).first()
+    await expect(source).toBeVisible()
+    await source.dragTo(targetCell)
+
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    // 起点 20 日 09:00 → 22 日 09:00；终点 22 日 11:00 → 24 日 11:00，长度不变（3 个日历日）
+    await expect(page.getByText(/11月22日–11月24日（3 天）/)).toBeVisible()
   })
 })
