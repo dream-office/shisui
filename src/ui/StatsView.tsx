@@ -1,23 +1,7 @@
 import { useMemo } from 'react'
-import type { StoredTask } from 'shisui-core'
+import { computeStats } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
-
-const DAY_MS = 86_400_000
-
-/** 本周一 00:00（周一为一周起点） */
-function startOfWeek(ms: number): number {
-  const d = new Date(ms)
-  const offset = (d.getDay() + 6) % 7
-  d.setDate(d.getDate() - offset)
-  d.setHours(0, 0, 0, 0)
-  return d.getTime()
-}
-
-function ratio(numerator: number, denominator: number): number | null {
-  if (denominator === 0) return null
-  return Math.round((numerator / denominator) * 100)
-}
 
 function MetricBar({ label, hint, value }: { label: string; hint: string; value: number | null }) {
   return (
@@ -36,36 +20,12 @@ function MetricBar({ label, hint, value }: { label: string; hint: string; value:
 
 /**
  * 统计页：全部在本地用现有数据算，不引图表库。
- * 完成率分母按「dueAt 落在本周」的任务（不看完成时间）；手改率只统计解析来源的任务。
+ * 口径在 core 的 computeStats 里（纯函数、可单测）。
  */
 export default function StatsView() {
   const tasks = useApp((s) => s.tasks)
   const now = useNow(60_000)
-
-  const stats = useMemo(() => {
-    const weekStart = startOfWeek(now)
-    const weekEnd = weekStart + 7 * DAY_MS
-    const weekTasks = tasks.filter(
-      (task: StoredTask) => task.dueAt !== null && task.dueAt >= weekStart && task.dueAt < weekEnd,
-    )
-    const doneThisWeek = weekTasks.filter((task) => task.done).length
-
-    const parsedTasks = tasks.filter(
-      (task) => task.engine === 'rule' || task.engine === 'llm' || task.engine === 'hybrid',
-    )
-    const edited = parsedTasks.filter((task) => task.editedFields.length > 0).length
-
-    return {
-      weekTotal: weekTasks.length,
-      doneThisWeek,
-      completion: ratio(doneThisWeek, weekTasks.length),
-      parsedTotal: parsedTasks.length,
-      edited,
-      editRate: ratio(edited, parsedTasks.length),
-      total: tasks.length,
-      open: tasks.filter((task) => !task.done).length,
-    }
-  }, [tasks, now])
+  const stats = useMemo(() => computeStats(tasks, now), [tasks, now])
 
   return (
     <section className="stats-view">
