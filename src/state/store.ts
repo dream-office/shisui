@@ -4,13 +4,13 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { createManualTask, mergeTasks } from 'shisui-core'
+import { createManualTask, mergeIcsImport, mergeTasks } from 'shisui-core'
 import { parseNotice } from 'shisui-core'
 import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 
-export type View = 'inbox' | 'plan' | 'settings'
+export type View = 'inbox' | 'plan' | 'calendar' | 'settings'
 
 interface AppState {
   view: View
@@ -31,6 +31,10 @@ interface AppState {
   loadHistory: () => Promise<void>
   parse: (raw: string) => Promise<void>
   addManualTask: (input: ManualTaskInput) => Promise<void>
+  /** 把任务挪到某一天：只改日期，保留原时刻；全天任务保持 00:00 */
+  moveTaskToDay: (id: string, targetDayStart: number) => Promise<void>
+  /** 导入 ICS 解析结果：按 sourceUid 去重，一个事务写入，返回三个计数 */
+  importIcsTasks: (parsed: ParsedTask[]) => Promise<{ added: number; updated: number; skipped: number }>
   updateCandidate: (id: string, patch: Partial<ParsedTask>) => void
   dismissCandidate: (id: string) => void
   acceptCandidates: (ids: string[]) => Promise<void>
@@ -71,6 +75,47 @@ export const useApp = create<AppState>((set, get) => ({
     const task = createManualTask(input, id)
     await repo.insertTasks([task])
     set({ tasks: await repo.listTasks() })
+  },
+
+  moveTaskToDay: async (id, targetDayStart) => {
+    const task = get().tasks.find((item) => item.id === id)
+    if (!task) return
+
+    const primary = task.startAt ?? task.dueAt
+    if (primary === null) {
+      // 没有时间信息的任务：直接落到目标日的 00:00（视为全天）
+      await repo.updateTask(id, { dueAt: targetDayStart, editedField: 'dueAt' })
+      set({ tasks: await repo.listTasks() })
+      return
+    }
+
+    const at = new Date(primary)
+    const allDay = at.getHours() === 0 && at.getMinutes() === 0 && at.getSeconds() === 0
+    const oldDayStart = new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime()
+    const delta = allDay
+      ? targetDayStart - oldDayStart
+      : (() => {
+          const target = new Date(targetDayStart)
+          target.setHours(at.getHours(), at.getMinutes(), at.getSeconds(), at.getMilliseconds())
+          return target.getTime() - primary
+        })()
+
+    const patch: Partial<StoredTask> = {}
+    if (task.startAt !== null) patch.startAt = task.startAt + delta
+    if (task.dueAt !== null) patch.dueAt = task.dueAt + delta
+    await repo.updateTask(id, { ...patch, editedField: 'dueAt' })
+    set({ tasks: await repo.listTasks() })
+  },
+
+  importIcsTasks: async (parsed) => {
+    const existing = get().tasks
+    const plan = mergeIcsImport(
+      existing.map((task) => ({ id: task.id, sourceUid: task.sourceUid ?? null })),
+      parsed,
+    )
+    await repo.applyIcsPlan(plan)
+    set({ tasks: await repo.listTasks() })
+    return { added: plan.toInsert.length, updated: plan.toUpdate.length, skipped: plan.skipped.length }
   },
 
   parse: async (raw) => {

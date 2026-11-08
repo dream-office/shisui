@@ -1367,3 +1367,110 @@ em {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ── ICS 导入 ─────────────────────────────────── */
+.ics-import { margin-top: 16px; }
+.ics-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.ics-head h3 { margin: 0; }
+.ics-file input[type='file'] {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.ics-error { margin: 10px 0 0; font-size: 13px; color: var(--danger); }
+.ics-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--warn); line-height: 1.7; }
+.ics-preview { margin-top: 14px; }
+.ics-summary { margin: 0 0 8px; font-size: 13.5px; }
+.ics-preview ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ics-preview li { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.ics-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ics-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; }
+.ics-chip-new { background: var(--ok-soft); color: var(--ok); }
+.ics-chip-update { background: var(--accent-soft); color: var(--accent); }
+.ics-chip-skip { background: var(--line); color: var(--muted); }
+.ics-actions { margin-top: 12px; display: flex; gap: 10px; }
+.ics-result { margin: 12px 0 0; font-size: 13px; color: var(--ok); }
+/* ── 分享目标提示 ──────────────────────────────── */
+.share-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.share-banner .btn {
+  margin-left: auto;
+}
+/* ── 月视图 ────────────────────────────────────── */
+.month-view { display: flex; flex-direction: column; gap: 14px; }
+.month-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.month-title { margin: 0 auto 0 4px; font-size: 17px; }
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+.month-weekday { text-align: center; font-size: 12px; color: var(--muted); padding: 2px 0; }
+.month-cell {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 5px 4px;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.month-cell:hover { border-color: var(--accent); }
+.month-cell.is-outside { color: var(--muted); background: var(--surface-2); }
+.month-cell.is-today { border-color: var(--accent); border-width: 2px; }
+.month-cell.is-selected { background: var(--accent-soft); border-color: var(--accent); }
+.month-daynum { font-variant-numeric: tabular-nums; line-height: 1.1; }
+.month-dots { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
+.month-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--accent); }
+.month-dot.is-done { background: var(--line-strong); }
+.month-count { font-size: 10px; color: var(--muted); }
+.month-day h3 { margin: 0 0 10px; font-size: 15px; }
+.day-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.day-task {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 13.5px;
+  cursor: grab;
+}
+.day-task:active { cursor: grabbing; }
+.day-task.is-done { opacity: 0.55; text-decoration: line-through; }
+.day-time { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.day-title { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.day-list + .month-hint, .month-hint { margin: 12px 0 0; font-size: 12.5px; }
+
+@media (max-width: 640px) {
+  .month-cell { min-height: 40px; padding: 4px 3px; font-size: 12px; border-radius: 7px; }
+  .month-title { font-size: 15px; }
+  .month-toolbar .btn { padding: 6px 9px; }
+}

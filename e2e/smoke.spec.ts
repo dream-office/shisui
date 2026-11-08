@@ -163,6 +163,206 @@ test.describe('ICS 导出', () => {
   })
 })
 
+test.describe('ICS 导入', () => {
+  const ICS_TEXT = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:import-test-1@example.com',
+    'SUMMARY:导入的评审会',
+    'DTSTART:20261120T010000Z',
+    'DTEND:20261120T030000Z',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  async function pickFile(page: Page) {
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'test.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_TEXT, 'utf-8'),
+    })
+  }
+
+  test('J. 选文件 → 预览 → 确认导入 → 日程可见；再导入走更新不翻倍', async ({ page }) => {
+    await page.goto('/')
+    await pickFile(page)
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+
+    await page.getByRole('button', { name: '确认导入' }).click()
+    await expect(page.getByText(/导入完成：新增 1 条/)).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByRole('main')).toContainText('导入的评审会')
+
+    // 同一份文件再导入一次：应当全部识别为「更新」
+    await nav.getByRole('button', { name: /^收件/ }).click()
+    await pickFile(page)
+    await expect(page.getByText(/新增 0 \/ 更新 1/)).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('K. 坏文件给出可读错误，不崩', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'bad.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from('这不是日历文件', 'utf-8'),
+    })
+    await expect(page.locator('.ics-error')).toContainText('BEGIN:VCALENDAR', { timeout: 10_000 })
+  })
+
+  test('K2. RRULE 只导入首实例，预览里有明确标注', async ({ page }) => {
+    const rruleIcs = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      'UID:rrule-test@example.com',
+      'SUMMARY:每周例会',
+      'DTSTART:20261120T010000Z',
+      'DTEND:20261120T020000Z',
+      'RRULE:FREQ=WEEKLY;COUNT=8',
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n')
+
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'rrule.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(rruleIcs, 'utf-8'),
+    })
+
+    // 只导入 1 条 + 预览明确标注「仅导入首个实例」
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.ics-note')).toContainText('只导入首个实例')
+  })
+})
+
+test.describe('分享目标', () => {
+  test('L. 带分享参数打开 → 输入框预填 + 提示可见 + URL 已清空', async ({ page }) => {
+    const shared = '明天下班前把报销单交给财务'
+    await page.goto(`/?title=${encodeURIComponent('部门群')}&text=${encodeURIComponent(shared)}`)
+
+    await expect(page.getByText('来自分享')).toBeVisible()
+    await expect(page.getByLabel('群消息原文')).toHaveValue(/把报销单交给财务/)
+    // replaceState 之后地址栏不应再有 query（刷新不会重复触发，也不留别人的分享内容）
+    expect(new URL(page.url()).search).toBe('')
+
+    await page.getByRole('button', { name: '知道了' }).click()
+    await expect(page.getByText('来自分享')).toBeHidden()
+  })
+})
+
+test.describe('月视图', () => {
+  test('M. 42 格网格、切换月份、今天按钮', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    await expect(page.locator('.month-cell')).toHaveCount(42)
+    const title = page.locator('.month-title')
+    const initial = (await title.textContent()) ?? ''
+
+    await page.getByRole('button', { name: '下个月' }).click()
+    await expect(title).not.toHaveText(initial)
+
+    await page.getByRole('button', { name: '今天' }).click()
+    await expect(title).toHaveText(initial)
+  })
+
+  test('N. 拖拽任务到另一天：日期变化、时刻保留', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('拖我试试')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const todayCell = page.locator('.month-cell.is-today')
+    const todayEpoch = Number(await todayCell.getAttribute('data-day'))
+    const targetCell = page.locator(`.month-cell[data-day="${todayEpoch + 86_400_000}"]`)
+    await expect(targetCell).toHaveCount(1)
+
+    const source = page.locator('.day-task', { hasText: '拖我试试' })
+    await expect(source).toBeVisible()
+    await source.dragTo(targetCell)
+
+    const moved = page.locator('.day-task', { hasText: '拖我试试' })
+    await expect(moved).toBeVisible()
+    await expect(moved).toContainText('18:00')
+  })
+
+  test('O. 360px 宽度下不横向溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    await expect(page.locator('.month-grid')).toBeVisible()
+
+    const size = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }))
+    expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
+  })
+
+  test('C6. 点击某天只显示当天任务', async ({ page }) => {
+    await page.goto('/')
+
+    // 两天各加一条（用 datetime-local 指定日期，避免依赖“今天”）
+    const addTask = async (title: string, when: string) => {
+      await page.getByRole('button', { name: '手动添加' }).click()
+      await page.getByLabel('标题').fill(title)
+      await page.getByLabel('截止时间').fill(when)
+      await page.getByRole('button', { name: '添加', exact: true }).click()
+    }
+    await addTask('二十号的活', '2026-11-20T18:00')
+    await addTask('二十一号的活', '2026-11-21T09:00')
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime()
+    await page.locator(`.month-cell[data-day="${day(2026, 11, 20)}"]`).click()
+
+    const list = page.locator('.month-day')
+    await expect(list).toContainText('二十号的活')
+    await expect(list).not.toContainText('二十一号的活')
+  })
+
+  test('C8. 跨月拖拽：拖到相邻月份日期后月份与日期正确', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('月底跨月')
+    await page.getByLabel('截止时间').fill('2026-11-30T18:00')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime()
+    await page.locator(`.month-cell[data-day="${day(2026, 11, 30)}"]`).click()
+
+    const source = page.locator('.day-task', { hasText: '月底跨月' })
+    await expect(source).toBeVisible()
+    // 12 月 1 日这一格在 11 月的网格里是「下月」格子，可以接收拖拽
+    const target = page.locator(`.month-cell[data-day="${day(2026, 12, 1)}"]`)
+    await expect(target).toHaveCount(1)
+    await source.dragTo(target)
+
+    const dayCard = page.locator('.month-day')
+    await expect(dayCard).toContainText('12月1日')
+    await expect(dayCard).toContainText('月底跨月')
+  })
+})
+
 test.describe('PWA', () => {
   test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
     await page.goto('/')
@@ -200,6 +400,11 @@ test.describe('PWA', () => {
     expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '192x192')).toBe(true)
     expect(icons.some((icon) => icon.type === 'image/png' && icon.sizes === '512x512')).toBe(true)
     expect(icons.some((icon) => icon.purpose === 'maskable' && icon.type === 'image/png')).toBe(true)
+
+    // 分享目标：GET + title/text/url 三个参数（Chrome/Android 生效；iOS 不支持，见 README）
+    const withShare = manifest as typeof manifest & { share_target?: { method?: string; params?: Record<string, string> } }
+    expect(withShare.share_target?.method).toBe('GET')
+    expect(withShare.share_target?.params).toEqual({ title: 'title', text: 'text', url: 'url' })
 
     // apple-touch-icon 必须是 PNG，且实际可访问
     await page.goto('/')

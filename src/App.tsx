@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useApp } from '@/state/store'
 import { registerServiceWorker } from '@/services/pwa'
 import InboxView from '@/ui/InboxView'
+import MonthView from '@/ui/MonthView'
 import PlanView from '@/ui/PlanView'
 import SettingsView from '@/ui/SettingsView'
 import { isLLMReady } from '@/services/llm'
@@ -9,6 +10,7 @@ import { isLLMReady } from '@/services/llm'
 const TABS = [
   { id: 'inbox', label: '收件' },
   { id: 'plan', label: '日程' },
+  { id: 'calendar', label: '月历' },
   { id: 'settings', label: '设置' },
 ] as const
 
@@ -66,6 +68,7 @@ export default function App() {
       <main className="main">
         {view === 'inbox' && <InboxView />}
         {view === 'plan' && <PlanView />}
+        {view === 'calendar' && <MonthView />}
         {view === 'settings' && <SettingsView />}
       </main>
 

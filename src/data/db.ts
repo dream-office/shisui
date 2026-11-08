@@ -16,6 +16,11 @@ export class ShisuiDB extends Dexie {
       tasks: 'id, dueAt, startAt, done, kind, createdAt',
       batches: 'id, createdAt',
     })
+    // v2：ICS 导入去重用 sourceUid（只加索引，不改动已有行；老数据该字段为空）
+    this.version(2).stores({
+      tasks: 'id, dueAt, startAt, done, kind, createdAt, sourceUid',
+      batches: 'id, createdAt',
+    })
   }
 }
 
