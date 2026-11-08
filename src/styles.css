@@ -1241,6 +1241,25 @@ em {
   }
 }
 
+@media (max-width: 760px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand {
+    width: 100%;
+  }
+
+  .engine-pill {
+    order: 3;
+  }
+
+  .tab {
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 640px) {
   .app {
     padding: 14px 14px 40px;
