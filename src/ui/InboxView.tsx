@@ -74,8 +74,7 @@ export default function InboxView() {
   const llmConfig = useApp((s) => s.llmConfig)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [moreOpen, setMoreOpen] = useState(false)
-  const [moreUp, setMoreUp] = useState(false)
-  const [moreMaxHeight, setMoreMaxHeight] = useState<number | null>(null)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
   const moreWrapRef = useRef<HTMLDivElement>(null)
   const moreButtonRef = useRef<HTMLButtonElement>(null)
   const moreMenuRef = useRef<HTMLDivElement>(null)
@@ -93,24 +92,37 @@ export default function InboxView() {
         moreButtonRef.current?.focus()
       }
     }
-    const button = moreButtonRef.current
     const menu = moreMenuRef.current
-    if (button && menu) {
+    const reposition = () => {
+      const button = moreButtonRef.current
+      if (!button || !menu) return
       const rect = button.getBoundingClientRect()
+      const vh = window.innerHeight
+      const vw = window.innerWidth
+      const width = Math.min(260, vw - 24)
+      const maxHeight = Math.max(120, vh - 16)
       const natural = menu.scrollHeight
-      const below = window.innerHeight - rect.bottom - 18
-      const above = rect.top - 18
-      const up = natural > below && above > below
-      const space = Math.max(160, up ? above : below)
-      setMoreUp(up)
-      setMoreMaxHeight(Math.min(natural, space))
+      const height = Math.min(natural, maxHeight)
+      const belowTop = rect.bottom + 6
+      const aboveTop = rect.top - height - 6
+      // 优先下方；下方放不下且上方空间更大则放上方
+      let top = belowTop + height <= vh - 8 ? belowTop : aboveTop
+      // 最终钳制：无论选哪边都保证完整落在视口内；超高时 top=8 + 内部滚动
+      top = Math.max(8, Math.min(top, vh - height - 8))
+      const left = Math.max(8, Math.min(rect.right - width, vw - width - 8))
+      setMenuPos({ top, left, width, maxHeight: height })
     }
+    reposition()
     document.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('keydown', onKeyDown)
-    menu?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus()
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition)
+    menu?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus({ preventScroll: true })
     return () => {
       document.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition)
     }
   }, [moreOpen])
 
@@ -258,11 +270,15 @@ export default function InboxView() {
             {moreOpen && (
               <div
                 id="composer-more-menu"
-                className={`more-menu ${moreUp ? 'is-up' : ''}`}
+                className="more-menu"
                 role="menu"
                 aria-label={t('更多操作')}
                 ref={moreMenuRef}
-                style={moreMaxHeight ? { maxHeight: moreMaxHeight } : undefined}
+                style={
+                  menuPos
+                    ? { top: menuPos.top, left: menuPos.left, width: menuPos.width, maxHeight: menuPos.maxHeight }
+                    : { visibility: 'hidden' }
+                }
               >
                 <p className="more-group-title">{t('示例')}</p>
                 <button
