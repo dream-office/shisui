@@ -83,7 +83,9 @@ function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTas
   const createdAt = typeof raw.createdAt === 'number' && Number.isFinite(raw.createdAt) ? raw.createdAt : Date.now()
 
   const tags = Array.isArray(raw.tags)
-    ? raw.tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0).map((tag) => tag.trim())
+    ? raw.tags
+        .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+        .map((tag) => tag.trim().replace(/^#+/, '').toLowerCase())
     : []
 
   const base = migrateTaskV2toV3({

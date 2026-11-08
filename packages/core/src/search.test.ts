@@ -59,7 +59,11 @@ describe('filterTasks', () => {
 
 describe('normalizeTags / toggleTag', () => {
   it('去空白、去 #、去重（大小写不敏感）、限长', () => {
-    expect(normalizeTags([' 作业 ', '#作业', 'HOME', 'home', '', 'x'.repeat(30)])).toEqual(['作业', 'HOME', 'xxxxxxxxxxxxxxxxxxxx'])
+    expect(normalizeTags([' 作业 ', '#作业', 'HOME', 'home', '', 'x'.repeat(30)])).toEqual([
+      '作业',
+      'home',
+      'xxxxxxxxxxxxxxxxxxxx',
+    ])
   })
 
   it('增删标签返回新数组', () => {

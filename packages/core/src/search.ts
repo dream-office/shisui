@@ -68,9 +68,9 @@ export function normalizeTags(input: readonly string[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
   for (const raw of input) {
-    const tag = raw.trim().replace(/^#+/, '').trim()
+    const tag = raw.trim().replace(/^#+/, '').trim().toLowerCase()
     if (!tag) continue
-    const key = tag.toLowerCase()
+    const key = tag
     if (seen.has(key)) continue
     seen.add(key)
     out.push(tag.slice(0, 20))

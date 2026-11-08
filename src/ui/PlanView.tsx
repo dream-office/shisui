@@ -37,7 +37,10 @@ export default function PlanView() {
 
   const active = useMemo(() => tasks.filter((task) => !task.done), [tasks])
   const done = useMemo(() => tasks.filter((task) => task.done), [tasks])
-  const visibleActive = useMemo(() => filterTasks(active, searchQuery), [active, searchQuery])
+  const visibleActive = useMemo(
+    () => filterTasks(active, searchQuery).filter((task) => !onlyOpen || !task.skipped),
+    [active, searchQuery, onlyOpen],
+  )
   const visibleDone = useMemo(() => (onlyOpen ? [] : filterTasks(done, searchQuery)), [done, searchQuery, onlyOpen])
 
   const seriesById = useMemo(() => new Map(series.map((item) => [item.id, item])), [series])
