@@ -4,7 +4,7 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { createManualTask, mergeTasks } from 'shisui-core'
+import { createManualTask, mergeIcsImport, mergeTasks } from 'shisui-core'
 import { parseNotice } from 'shisui-core'
 import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask } from 'shisui-core'
 import * as repo from '@/data/repo'
@@ -31,6 +31,8 @@ interface AppState {
   loadHistory: () => Promise<void>
   parse: (raw: string) => Promise<void>
   addManualTask: (input: ManualTaskInput) => Promise<void>
+  /** 导入 ICS 解析结果：按 sourceUid 去重，一个事务写入，返回三个计数 */
+  importIcsTasks: (parsed: ParsedTask[]) => Promise<{ added: number; updated: number; skipped: number }>
   updateCandidate: (id: string, patch: Partial<ParsedTask>) => void
   dismissCandidate: (id: string) => void
   acceptCandidates: (ids: string[]) => Promise<void>
@@ -71,6 +73,17 @@ export const useApp = create<AppState>((set, get) => ({
     const task = createManualTask(input, id)
     await repo.insertTasks([task])
     set({ tasks: await repo.listTasks() })
+  },
+
+  importIcsTasks: async (parsed) => {
+    const existing = get().tasks
+    const plan = mergeIcsImport(
+      existing.map((task) => ({ id: task.id, sourceUid: task.sourceUid ?? null })),
+      parsed,
+    )
+    await repo.applyIcsPlan(plan)
+    set({ tasks: await repo.listTasks() })
+    return { added: plan.toInsert.length, updated: plan.toUpdate.length, skipped: plan.skipped.length }
   },
 
   parse: async (raw) => {

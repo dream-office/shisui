@@ -54,6 +54,38 @@ export async function clearAll(): Promise<void> {
   })
 }
 
+/** ICS 导入的落库：一个事务里完成全部插入与更新，中途失败不会留下半截数据 */
+export async function applyIcsPlan(plan: {
+  toInsert: ParsedTask[]
+  toUpdate: ParsedTask[]
+}): Promise<void> {
+  const now = Date.now()
+  const inserted: StoredTask[] = plan.toInsert.map((task) => ({
+    ...task,
+    createdAt: now,
+    done: false,
+    editedFields: [],
+  }))
+
+  await db.transaction('rw', db.tasks, async () => {
+    if (inserted.length > 0) await db.tasks.bulkPut(inserted)
+    for (const task of plan.toUpdate) {
+      const current = await db.tasks.get(task.id)
+      if (!current) continue
+      await db.tasks.put({
+        ...current,
+        title: task.title,
+        dueAt: task.dueAt,
+        startAt: task.startAt,
+        kind: task.kind,
+        location: task.location,
+        rawText: task.rawText,
+        sourceUid: task.sourceUid ?? current.sourceUid ?? null,
+      })
+    }
+  })
+}
+
 export interface Snapshot {
   version: 1
   exportedAt: string

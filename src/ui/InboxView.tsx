@@ -3,6 +3,7 @@ import { useApp } from '@/state/store'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import CandidateCard from './CandidateCard'
 import HistoryPanel from './HistoryPanel'
+import IcsImportPanel from './IcsImportPanel'
 import ManualAddForm from './ManualAddForm'
 import { useNow } from './useNow'
 
@@ -10,6 +11,7 @@ export default function InboxView() {
   const [raw, setRaw] = useState('')
   const [manualOpen, setManualOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [icsOpen, setIcsOpen] = useState(false)
   const history = useApp((s) => s.history)
   const candidates = useApp((s) => s.candidates)
   const parsing = useApp((s) => s.parsing)
@@ -79,6 +81,9 @@ export default function InboxView() {
           <button type="button" className="btn btn-ghost" onClick={() => setHistoryOpen((open) => !open)} disabled={parsing}>
             历史{history.length > 0 ? ` (${history.length})` : ''}
           </button>
+          <button type="button" className="btn btn-ghost" onClick={() => setIcsOpen((open) => !open)} disabled={parsing}>
+            导入 .ics
+          </button>
         </div>
 
         {parsing && (
@@ -90,6 +95,8 @@ export default function InboxView() {
       </section>
 
       {manualOpen && <ManualAddForm onClose={() => setManualOpen(false)} />}
+
+      {icsOpen && <IcsImportPanel onClose={() => setIcsOpen(false)} />}
 
       {historyOpen && (
         <HistoryPanel

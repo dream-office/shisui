@@ -41,8 +41,10 @@ export interface ParsedTask {
   confidence: Confidence
   /** 可解释性：为什么给出这个判定，直接展示给用户 */
   reasons: string[]
-  /** 谁解析出来的；manual = 用户手动添加，没经过引擎 */
-  engine: 'rule' | 'llm' | 'hybrid' | 'manual'
+  /** 谁解析出来的；manual = 用户手动添加，import = 从日历文件导入 */
+  engine: 'rule' | 'llm' | 'hybrid' | 'manual' | 'import'
+  /** 日历文件里的 UID：再导入同一事件时用于去重 / 更新；其它来源为 null */
+  sourceUid?: string | null
 }
 
 /** 已确认、落地到日程的事项 */

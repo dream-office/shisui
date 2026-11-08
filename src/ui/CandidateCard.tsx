@@ -55,7 +55,9 @@ export default function CandidateCard({ task, now, onUpdate, onAccept, onDismiss
               ? 'AI'
               : task.engine === 'manual'
                 ? '手动'
-                : '双引擎'}
+                : task.engine === 'import'
+                  ? '导入'
+                  : '双引擎'}
         </span>
         {cd && <span className={`countdown tone-${cd.tone}`}>{cd.text}</span>}
       </header>

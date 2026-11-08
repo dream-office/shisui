@@ -1367,3 +1367,32 @@ em {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ── ICS 导入 ─────────────────────────────────── */
+.ics-import { margin-top: 16px; }
+.ics-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.ics-head h3 { margin: 0; }
+.ics-file input[type='file'] {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.ics-error { margin: 10px 0 0; font-size: 13px; color: var(--danger); }
+.ics-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--warn); line-height: 1.7; }
+.ics-preview { margin-top: 14px; }
+.ics-summary { margin: 0 0 8px; font-size: 13.5px; }
+.ics-preview ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ics-preview li { display: flex; align-items: baseline; gap: 8px; font-size: 13px; }
+.ics-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ics-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; }
+.ics-chip-new { background: var(--ok-soft); color: var(--ok); }
+.ics-chip-update { background: var(--accent-soft); color: var(--accent); }
+.ics-chip-skip { background: var(--line); color: var(--muted); }
+.ics-actions { margin-top: 12px; display: flex; gap: 10px; }
+.ics-result { margin: 12px 0 0; font-size: 13px; color: var(--ok); }

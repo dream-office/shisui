@@ -163,6 +163,59 @@ test.describe('ICS 导出', () => {
   })
 })
 
+test.describe('ICS 导入', () => {
+  const ICS_TEXT = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:import-test-1@example.com',
+    'SUMMARY:导入的评审会',
+    'DTSTART:20261120T010000Z',
+    'DTEND:20261120T030000Z',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  async function pickFile(page: Page) {
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'test.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_TEXT, 'utf-8'),
+    })
+  }
+
+  test('J. 选文件 → 预览 → 确认导入 → 日程可见；再导入走更新不翻倍', async ({ page }) => {
+    await page.goto('/')
+    await pickFile(page)
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+
+    await page.getByRole('button', { name: '确认导入' }).click()
+    await expect(page.getByText(/导入完成：新增 1 条/)).toBeVisible()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByRole('main')).toContainText('导入的评审会')
+
+    // 同一份文件再导入一次：应当全部识别为「更新」
+    await nav.getByRole('button', { name: /^收件/ }).click()
+    await pickFile(page)
+    await expect(page.getByText(/新增 0 \/ 更新 1/)).toBeVisible({ timeout: 15_000 })
+  })
+
+  test('K. 坏文件给出可读错误，不崩', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'bad.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from('这不是日历文件', 'utf-8'),
+    })
+    await expect(page.locator('.ics-error')).toContainText('BEGIN:VCALENDAR', { timeout: 10_000 })
+  })
+})
+
 test.describe('PWA', () => {
   test('H. 离线仍能打开（Service Worker 缓存了应用外壳）', async ({ page, context }) => {
     await page.goto('/')
