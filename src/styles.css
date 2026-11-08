@@ -1597,3 +1597,17 @@ em {
 .focus-head { display: flex; align-items: baseline; justify-content: space-between; }
 .focus-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .focus-hint { font-size: 12px; }
+
+
+/* ── v0.10 加密备份 / 系列编辑 ─────────────── */
+.backup-encrypt { margin: 8px 0; }
+.backup-password { display: flex; flex-wrap: wrap; gap: 10px; }
+.backup-password .field { flex: 1; min-width: 180px; }
+.task-editor { margin-top: 8px; padding: 10px; border: 1px dashed var(--line); border-radius: 8px; }
+.edit-inline { display: flex; flex-wrap: wrap; gap: 8px; }
+.edit-inline .field { flex: 1; min-width: 120px; }
+.scope-choice { border: none; margin: 6px 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.scope-choice legend { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.scope-choice label { font-size: 13px; display: inline-flex; align-items: center; gap: 4px; }
+.edit-actions { display: flex; gap: 8px; margin-top: 8px; }
+.edit-hint { flex-basis: 100%; margin: 2px 0 0; font-size: 12px; }

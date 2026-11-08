@@ -1,6 +1,13 @@
 import { useRef, useState } from 'react'
 import { version as appVersion } from '../../package.json'
-import { validateBackup } from 'shisui-core'
+import {
+  BackupCryptoError,
+  assertPassword,
+  decryptBackup,
+  encryptBackup,
+  isEncryptedBackup,
+  validateBackup,
+} from 'shisui-core'
 import { useApp } from '@/state/store'
 import { downloadTextFile } from '@/services/download'
 import { DEFAULT_LLM_CONFIG, isLLMReady, type LLMConfig } from '@/services/llm'
@@ -23,6 +30,12 @@ export default function SettingsView() {
   const [preview, setPreview] = useState<RestorePreview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const [encrypt, setEncrypt] = useState(false)
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [pendingEncrypted, setPendingEncrypted] = useState<string | null>(null)
+  const [decryptPassword, setDecryptPassword] = useState('')
+  const [busy, setBusy] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleSave = () => {
@@ -31,17 +44,48 @@ export default function SettingsView() {
     window.setTimeout(() => setSaved(false), 1800)
   }
 
-  const handleExport = () => {
-    const stamp = new Date().toISOString().slice(0, 10)
-    downloadTextFile(exportBackup(), `shisui-backup-${stamp}.json`, 'application/json;charset=utf-8')
-    setDone('备份已下载')
+  const handleExport = async () => {
     setError(null)
+    setDone(null)
+    const stamp = new Date().toISOString().slice(0, 10)
+    let text = exportBackup()
+    if (encrypt) {
+      try {
+        assertPassword(password)
+      } catch (err) {
+        setError(err instanceof BackupCryptoError ? err.message : '密码不合法')
+        return
+      }
+      if (password !== confirm) {
+        setError('两次输入的密码不一致')
+        return
+      }
+      setBusy(true)
+      try {
+        text = JSON.stringify(await encryptBackup(text, password))
+      } finally {
+        setBusy(false)
+      }
+      setPassword('')
+      setConfirm('')
+    }
+    const suffix = encrypt ? 'encrypted' : 'backup'
+    downloadTextFile(text, `shisui-${suffix}-${stamp}.json`, 'application/json;charset=utf-8')
+    setDone(encrypt ? '加密备份已下载（密码请自己记住，丢了无法恢复）' : '备份已下载')
   }
 
   const handlePick = async (file: File) => {
     setError(null)
     setDone(null)
     const text = await file.text()
+    if (isEncryptedBackup(text)) {
+      setPreview(null)
+      setPendingEncrypted(text)
+      setDecryptPassword('')
+      setError(null)
+      return
+    }
+    setPendingEncrypted(null)
     const result = validateBackup(text)
     if (!result.ok || !result.backup) {
       setPreview(null)
@@ -55,6 +99,33 @@ export default function SettingsView() {
       batches: result.backup.batches.length,
       exportedAt: result.backup.exportedAt,
     })
+  }
+
+  const handleDecryptPreview = async () => {
+    if (!pendingEncrypted) return
+    setError(null)
+    setBusy(true)
+    try {
+      const plaintext = await decryptBackup(pendingEncrypted, decryptPassword)
+      const result = validateBackup(plaintext)
+      if (!result.ok || !result.backup) {
+        setError(result.errors[0] ?? '解密后的备份不合法')
+        return
+      }
+      setPendingEncrypted(null)
+      setDecryptPassword('')
+      setPreview({
+        text: plaintext,
+        tasks: result.backup.tasks.length,
+        series: result.backup.series.length,
+        batches: result.backup.batches.length,
+        exportedAt: result.backup.exportedAt,
+      })
+    } catch (err) {
+      setError(err instanceof BackupCryptoError ? err.message : '解密失败')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const confirmRestore = async () => {
@@ -76,8 +147,36 @@ export default function SettingsView() {
           备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。**恢复会覆盖当前全部数据**，先下载一份再恢复最稳。
           文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。
         </p>
+        <label className="inline-check backup-encrypt">
+          <input type="checkbox" checked={encrypt} onChange={(event) => setEncrypt(event.target.checked)} />
+          加密备份（密码至少 8 位，丢失密码无法恢复）
+        </label>
+        {encrypt && (
+          <div className="backup-password">
+            <label className="field block">
+              <span>密码</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                aria-label="备份密码"
+                autoComplete="new-password"
+              />
+            </label>
+            <label className="field block">
+              <span>再输一次</span>
+              <input
+                type="password"
+                value={confirm}
+                onChange={(event) => setConfirm(event.target.value)}
+                aria-label="确认备份密码"
+                autoComplete="new-password"
+              />
+            </label>
+          </div>
+        )}
         <div className="backup-actions">
-          <button type="button" className="btn btn-primary" onClick={handleExport}>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void handleExport()}>
             导出 JSON 备份
           </button>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
@@ -95,6 +194,30 @@ export default function SettingsView() {
             }}
           />
         </div>
+
+        {pendingEncrypted && (
+          <div className="restore-preview" role="region" aria-label="加密备份解锁">
+            <p>这是加密备份，输入导出时设置的密码来解锁。</p>
+            <label className="field block">
+              <span>密码</span>
+              <input
+                type="password"
+                value={decryptPassword}
+                onChange={(event) => setDecryptPassword(event.target.value)}
+                aria-label="解密密码"
+                autoComplete="off"
+              />
+            </label>
+            <div className="backup-actions">
+              <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void handleDecryptPreview()}>
+                解密并预览
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setPendingEncrypted(null)}>
+                取消
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <p className="import-error" role="alert">

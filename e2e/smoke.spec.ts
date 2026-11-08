@@ -962,3 +962,49 @@ test.describe('v0.10 系列编辑', () => {
     await expect(page.getByText('原名')).toHaveCount(0)
   })
 })
+
+
+test.describe('v0.10 加密备份', () => {
+  test('Z8. 加密导出 → 错误密码拒绝 → 正确密码恢复', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('加密备份里的任务')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('checkbox', { name: /加密备份/ }).check()
+    await page.getByLabel('备份密码', { exact: true }).fill('shisui-pass-123')
+    await page.getByLabel('确认备份密码').fill('shisui-pass-123')
+
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: '导出 JSON 备份' }).click()
+    const download = await downloadPromise
+    const path = await download.path()
+    const encryptedText = readFileSync(path!, 'utf-8')
+    const envelope = JSON.parse(encryptedText)
+    expect(envelope.format).toBe('shisui-backup-encrypted')
+    expect(envelope.encryptedVersion).toBe(1)
+    expect(envelope.kdf.iterations).toBe(310000)
+
+    // 错误密码：拒绝且不动数据
+    await page.locator('input[type="file"][accept*="json"]').setInputFiles({
+      name: 'backup-enc.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(encryptedText, 'utf-8'),
+    })
+    await expect(page.getByRole('region', { name: '加密备份解锁' })).toBeVisible()
+    await page.getByLabel('解密密码').fill('wrong-pass-123')
+    await page.getByRole('button', { name: '解密并预览' }).click()
+    await expect(page.getByRole('alert')).toContainText('密码错误')
+
+    // 正确密码：预览 → 恢复
+    await page.getByLabel('解密密码').fill('shisui-pass-123')
+    await page.getByRole('button', { name: '解密并预览' }).click()
+    await expect(page.getByRole('region', { name: '恢复预览' })).toContainText('1 条任务')
+    await page.getByRole('button', { name: '确认恢复' }).click()
+    await expect(page.getByText(/已恢复 1 条任务/)).toBeVisible()
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('加密备份里的任务')).toBeVisible()
+  })
+})
