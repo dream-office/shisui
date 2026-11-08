@@ -77,15 +77,23 @@ export function escapeIcsText(text: string): string {
     .replace(/\r\n|\r|\n/g, '\\n')
 }
 
+/** 一个码点的 UTF-8 字节数（纯数学，不依赖 TextEncoder，任何环境结果一致） */
+function utf8Length(char: string): number {
+  const code = char.codePointAt(0) ?? 0
+  if (code <= 0x7f) return 1
+  if (code <= 0x7ff) return 2
+  if (code <= 0xffff) return 3
+  return 4
+}
+
 /** 按 75 字节折行（续行以单个空格开头，属于 ICS 规范要求） */
 function foldLine(line: string): string {
-  const encoder = new TextEncoder()
   const chunks: string[] = []
   let current = ''
   let octets = 0
 
   for (const char of line) {
-    const size = encoder.encode(char).length
+    const size = utf8Length(char)
     if (octets + size > MAX_LINE_OCTETS) {
       chunks.push(current)
       current = ' '

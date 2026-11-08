@@ -5,6 +5,21 @@
 
 ## [Unreleased]
 
+### 变更
+
+- **TypeScript 5.9 → 7.0.2**（原生编译器重写）。迁移要动两处：
+  - TS7 **移除了 `baseUrl`**，`paths` 必须写相对路径 → 删 `baseUrl`，
+    改为 `"@/*": ["./src/*"]`、`"shisui-core": ["./packages/core/src/index.ts"]`。
+  - TS7 **不再自动包含 `@types/node`**：`shisui-core` 的 `tsconfig.build.json` 只声明了 ES2022 lib，
+    原先 `ics.ts` 靠环境里的 `TextEncoder` 计算折行字节数 → 改为纯数学的 `utf8Length()`，
+    结果与之前完全一致，且不再依赖宿主全局对象。
+- `src/styles.css` 补齐文件末尾换行。
+
+### 测试
+
+- 迁移后：`typecheck` 0 · 105 单测 · `build` 0 · core build（40 个产物）+ `smoke:core`（27 导出）0 ·
+  Playwright 9 条全绿。评估时还确认：**只跑 `vitest` 会漏掉 TS 配置问题**（它走 esbuild，不经过 tsc）。
+
 （下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
 
 ## [0.5.0] - 2026-11-07
