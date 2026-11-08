@@ -214,6 +214,34 @@ test.describe('ICS 导入', () => {
     })
     await expect(page.locator('.ics-error')).toContainText('BEGIN:VCALENDAR', { timeout: 10_000 })
   })
+
+  test('K2. RRULE 只导入首实例，预览里有明确标注', async ({ page }) => {
+    const rruleIcs = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      'UID:rrule-test@example.com',
+      'SUMMARY:每周例会',
+      'DTSTART:20261120T010000Z',
+      'DTEND:20261120T020000Z',
+      'RRULE:FREQ=WEEKLY;COUNT=8',
+      'END:VEVENT',
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n')
+
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'rrule.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(rruleIcs, 'utf-8'),
+    })
+
+    // 只导入 1 条 + 预览明确标注「仅导入首个实例」
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await expect(page.locator('.ics-note')).toContainText('只导入首个实例')
+  })
 })
 
 test.describe('分享目标', () => {
