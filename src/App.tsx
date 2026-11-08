@@ -10,6 +10,7 @@ import PlanView from '@/ui/PlanView'
 import SettingsView from '@/ui/SettingsView'
 import StatsView from '@/ui/StatsView'
 import { isLLMReady } from '@/services/llm'
+import { registerSignatureClick } from '@/ui/signature'
 
 /** 仅在 URL 显式带 ?__boom=1 时渲染：供 e2e 验证错误边界；默认完全不影响使用 */
 function ErrorProbe(): null {
@@ -24,6 +25,8 @@ const TABS = [
   { id: 'settings', label: '设置' },
 ] as const
 
+let signatureLogged = false
+
 export default function App() {
   const view = useApp((s) => s.view)
   const setView = useApp((s) => s.setView)
@@ -37,6 +40,10 @@ export default function App() {
   )
   const [helpOpen, setHelpOpen] = useState(false)
   const helpButtonRef = useRef<HTMLButtonElement>(null)
+  const [signatureOpen, setSignatureOpen] = useState(false)
+  const signatureClicks = useRef<number[]>([])
+  const signatureRef = useRef<HTMLButtonElement>(null)
+  const signatureCloseRef = useRef<HTMLButtonElement>(null)
 
   // 语言切换：同步 i18n 模块、<html lang> 与标题
   useEffect(() => {
@@ -57,6 +64,39 @@ export default function App() {
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  // 控制台签名：整页只打一次（React StrictMode 双挂载也只一次）
+  useEffect(() => {
+    if (signatureLogged) return
+    signatureLogged = true
+    console.log('%c拾穗 · dream-office · 把散落的时间捡起来', 'color:#6b67e3;font-weight:600;')
+  }, [])
+
+  // 彩蛋打开后：焦点到关闭按钮，Esc 关闭并把焦点还给落款
+  useEffect(() => {
+    if (!signatureOpen) return
+    signatureCloseRef.current?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        setSignatureOpen(false)
+        signatureRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [signatureOpen])
+
+  const closeSignature = () => {
+    setSignatureOpen(false)
+    signatureRef.current?.focus()
+  }
+
+  const handleSignatureClick = () => {
+    const result = registerSignatureClick(signatureClicks.current, Date.now())
+    signatureClicks.current = result.clicks
+    if (result.open) setSignatureOpen(true)
+  }
 
   // 只在生产构建里注册 Service Worker；有新版本时提示用户，而不是自动替换页面
   useEffect(() => {
@@ -130,6 +170,47 @@ export default function App() {
         >
           {t('源码（AGPL-3.0）')}
         </a>
+        <button
+          ref={signatureRef}
+          type="button"
+          className="signature-btn"
+          onClick={handleSignatureClick}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSignatureOpen(true)
+            }
+          }}
+          aria-label={t('dream-office 签名')}
+          title={t('dream-office 签名')}
+          aria-expanded={signatureOpen}
+          aria-controls="signature-note"
+        >
+          <span className="signature-mark" aria-hidden />
+          dream-office
+        </button>
+        {signatureOpen && (
+          <div
+            id="signature-note"
+            className="signature-line"
+            role="dialog"
+            aria-modal="false"
+            aria-label={t('作者签名')}
+          >
+            <p className="signature-quote" aria-live="polite">
+              {t('把散落的时间，一粒一粒捡起来。')}
+            </p>
+            <button
+              ref={signatureCloseRef}
+              type="button"
+              className="signature-close"
+              onClick={closeSignature}
+              aria-label={t('关闭作者签名')}
+            >
+              ×
+            </button>
+          </div>
+        )}
       </footer>
 
       <HelpPanel

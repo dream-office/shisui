@@ -266,3 +266,5 @@ the Free Software Foundation, either version 3 of the License, or
 （站点发布后位于 `/licenses/` 下）。其中一个依赖 Dexie 是 Apache-2.0，其 NOTICE 已一并保留。
 
 安全问题怎么报：见 [SECURITY.md](SECURITY.md)。
+
+dream-office · 把散落的时间，一粒一粒捡起来。
