@@ -1182,3 +1182,68 @@ test.describe('v1.0 English 静态 UI', () => {
     expect([...found]).toEqual([])
   })
 })
+
+
+test.describe('v1.1 签名彩蛋', () => {
+  test('S1. 三击弹出 / 键盘打开 / Esc 关闭 + 焦点回落款 / 关闭按钮', async ({ page }) => {
+    await page.goto('/')
+    const button = page.locator('.signature-btn')
+    await expect(button).toBeVisible()
+    await expect(button).toContainText('dream-office')
+
+    // 点 1 次、2 次都不弹
+    await button.click()
+    await expect(page.locator('.signature-line')).toHaveCount(0)
+    await button.click()
+    await expect(page.locator('.signature-line')).toHaveCount(0)
+
+    // 2 秒内第 3 次 → 弹出中文一句话
+    await button.click()
+    const line = page.locator('.signature-line')
+    await expect(line).toBeVisible()
+    await expect(line).toContainText('把散落的时间，一粒一粒捡起来。')
+
+    // Esc 关闭，焦点回按钮
+    await page.keyboard.press('Escape')
+    await expect(line).toHaveCount(0)
+    await expect(button).toBeFocused()
+
+    // 键盘 Enter 打开；关闭按钮关闭并回焦点
+    await button.focus()
+    await page.keyboard.press('Enter')
+    await expect(line).toBeVisible()
+    await page.locator('.signature-close').click()
+    await expect(line).toHaveCount(0)
+    await expect(button).toBeFocused()
+  })
+
+  test('S2. 英文界面显示英文一句话', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('button', { name: 'English' }).click()
+    const button = page.locator('.signature-btn')
+    await button.click()
+    await button.click()
+    await button.click()
+    await expect(page.locator('.signature-line')).toContainText(
+      'Picking up the scattered moments, one grain at a time.',
+    )
+  })
+
+  test('S3. 控制台签名只打一次；360px 不溢出', async ({ page }) => {
+    const logs: string[] = []
+    page.on('console', (msg) => logs.push(msg.text()))
+    await page.setViewportSize({ width: 360, height: 800 })
+    await page.goto('/')
+    await page.waitForTimeout(300)
+    await page.locator('.signature-btn').click()
+    await page.waitForTimeout(100)
+    expect(logs.filter((text) => text.includes('dream-office')).length).toBe(1)
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(1)
+    await expect(page.locator('.signature-btn')).toBeVisible()
+  })
+})

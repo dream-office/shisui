@@ -331,6 +331,10 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '把散落的时间，一粒一粒捡起来。': 'Picking up the scattered moments, one grain at a time.',
+  'dream-office 签名': 'dream-office signature',
+  '关闭作者签名': 'Close signature',
+
   '有低置信度条目，已高亮标出，请人工核对': 'Some items have low confidence and are highlighted — please review before accepting.',
   邮箱: 'Email',
   飞书: 'Feishu',
