@@ -29,7 +29,7 @@ test.describe('首屏', () => {
 
     await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
     await expect(page.getByText('群里散落的截止时间，替你捡起来')).toBeVisible()
-    await expect(page.getByText('数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器')).toBeVisible()
+    await expect(page.getByText('数据只存在本地浏览器里（IndexedDB），不上传服务器')).toBeVisible()
 
     // AGPL §13：通过网络使用本应用的人必须能拿到源码入口，页脚不许被删
     const sourceLink = page.getByRole('link', { name: /源码/ })
