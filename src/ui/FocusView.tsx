@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useMemo, useState } from 'react'
 import { sortFocusQueue } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -29,16 +30,16 @@ export default function FocusView() {
   }
 
   return (
-    <section className="focus card" role="region" aria-label="专注模式">
+    <section className="focus card" role="region" aria-label={t('专注模式')}>
       <div className="focus-head">
-        <h3>专注模式</h3>
+        <h3>{t('专注模式')}</h3>
         <span className="muted">
-          {active.length === 0 ? '全部处理完了' : `${safeIndex + 1} / ${active.length}`}
+          {active.length === 0 ? t('全部处理完了') : `${safeIndex + 1} / ${active.length}`}
         </span>
       </div>
 
       {current === undefined ? (
-        <p className="muted">没有未完成的任务了，休息一下。</p>
+        <p className="muted">{t('没有未完成的任务了，休息一下。')}</p>
       ) : (
         <div className="focus-body">
           <TaskRow
@@ -48,7 +49,7 @@ export default function FocusView() {
             onDelete={() => void run(focusSkip)}
             seriesLabel={
               current.seriesId
-                ? series.find((item) => item.id === current.seriesId)?.title ?? '重复'
+                ? series.find((item) => item.id === current.seriesId)?.title ?? t('重复')
                 : null
             }
             onSkip={() => void run(focusSkip)}
@@ -56,19 +57,19 @@ export default function FocusView() {
           />
           <div className="focus-actions">
             <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => void run(focusComplete)}>
-              完成
+              {t('完成')}
             </button>
             <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void run(focusSkip)}>
-              跳过
+              {t('跳过')}
             </button>
             <button type="button" className="btn btn-sm" disabled={busy} onClick={focusNext}>
-              下一条
+              {t('下一条')}
             </button>
             <button type="button" className="btn btn-ghost btn-sm" onClick={closeFocus}>
-              退出专注
+              {t('退出专注')}
             </button>
           </div>
-          <p className="muted focus-hint">完成后会自动排到下一条；「跳过」对重复任务是「跳过这一次」。</p>
+          <p className="muted focus-hint">{t('完成后会自动排到下一条；「跳过」对重复任务是「跳过这一次」。')}</p>
         </div>
       )}
     </section>

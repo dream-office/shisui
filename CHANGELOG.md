@@ -24,6 +24,35 @@
 - 日期标题与件数 chip 允许换行，窄屏不挤在一起
 - 件数 chip 固定不压缩，标题过长时优先换行
 
+## [1.0.0] - 2026-11-08
+
+**v1.0：使用说明 + 中英双语 + 格式冻结。**
+
+### 新增
+
+- **使用说明**：标题旁「怎么用」→ 三步弹层（粘贴 → 检查收录 → 去日程/月历）+ 补充（本地存储/重复任务语义/iOS 复制粘贴）
+  - Esc/遮罩关闭、焦点回触发按钮、`aria-modal`；360px 可用
+  - 首次访问提示条（localStorage 只弹一次）
+- **中英双语界面**
+  - 自建 `src/i18n`（不引第三方库）：`t()` + 中文原文作 key + 英文映射，缺 key 回退中文
+  - 覆盖导航/按钮/空态/错误/表单 label 与 placeholder/aria/title/设置页/使用说明
+  - 日期与相对时间统一 `Intl`；`document.documentElement.lang` 与标题同步
+  - 设置页中文/English 切换，默认中文，localStorage 持久化；用户输入/任务标题/原文不翻译
+  - PWA manifest **中英两份**（`manifest.webmanifest` / `manifest.en.webmanifest`，均含 icons/share_target），按语言切换 `<link rel="manifest">`
+  - 设置页全部可见文案/label/placeholder/aria 均走字典；English 页面正文/aria/placeholder 由 e2e 中文扫描守护（允许品牌「穗」与语言自称「中文」）
+
+### 文档与冻结
+
+- 新增 `docs/DATA-FORMAT.md`：DB v3 / backupVersion 1 / 加密信封 / ICS 子集 / 迁移策略，**v1.0 冻结**
+- 新增 `docs/ARCHITECTURE.md`：分层、隐私、i18n 与帮助层、开发命令
+- 应用与 core 版本统一 **1.0.0**
+
+### 测试
+
+- 单测：i18n 字典完整性（扫描源码 t('…') 全部有英文）、切换、缺 key 回退
+- e2e：使用说明 H1/H2、语言切换 L1（刷新保持、html lang、标题）、
+  L2 = English 空态 + 解析后候选页 + 收录后 Plan 有数据三态无中文扫描 + manifest 切换
+
 ## [0.10.0] - 2026-11-08
 
 **系列编辑 + 备份加密 + iOS 粘贴入口。**
@@ -95,6 +124,7 @@
 ### 已知限制
 
 - 备份不加密；撤销刷新后失效；搜索默认包含已完成（可用「只看未完成」过滤）
+- 英文界面下 core 生成的解析理由/冲突详情/ICS 警告暂为中文（v1.1 处理）
 
 ## [0.8.0] - 2026-11-08
 

@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
 interface Props {
@@ -43,17 +44,17 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <section className="error-boundary card" role="alert">
-        <h3>界面出了点问题，但你的数据还在</h3>
+        <h3>{t('界面出了点问题，但你的数据还在')}</h3>
         <p className="muted">
-          待办都存在浏览器本地（IndexedDB），不会因为这次异常丢失。可以先重试；如果反复出现，回首页后手动导出备份。
+          {t('待办都存在浏览器本地（IndexedDB），不会因为这次异常丢失。可以先重试；如果反复出现，回首页后手动导出备份。')}
         </p>
-        <pre className="error-detail">{this.state.message || '未知错误'}</pre>
+        <pre className="error-detail">{this.state.message || t('未知错误')}</pre>
         <div className="error-actions">
           <button type="button" className="btn btn-primary" onClick={this.retry}>
-            重试
+            {t('重试')}
           </button>
           <button type="button" className="btn btn-ghost" onClick={this.goHome}>
-            回首页
+            {t('回首页')}
           </button>
         </div>
       </section>

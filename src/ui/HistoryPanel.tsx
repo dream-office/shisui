@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { useApp } from '@/state/store'
 
 /**
@@ -10,10 +11,10 @@ export default function HistoryPanel({ onReuse }: { onReuse: (raw: string) => vo
   return (
     <section className="history card">
       <h3>
-        导入历史<span className="muted">（{history.length}）</span>
+        {t('导入历史')}<span className="muted">（{history.length}）</span>
       </h3>
       {history.length === 0 ? (
-        <p className="muted">还没有收录过通知。贴一段、点「全部收录」之后，这里会留下原文，方便回看和二次收录。</p>
+        <p className="muted">{t('还没有收录过通知。贴一段、点「全部收录」之后，这里会留下原文，方便回看和二次收录。')}</p>
       ) : (
         <ul>
           {history.map((batch) => (
@@ -23,12 +24,12 @@ export default function HistoryPanel({ onReuse }: { onReuse: (raw: string) => vo
                   {new Date(batch.createdAt).toLocaleString('zh-CN', { hour12: false })}
                 </time>
                 <span className="muted">
-                  · {batch.taskCount} 条 · {batch.engine}
+                  · {batch.taskCount} {t('条')} · {batch.engine}
                 </span>
               </div>
               <p className="history-raw">{batch.rawText.slice(0, 90)}{batch.rawText.length > 90 ? '…' : ''}</p>
               <button type="button" className="btn btn-sm" onClick={() => onReuse(batch.rawText)}>
-                重新解析
+                {t('重新解析')}
               </button>
             </li>
           ))}

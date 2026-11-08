@@ -1650,3 +1650,62 @@ em {
   .footer-sep { display: none; }
   .footer span { text-wrap: balance; max-width: 100%; }
 }
+
+
+/* ── v1.0 使用说明 ─────────────────────────── */
+.help-open { flex: none; }
+.first-visit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 18, 30, 0.42);
+}
+.help-panel {
+  width: min(560px, 100%);
+  max-height: min(86vh, 720px);
+  overflow-y: auto;
+  padding: 18px 20px;
+  background: var(--card);
+}
+.help-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.help-head h2 { margin: 0; font-size: 18px; }
+.help-steps { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.help-steps li { display: flex; gap: 10px; align-items: flex-start; }
+.help-step-num {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.help-steps p { margin: 4px 0 0; line-height: 1.7; font-size: 13px; }
+.help-notes { margin-top: 16px; }
+.help-notes h3 { margin: 0 0 6px; font-size: 14px; }
+.help-notes ul { margin: 0; padding-left: 18px; }
+.help-notes li { font-size: 12.5px; line-height: 1.7; color: var(--ink-soft); }
+.help-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+@media (max-width: 480px) {
+  .brand { flex-wrap: wrap; row-gap: 6px; }
+  .help-open { order: 3; margin-left: auto; }
+  .first-visit { flex-direction: column; align-items: flex-start; }
+}

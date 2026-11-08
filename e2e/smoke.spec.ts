@@ -258,7 +258,7 @@ test.describe('分享目标', () => {
     // replaceState 之后地址栏不应再有 query（刷新不会重复触发，也不留别人的分享内容）
     expect(new URL(page.url()).search).toBe('')
 
-    await page.getByRole('button', { name: '知道了' }).click()
+    await page.locator('.share-banner').getByRole('button', { name: '知道了' }).click()
     await expect(page.getByText('来自分享')).toBeHidden()
   })
 })
@@ -284,6 +284,11 @@ test.describe('月视图', () => {
     await page.goto('/')
     await page.getByRole('button', { name: '手动添加' }).click()
     await page.getByLabel('标题').fill('拖我试试')
+    // 显式填今天 23:00：默认值在 18:00 之后会顺延到明天，测试不能依赖运行时刻
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T23:00`
+    await page.locator('.manual input[type="datetime-local"]').fill(today)
     await page.getByRole('button', { name: '添加', exact: true }).click()
 
     const nav = page.getByRole('navigation', { name: '主视图' })
@@ -300,7 +305,7 @@ test.describe('月视图', () => {
 
     const moved = page.locator('.day-task', { hasText: '拖我试试' })
     await expect(moved).toBeVisible()
-    await expect(moved).toContainText('18:00')
+    await expect(moved).toContainText('23:00')
   })
 
   test('O. 360px 宽度下不横向溢出', async ({ page }) => {
@@ -1041,5 +1046,139 @@ test.describe('v0.10 iOS 剪贴板替代', () => {
     const value = await page.getByLabel('群消息原文').inputValue()
     // 精确等于：末尾已有换行时不重复补，只保留单个分隔换行
     expect(value).toBe('已有内容\n周一9点开会')
+  })
+})
+
+
+test.describe('v1.0 使用说明', () => {
+  test('H1. 首次访问提示条只出现一次', async ({ page }) => {
+    await page.goto('/')
+    const banner = page.locator('.first-visit')
+    await expect(banner).toBeVisible()
+    await page.getByRole('button', { name: '知道了' }).first().click()
+    await expect(banner).toHaveCount(0)
+    await page.reload()
+    await expect(page.locator('.first-visit')).toHaveCount(0)
+  })
+
+  test('H2. 怎么用：打开/Esc 关闭/焦点回按钮/aria；360px 不溢出', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 })
+    await page.goto('/')
+    const trigger = page.getByRole('button', { name: '怎么用' })
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog')
+    await trigger.click()
+
+    const dialog = page.getByRole('dialog', { name: '怎么用拾穗' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toHaveAttribute('aria-modal', 'true')
+    await expect(dialog).toContainText('粘贴群消息')
+    await expect(dialog).toContainText('检查解析结果并收录')
+    await expect(dialog).toContainText('去日程 / 月历')
+    await expect(dialog).toContainText('不上传服务器')
+    await expect(dialog).toContainText('iOS')
+
+    // Esc 关闭，焦点回到触发按钮
+    await page.keyboard.press('Escape')
+    await expect(dialog).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+
+    // 遮罩点击也关闭
+    await trigger.click()
+    await expect(dialog).toBeVisible()
+    await page.locator('.help-overlay').click({ position: { x: 5, y: 5 } })
+    await expect(dialog).toHaveCount(0)
+  })
+})
+
+
+test.describe('v1.0 中英双语', () => {
+  test('L1. 切换 English：导航/标题/html lang 同步，刷新保持，可切回', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('button', { name: 'English' }).click()
+
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('nav')).toContainText('Inbox')
+    await expect(page.locator('nav')).toContainText('Settings')
+    await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
+    expect(await page.title()).toContain('Shisui')
+
+    await page.reload()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+    await expect(page.locator('nav')).toContainText('Inbox')
+    await expect(page.locator('nav')).toContainText('Plan')
+    // 刷新后默认回到收件页；重新进入设置再断言英文标题
+    await page.locator('nav').getByRole('button', { name: 'Settings' }).click()
+    await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
+
+    await page.getByRole('button', { name: '中文' }).click()
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+    await expect(page.locator('nav')).toContainText('收件')
+  })
+})
+
+
+test.describe('v1.0 English 静态 UI', () => {
+  test('L2. manifest 切换 + English 页面无中文（含解析/候选/Plan 有数据）', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('button', { name: 'English' }).click()
+
+    expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toContain('manifest.en.webmanifest')
+    const manifest = await (await page.request.get('/manifest.en.webmanifest')).json()
+    expect(manifest.lang).toBe('en')
+    expect(manifest.name).toContain('group messages to to-dos')
+
+    const scan = async () =>
+      page.evaluate(() => {
+        // 允许品牌「穗」与语言自称「中文」；用户内容/任务标题/reasons/ICS 警告不在扫描范围
+        const allowed = /穗|中文/
+        const skip = '.task-title,.candidate-title,.raw,.reasons,.warnings,.chips,.task-tags,.tag,.series-tag,.history-item,.task-meta,.conflicts,textarea,input,select,script,style'
+        const hasCjk = (text: string) => /[\u4e00-\u9fff]/.test(text) && !allowed.test(text)
+        const parts = new Set<string>()
+        for (const el of Array.from(document.body.querySelectorAll('*'))) {
+          if (el.closest(skip)) continue
+          for (const node of Array.from(el.childNodes)) {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const value = (node.textContent ?? '').trim()
+              if (value && hasCjk(value)) parts.add('text: ' + value)
+            }
+          }
+          for (const attr of ['aria-label', 'placeholder', 'title']) {
+            const value = el.getAttribute(attr)
+            if (value && hasCjk(value)) parts.add(`${attr}: ${value}`)
+          }
+        }
+        return [...parts]
+      })
+
+    const found = new Set<string>()
+    for (const label of ['Inbox', 'Calendar', 'Stats', 'Settings']) {
+      await page.locator('nav').getByRole('button', { name: label }).click()
+      await page.waitForTimeout(120)
+      for (const item of await scan()) found.add(item)
+    }
+
+    // 动态：解析示例 → 候选页；收录 → Plan 有数据
+    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('button', { name: 'Work example' }).click()
+    await page.getByRole('button', { name: 'Parse', exact: true }).click()
+    await expect(page.getByRole('heading', { name: /Found \d+ to-dos/ })).toBeVisible({ timeout: 15_000 })
+    for (const item of await scan()) found.add(item)
+
+    await page.getByRole('button', { name: 'Accept all' }).click()
+    await page.locator('nav').getByRole('button', { name: 'Plan' }).click()
+    await page.waitForTimeout(200)
+    for (const item of await scan()) found.add(item)
+
+    // 收录后回收件页：覆盖 toast「Accepted N to-dos…」
+    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.waitForTimeout(200)
+    for (const item of await scan()) found.add(item)
+
+    expect([...found]).toEqual([])
   })
 })

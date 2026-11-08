@@ -1,10 +1,11 @@
+import { t } from '@/i18n'
 import { useMemo, useState } from 'react'
 import { buildMonthGrid, spanDays, startOfDay } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
 
-const WEEKDAYS = ['一', '二', '三', '四', '五', '六', '日']
+import { dayHeadingI18n, monthLabelI18n, weekdayNarrowI18n } from '@/i18n'
 
 function dayStartOf(ms: number): number {
   return startOfDay(new Date(ms)).getTime()
@@ -59,7 +60,7 @@ export default function MonthView() {
 
   const cells = useMemo(() => buildMonthGrid(anchor), [anchor])
   const selectedTasks = byDay.get(selected) ?? []
-  const monthLabel = `${anchor.getFullYear()} 年 ${anchor.getMonth() + 1} 月`
+  const monthLabel = monthLabelI18n(anchor.getTime())
 
   const shiftMonth = (delta: number) => {
     setAnchor((current) => new Date(current.getFullYear(), current.getMonth() + delta, 1))
@@ -82,20 +83,20 @@ export default function MonthView() {
   return (
     <div className="month-view">
       <div className="month-toolbar">
-        <button type="button" className="btn btn-sm" onClick={() => shiftMonth(-1)} aria-label="上个月">
-          ← 上月
+        <button type="button" className="btn btn-sm" onClick={() => shiftMonth(-1)} aria-label={t('上个月')}>
+          {t('← 上月')}
         </button>
         <h2 className="month-title">{monthLabel}</h2>
         <button type="button" className="btn btn-sm" onClick={goToday}>
-          今天
+          {t('今天')}
         </button>
-        <button type="button" className="btn btn-sm" onClick={() => shiftMonth(1)} aria-label="下个月">
-          下月 →
+        <button type="button" className="btn btn-sm" onClick={() => shiftMonth(1)} aria-label={t('下个月')}>
+          {t('下月 →')}
         </button>
       </div>
 
-      <div className="month-grid" role="grid" aria-label="月历">
-        {WEEKDAYS.map((label) => (
+      <div className="month-grid" role="grid" aria-label={t('月历')}>
+        {weekdayNarrowI18n().map((label) => (
           <div key={label} className="month-weekday" role="columnheader">
             {label}
           </div>
@@ -115,7 +116,7 @@ export default function MonthView() {
               className={classes.join(' ')}
               data-day={day}
               role="gridcell"
-              aria-label={`${date.getMonth() + 1} 月 ${date.getDate()} 日，${dayTasks.length} 件事`}
+              aria-label={t('{m} 月 {d} 日，{n} 件事', { m: date.getMonth() + 1, d: date.getDate(), n: dayTasks.length })}
               onClick={() => setSelected(day)}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => void onDrop(event, day)}
@@ -136,15 +137,11 @@ export default function MonthView() {
 
       <section className="month-day card">
         <h3>
-          <span className="month-day-title">
-            {`${new Date(selected).getMonth() + 1} 月 ${new Date(selected).getDate()} 日 · ${
-              ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][new Date(selected).getDay()]
-            }`}
-          </span>
-          <span className="month-day-count">{selectedTasks.length} 件</span>
+          <span className="month-day-title">{dayHeadingI18n(selected)}</span>
+          <span className="month-day-count">{t('{n} 件', { n: selectedTasks.length })}</span>
         </h3>
         {selectedTasks.length === 0 ? (
-          <p className="muted month-day-empty">这天没有事。把其他日子的任务拖到这一格就能挪过来。</p>
+          <p className="muted month-day-empty">{t('这天没有事。把其他日子的任务拖到这一格就能挪过来。')}</p>
         ) : (
           <ul className="day-list">
             {selectedTasks.map((task) => (
@@ -161,13 +158,13 @@ export default function MonthView() {
               >
                 <span className="day-time">{formatTime(task)}</span>
                 <span className="day-title">{task.title}</span>
-                {spanDays(task) > 1 && <span className="day-span">跨天</span>}
+                {spanDays(task) > 1 && <span className="day-span">{t('跨天')}</span>}
                 {task.location && <span className="muted">{task.location}</span>}
               </li>
             ))}
           </ul>
         )}
-        <p className="muted month-hint">拖动任务到别的日期可改期；时刻保持不变，全天任务仍是整天。</p>
+        <p className="muted month-hint">{t('拖动任务到别的日期可改期；时刻保持不变，全天任务仍是整天。')}</p>
       </section>
     </div>
   )
