@@ -28,6 +28,7 @@ import { t } from '@/i18n'
 
 export type View = 'inbox' | 'plan' | 'calendar' | 'stats' | 'settings'
 export type Lang = 'zh' | 'en'
+export type ImageMode = 'ask' | 'local' | 'ai' | 'off'
 
 interface AppState {
   view: View
@@ -54,6 +55,8 @@ interface AppState {
   undo: { label: string; before: StoredTask[]; generatedIds?: string[] } | null
   /** 界面语言 */
   lang: Lang
+  /** 图片识别模式：ask / local / ai / off */
+  imageMode: ImageMode
   /** 专注模式 */
   focusMode: boolean
   focusIndex: number
@@ -68,6 +71,9 @@ interface AppState {
   /** 结束系列：停止生成、保留历史 */
   endSeries: (id: string) => Promise<void>
   setLang: (lang: Lang) => void
+  setImageMode: (mode: ImageMode) => void
+  /** 图片识别结果直接进入候选 */
+  setImageCandidates: (tasks: ParsedTask[]) => void
   setSearchQuery: (query: string) => void
   toggleSelection: (id: string) => void
   clearSelection: () => void
@@ -180,6 +186,15 @@ export const useApp = create<AppState>((set, get) => ({
       return 'zh' as Lang
     }
   })(),
+  imageMode: (() => {
+    if (typeof window === 'undefined') return 'ask' as ImageMode
+    try {
+      const value = window.localStorage.getItem('shisui.imageMode')
+      return value === 'local' || value === 'ai' || value === 'off' ? (value as ImageMode) : ('ask' as ImageMode)
+    } catch {
+      return 'ask' as ImageMode
+    }
+  })(),
   searchQuery: '',
   selectedIds: [],
   undo: null,
@@ -280,6 +295,26 @@ export const useApp = create<AppState>((set, get) => ({
       // 隐私模式下忽略，仅本次生效
     }
     set({ lang })
+  },
+
+  setImageMode: (mode) => {
+    try {
+      window.localStorage.setItem('shisui.imageMode', mode)
+    } catch {
+      // 隐私模式下忽略，仅本次生效
+    }
+    set({ imageMode: mode })
+  },
+
+  setImageCandidates: (tasks) => {
+    set({
+      candidates: tasks,
+      warnings: [],
+      parsing: false,
+      stage: '',
+      engineNote: tasks.length > 0 ? t('图片识别到 {n} 条', { n: tasks.length }) : t('图片里没有识别出可用的待办'),
+      batchMode: false,
+    })
   },
 
   setSearchQuery: (query) => set({ searchQuery: query }),

@@ -9,6 +9,7 @@ import HistoryPanel from './HistoryPanel'
 import IcsImportPanel from './IcsImportPanel'
 import ManualAddForm from './ManualAddForm'
 import EmptyState from './EmptyState'
+import ImportPanel from './ImportPanel'
 import { useNow } from './useNow'
 
 /**
@@ -209,6 +210,13 @@ export default function InboxView() {
             {t('导入 .ics')}
           </button>
         </div>
+
+        <ImportPanel
+          onText={(text) => {
+            setRaw(text)
+            requestAnimationFrame(() => textareaRef.current?.focus())
+          }}
+        />
 
         {parsing && (
           <div className="stage">

@@ -46,11 +46,11 @@ const KIND_LIST: TaskKind[] = ['task', 'meeting', 'review', 'signup', 'payment',
  * 意图控制的核心在这里：把「AI 该做什么、不该做什么、拿不准怎么办」全部写成可执行规则。
  * 这段 Prompt 是本项目的核心资产之一，改动必须同步更新 docs/DEVLOG.md。
  */
-export function buildMessages(raw: string, ref: Date) {
+export function buildExtractionSystemPrompt(ref: Date): string {
   const refText = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, '0')}-${String(ref.getDate()).padStart(2, '0')} ${String(ref.getHours()).padStart(2, '0')}:${String(ref.getMinutes()).padStart(2, '0')}`
   const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][ref.getDay()]
 
-  const system = [
+  return [
     '你是「群消息结构化抽取器」。你只输出 JSON，不输出任何解释性文字。',
     '',
     '任务：从一段群聊 / 工作通知 / 校园通知里，抽取「必须亲自去做、且有明确时间」的事项。',
@@ -83,11 +83,57 @@ export function buildMessages(raw: string, ref: Date) {
       KIND_LIST.join('|') +
       '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null（URL/网址填 null）","location":"真实地点或线上平台名 或 null（URL 填 null）","url":"该事项的报名/考试链接（仅 http/https）或 null","note":"报名要求/温馨提示等备注 或 null","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
   ].join('\n')
+}
 
+export function buildMessages(raw: string, ref: Date) {
   return [
-    { role: 'system' as const, content: system },
+    { role: 'system' as const, content: buildExtractionSystemPrompt(ref) },
     { role: 'user' as const, content: '通知原文：\n' + raw },
   ]
+}
+
+/** 图片识图用的 messages（OpenAI 兼容 content 数组） */
+export function buildImageMessages(imageDataUrl: string, ref: Date) {
+  const system = `${buildExtractionSystemPrompt(ref)}\n\n这是通知图片。请先阅读图片中的文字，再按同一 JSON 规则抽取；看不清的地方 confidence 设为 low。`
+  return [
+    { role: 'system' as const, content: system },
+    {
+      role: 'user' as const,
+      content: [
+        { type: 'text' as const, text: '通知图片：' },
+        { type: 'image_url' as const, image_url: { url: imageDataUrl } },
+      ],
+    },
+  ]
+}
+
+/** AI 识图：一次性请求（非流式）；失败给可读错误，不自动重试 */
+export async function parseImageWithLLM(
+  imageDataUrl: string,
+  ref: Date,
+  config: LLMConfig,
+): Promise<ParsedTask[]> {
+  const response = await fetch(config.endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: config.model,
+      temperature: 0,
+      stream: false,
+      messages: buildImageMessages(imageDataUrl, ref),
+    }),
+  })
+  if (!response.ok) {
+    if ([400, 404, 415, 422].includes(response.status)) throw new Error('AI_MODEL_NO_VISION')
+    throw new Error(`AI 接口返回 ${response.status}，请检查地址与 Key`)
+  }
+  const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> }
+  const content = payload.choices?.[0]?.message?.content
+  if (!content) throw new Error('AI_MODEL_NO_VISION')
+  return parseLLMResponse(extractJson(content))
 }
 
 export interface LLMProgress {

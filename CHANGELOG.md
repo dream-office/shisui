@@ -33,6 +33,30 @@
 - 已知限制改为：core 动态文本的英文结构化文案计划 **v1.3**（v1.1.0 为签名彩蛋，不含 core 重构）
 - 与 v1.0.0 Release body、README、CHANGELOG 保持一致
 
+## [1.3.0] - 2026-11-08
+
+### 新增（识图 / 文档导入）
+
+- **本地文档导入**：PDF 文本层、DOCX、TXT、MD → 填入收件框可编辑；重依赖动态 import，不进首屏
+  - 扫描版 PDF 明确提示「请拍照/截图」；`.doc/.xls/.ppt` 拒绝并提示另存
+  - 文档 ≤20MB；提取文本 ≤5 万字（截断 + 提示）；文件名不写入 rawText
+- **图片识别四态开关**（设置页持久化）：每次询问（默认）/ 本地 OCR / AI 识图 / 关闭
+  - **本地 OCR**：Tesseract.js `chi_sim+eng`，WASM/worker/语言包全部本站相对路径（不走 CDN）；首次使用弹声明（本地运行/不上传/5–10MB/耗时/内存/识别率/低端设备建议），确认后才加载；不参与 PWA 预缓存，首次使用后运行时缓存
+  - **AI 识图**：必须已配置 API，且每次上传前勾选确认「图片将发送到你配置的 AI 服务」；OpenAI 兼容 image_url；模型不支持视觉给可读错误、不重试
+  - 图片压缩到长边 ≤1600 / JPEG 0.8；png/jpg/webp；≤10MB
+- **隐私**：本地文档/OCR 0 外网请求；base64 不写日志不落库；文件名不进备份
+- 许可：Tesseract.js / tesseract.js-core / tessdata（Apache-2.0）、pdf.js（Apache-2.0）、mammoth（BSD-2-Clause）列入 `public/licenses/`
+
+### 测试
+
+- e2e：TXT/MD/PDF/DOCX、扫描 PDF 提示、21MB 拒绝；OCR 声明前不加载语言包 + 0 外网请求；关闭态禁用；无 API 禁用；AI 未确认 0 请求、确认后 mock 视觉响应出候选；模式持久化
+- 单测：导入限制/截断、图片 messages
+- 首屏 gzip 实测见交付报告（目标 +30KB 内）
+
+### 版本
+
+- 应用 **1.3.0**；`shisui-core` **1.1.0**（无 DB/备份/ICS 改动）
+
 ## [1.2.0] - 2026-11-08
 
 ### 新增（结构化多事项）

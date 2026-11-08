@@ -27,6 +27,8 @@ export default function SettingsView() {
   const exportBackup = useApp((s) => s.exportBackup)
   const restoreBackup = useApp((s) => s.restoreBackup)
   const lang = useApp((s) => s.lang)
+  const imageMode = useApp((s) => s.imageMode)
+  const setImageMode = useApp((s) => s.setImageMode)
   const setAppLang = useApp((s) => s.setLang)
   const changeLang = (next: 'zh' | 'en') => {
     setAppLang(next)
@@ -167,6 +169,36 @@ export default function SettingsView() {
             {t('English')}
           </button>
         </div>
+      </section>
+
+      <section className="card" aria-labelledby="image-title">
+        <h3 id="image-title">{t('图片识别')}</h3>
+        <p className="muted">{t('文档在本机解析；图片可选择本地 OCR（不上传）或 AI 识图（发送到你配置的 API）。')}</p>
+        <div className="image-mode-options" role="radiogroup" aria-label={t('图片识别方式')}>
+          {[
+            ['ask', t('每次询问（默认）')],
+            ['local', t('本地 OCR（离线）')],
+            ['ai', t('AI 识图（发送到 API）')],
+            ['off', t('关闭图片识别')],
+          ].map(([value, label]) => {
+            const aiDisabled = value === 'ai' && !isLLMReady(llmConfig)
+            return (
+              <label key={value} className={`inline-check ${aiDisabled ? 'is-disabled' : ''}`}>
+                <input
+                  type="radio"
+                  name="image-mode"
+                  value={value}
+                  checked={imageMode === value}
+                  disabled={aiDisabled}
+                  onChange={() => setImageMode(value as typeof imageMode)}
+                />
+                {label}
+                {aiDisabled && <span className="muted"> · {t('未配置 AI 接口')}</span>}
+              </label>
+            )
+          })}
+        </div>
+        <p className="muted">{t('本地 OCR 首次使用需确认声明并加载约 5–10MB 语言包；缓存后可离线。AI 每次上传前都会再次确认。')}</p>
       </section>
 
       <section className="card" aria-labelledby="backup-title">
@@ -334,9 +366,13 @@ export default function SettingsView() {
         </p>
         <p className="muted about-author">{t('作者：dream-office')}</p>
         <p className="about-signature">{t('dream-office · 把散落的时间，一粒一粒捡起来。')}</p>
-        <p className="muted">
+        <p className="muted about-links">
           <a href="https://github.com/dream-office/shisui" target="_blank" rel="noreferrer">
             {t('源码（GitHub）')}
+          </a>
+          {' · '}
+          <a href="./licenses/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">
+            {t('第三方许可')}
           </a>
         </p>
       </section>
