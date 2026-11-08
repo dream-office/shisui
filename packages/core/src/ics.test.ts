@@ -1,3 +1,4 @@
+import { importIcs } from './icsImport.js'
 import { describe, expect, it } from 'vitest'
 import { escapeIcsText, isAllDayTimestamp, tasksToIcs, type IcsTask } from './ics.js'
 
@@ -132,5 +133,34 @@ describe('tasksToIcs', () => {
       index += 1
     }
     expect(total).toBe(`SUMMARY:${title}`)
+  })
+})
+
+
+describe('v1.2 ICS url / note', () => {
+  it('导出 URL/DESCRIPTION，导入还原', () => {
+    const task = {
+      id: 't1',
+      title: 'WPS 挑战赛',
+      dueAt: new Date(2026, 10, 8, 22, 0).getTime(),
+      startAt: new Date(2026, 10, 5, 9, 0).getTime(),
+      endAt: new Date(2026, 10, 8, 22, 0).getTime(),
+      allDay: false,
+      kind: 'exam' as const,
+      channel: null,
+      location: null,
+      url: 'https://f.kdocs.cn/g/BcUkkscR/',
+      note: '温馨提示 1+2',
+      rawText: '',
+      confidence: 'high' as const,
+      reasons: [],
+      engine: 'rule' as const,
+    }
+    const ics = tasksToIcs([task], { ref: new Date(2026, 10, 4) })
+    expect(ics).toContain('URL:https://f.kdocs.cn/g/BcUkkscR/')
+    expect(ics).toContain('DESCRIPTION:温馨提示 1+2')
+    const imported = importIcs(ics)
+    expect(imported.tasks[0].url).toBe('https://f.kdocs.cn/g/BcUkkscR/')
+    expect(imported.tasks[0].note).toBe('温馨提示 1+2')
   })
 })

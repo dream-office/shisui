@@ -93,3 +93,20 @@ export function isSpanning(task: TaskLike): boolean {
   const end = taskEndMs(task)
   return end !== null && new Date(start).toDateString() !== new Date(end).toDateString()
 }
+
+
+/** v3 → v4：补 url/note 默认值；纯函数、幂等 */
+export type MigratedTaskV4<T> = T & { url: string | null; note: string | null }
+
+export function migrateTaskV3toV4<T extends Record<string, unknown>>(task: T): MigratedTaskV4<T> {
+  return {
+    ...task,
+    url: typeof task.url === 'string' && task.url.trim() ? task.url.trim() : null,
+    note: typeof task.note === 'string' && task.note.trim() ? task.note.trim() : null,
+  } as MigratedTaskV4<T>
+}
+
+/** 系列同理（v3 的系列表历史数据） */
+export function migrateSeriesV3toV4<T extends Record<string, unknown>>(series: T): MigratedTaskV4<T> {
+  return migrateTaskV3toV4(series)
+}

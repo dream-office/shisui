@@ -9,7 +9,7 @@ src/
   App.tsx            应用外壳（导航、页脚、使用说明、语言同步）
   ui/                纯展示组件（Inbox/Plan/Month/Stats/Settings/Focus/Help…）
   state/store.ts     zustand 状态编排：解析→确认→落库、批量、撤销、专注、语言
-  data/db.ts         Dexie（IndexedDB v3）
+  data/db.ts         Dexie（IndexedDB v4；url/note 字段）
   data/repo.ts       数据访问（事务、系列编辑、备份 replace、撤销写回）
   services/          PWA、下载、LLM 调用（可选）
   i18n/              自建 i18n（字典、Intl 时间格式、t()）
@@ -19,7 +19,7 @@ packages/core/       MIT 纯函数层（解析/时间/重复/ICS/备份/冲突/�
 ## 关键约定
 
 - **core 不依赖 DOM / IO**：可在 node 与浏览器复用；展示层文案不进 core（冲突提示等核心生成的字符串保留中文，v1.x 再抽）
-- **DB 无隐式迁移**：schema 变更必须升 version 并写迁移；v1.0 冻结 [DATA-FORMAT.md](DATA-FORMAT.md)
+- **DB 无隐式迁移**：schema 变更必须升 version 并写迁移；v1.0 冻结 [DATA-FORMAT.md](DATA-FORMAT.md)，v1.2 起 DB v4（url/note）
 - **隐私**：无账号、无上传；AI Key 只存 localStorage，备份不含 Key
 - **错误边界**：渲染异常不白屏；提供重试/回首页
 - **无障碍**：帮助弹层 `role=dialog` + `aria-modal`，Esc 关闭、焦点回按钮；按钮/输入都有可读标签

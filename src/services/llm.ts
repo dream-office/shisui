@@ -76,11 +76,12 @@ export function buildMessages(raw: string, ref: Date) {
     '例1：通知含「请于11月10日23:59前统计缺页教材数量并反馈」「学习平台：https://example.edu.cn」→ 只抽 1 条 {"title":"统计缺页教材数量并反馈","kind":"task","dueAt":"2026-11-10T23:59:00+08:00","channel":null,"location":null}；网址不是条目、不是 channel。',
     '例2：同一通知「A 表 11月5日前交」「B 报告 12月30日前交」→ 2 条，因为截止时间不同。',
     '例3：「二、学习（考试）平台…」「四、学习委员负责跟进」→ 不抽；章节标题和角色分工不是待办。',
+    '例4：一条竞赛通知含 3 个赛道、各自链接与考试时间 → 抽 3 条；每条独立 url；「免费/获奖率高/简历添彩」丢弃；同一份「温馨提示」写进每条 note。',
     '',
     '输出格式（严格 JSON，不要 markdown 代码块）：',
     '{"tasks":[{"title":"干净的一句话标题，不含时间短语","kind":"' +
       KIND_LIST.join('|') +
-      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null（URL/网址填 null）","location":"真实地点或线上平台名 或 null（URL 填 null）","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
+      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null（URL/网址填 null）","location":"真实地点或线上平台名 或 null（URL 填 null）","url":"该事项的报名/考试链接（仅 http/https）或 null","note":"报名要求/温馨提示等备注 或 null","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
   ].join('\n')
 
   return [
@@ -133,6 +134,18 @@ function cleanLocation(value: unknown): string | null {
   return location
 }
 
+function cleanUrl(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const url = value.trim()
+  return /^https?:\/\//i.test(url) ? url : null
+}
+
+function cleanNote(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const note = value.trim()
+  return note ? note : null
+}
+
 function titleBigrams(title: string): Set<string> {
   const chars = title.replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, '')
   const grams = new Set<string>()
@@ -167,6 +180,8 @@ function dedupeLlmTasks(tasks: ParsedTask[]): ParsedTask[] {
     if (task.title.length > duplicate.title.length) duplicate.title = task.title
     duplicate.channel = duplicate.channel ?? task.channel
     duplicate.location = duplicate.location ?? task.location
+    duplicate.url = duplicate.url ?? task.url ?? null
+    duplicate.note = duplicate.note ?? task.note ?? null
     duplicate.confidence = CONF_RANK[task.confidence] > CONF_RANK[duplicate.confidence] ? task.confidence : duplicate.confidence
   }
   return out
@@ -197,6 +212,8 @@ function toParsedTask(row: Record<string, unknown>, index: number): ParsedTask |
     kind,
     channel: cleanChannel(row.channel),
     location: cleanLocation(row.location),
+    url: cleanUrl(row.url),
+    note: cleanNote(row.note),
     rawText: typeof row.reason === 'string' ? row.reason : '',
     confidence: confidence === 'high' ? 'medium' : confidence, // AI 单方结论封顶 medium
     reasons: [typeof row.reason === 'string' ? `AI 判断：${row.reason}` : 'AI 抽取结果'],

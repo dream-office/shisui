@@ -36,6 +36,10 @@ export interface ParsedTask {
   channel: string | null
   /** 地点：教学楼 A301、线上腾讯会议…… */
   location: string | null
+    /** 相关链接（仅 http/https）；null = 没有 */
+    url?: string | null
+    /** 备注：报名要求、温馨提示等；null = 没有 */
+    note?: string | null
   /** 原文片段，永远保留，供用户核对 */
   rawText: string
   confidence: Confidence
@@ -83,6 +87,8 @@ export interface TaskSeries {
   kind: TaskKind
   channel?: string | null
   location?: string | null
+    url?: string | null
+    note?: string | null
   /** COUNT（含首次）；null = 不限 */
   count?: number | null
   /** UNTIL（含当天）；null = 不限 */

@@ -198,6 +198,7 @@ interface RawEvent {
   summary: string
   description: string
   location: string
+  url: string
   start: Property | null
   end: Property | null
   hasRule: boolean
@@ -224,6 +225,7 @@ function collectEvents(lines: string[]): RawEvent[] {
         summary: '',
         description: '',
         location: '',
+        url: '',
         start: null,
         end: null,
         hasRule: false,
@@ -259,6 +261,9 @@ function collectEvents(lines: string[]): RawEvent[] {
         break
       case 'LOCATION':
         current.location = unescapeIcsText(prop.value)
+        break
+      case 'URL':
+        current.url = prop.value.trim()
         break
       case 'DTSTART':
         current.start = prop
@@ -378,6 +383,8 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
       kind: kindFor({ start, end }),
       channel: null,
       location: event.location.trim() || null,
+      url: /^https?:\/\//i.test(event.url) ? event.url : null,
+      note: event.description.trim() || null,
       rawText: rawLines.join('\n'),
       confidence: 'high',
       reasons,

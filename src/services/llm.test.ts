@@ -43,11 +43,29 @@ describe('v1.1.3 LLM 后处理', () => {
     expect(tasks).toHaveLength(1)
   })
 
+  it('url/note：只收 http(s) 链接，note 原样保留', () => {
+    const [task] = parseLLMResponse({
+      tasks: [
+        {
+          title: 'WPS 挑战赛',
+          kind: 'exam',
+          dueAt: '2026-11-08T22:00:00+08:00',
+          url: 'https://f.kdocs.cn/g/BcUkkscR/',
+          note: '温馨提示',
+        },
+      ],
+    })
+    expect(task.url).toBe('https://f.kdocs.cn/g/BcUkkscR/')
+    expect(task.note).toBe('温馨提示')
+    expect(parseLLMResponse({ tasks: [{ title: 'x', dueAt: '2026-11-08T22:00:00+08:00', url: 'javascript:alert(1)' }] })[0].url).toBeNull()
+  })
+
   it('prompt 含 3 个 few-shot、URL 不是 channel、单通知通常 1 条', () => {
     const system = buildMessages('通知', REF)[0].content
     expect(system).toContain('例1')
     expect(system).toContain('例2')
     expect(system).toContain('例3')
+    expect(system).toContain('例4')
     expect(system).toContain('URL / 网址不是 channel')
     expect(system).toContain('一条通知可能有多件事')
   })

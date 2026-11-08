@@ -26,6 +26,8 @@ export interface IcsTask {
   rrule?: string | null
   channel?: string | null
   location?: string | null
+  url?: string | null
+  note?: string | null
   rawText?: string
   done?: boolean
 }
@@ -40,6 +42,8 @@ export interface IcsSeries {
   title: string
   channel?: string | null
   location?: string | null
+  url?: string | null
+  note?: string | null
   until?: number | null
   endedAt?: number | null
 }
@@ -132,6 +136,7 @@ interface EventInput {
   end: number
   allDay: boolean
   location?: string | null
+  url?: string | null
   description?: string
   rrule?: string | null
   done?: boolean
@@ -153,6 +158,7 @@ function buildEvent(input: EventInput, dtstamp: string): string {
     lines(`SUMMARY:${escapeIcsText(input.title || '未命名')}`),
     input.description ? lines(`DESCRIPTION:${escapeIcsText(input.description)}`) : '',
     input.location ? lines(`LOCATION:${escapeIcsText(input.location)}`) : '',
+    input.url && /^https?:\/\//i.test(input.url) ? foldLine(`URL:${input.url}`) : '',
     input.rrule ? foldLine(`RRULE:${applyUntil(input.rrule, input.until)}`) : '',
     input.done ? 'STATUS:COMPLETED' : 'STATUS:CONFIRMED',
     'END:VEVENT',
@@ -223,9 +229,12 @@ export function tasksToIcs(tasks: readonly IcsTask[], options: IcsOptions = {}):
         end,
         allDay,
         location: task.location,
-        description: [task.channel ? `渠道：${task.channel}` : '', task.rawText ? `原文：${task.rawText}` : '']
-          .filter(Boolean)
-          .join('\n'),
+        url: task.url ?? null,
+        description:
+          task.note ??
+          [task.channel ? `渠道：${task.channel}` : '', task.rawText ? `原文：${task.rawText}` : '']
+            .filter(Boolean)
+            .join('\n'),
         rrule: task.rrule ?? null,
         done: task.done,
       },
@@ -248,7 +257,8 @@ export function tasksToIcs(tasks: readonly IcsTask[], options: IcsOptions = {}):
           end,
           allDay,
           location: series.location,
-          description: series.channel ? `渠道：${series.channel}` : '',
+          url: series.url ?? null,
+          description: series.note ?? (series.channel ? `渠道：${series.channel}` : ''),
           rrule: series.rrule,
           until: series.endedAt ?? series.until ?? null,
         },

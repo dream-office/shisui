@@ -104,6 +104,8 @@ export function mergeTasks(ruleTasks: ParsedTask[], llmTasks: ParsedTask[]): Mer
     if (existing) {
       existing.channel = existing.channel ?? (isUrlLike(task.channel) ? null : task.channel)
       existing.location = existing.location ?? (isUrlLike(task.location) ? null : task.location)
+      existing.url = existing.url ?? (/^https?:\/\//i.test(task.url ?? '') ? task.url : null)
+      existing.note = existing.note ?? task.note ?? null
       for (const reason of task.reasons) {
         if (!existing.reasons.includes(reason)) existing.reasons.push(reason)
       }

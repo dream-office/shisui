@@ -219,6 +219,8 @@ export async function applyIcsPlan(plan: {
         startAt: task.startAt,
         kind: task.kind,
         location: task.location,
+        url: task.url ?? current.url ?? null,
+        note: task.note ?? current.note ?? null,
         rawText: task.rawText,
         sourceUid: task.sourceUid ?? current.sourceUid ?? null,
       })

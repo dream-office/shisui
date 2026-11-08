@@ -147,6 +147,8 @@ async function buildPlan(task: StoredTask): Promise<{ nextTask: ParsedTask | nul
     nextTask: nextTask
       ? {
           ...nextTask,
+          url: task.url ?? null,
+          note: task.note ?? null,
           kind: nextTask.kind as ParsedTask['kind'],
           confidence: 'high',
           reasons: ['由重复规则生成'],
@@ -529,6 +531,8 @@ export const useApp = create<AppState>((set, get) => ({
           kind: task.kind,
           channel: task.channel,
           location: task.location,
+          url: task.url ?? null,
+          note: task.note ?? null,
           count: rule?.count ?? null,
           until: rule?.until ?? null,
           createdAt: Date.now(),
@@ -639,6 +643,8 @@ export const useApp = create<AppState>((set, get) => ({
           kind: task.kind,
           channel: task.channel,
           location: task.location,
+          url: task.url ?? null,
+          note: task.note ?? null,
           count: rule?.count ?? null,
           until: rule?.until ?? null,
           createdAt: Date.now(),

@@ -283,6 +283,8 @@ export function parseSegment(segment: string, ref: Date, index: number, override
       kind: kind === 'other' ? 'task' : kind,
       channel,
       location,
+      url: URL_CAPTURE_RE.exec(segment)?.[0] ?? null,
+      note: null,
       rawText: segment,
       confidence: 'medium',
       reasons,
@@ -337,6 +339,8 @@ export function parseSegment(segment: string, ref: Date, index: number, override
   // URL / 会议号不是地点
   if (location && /(?:https?:|www\.|会议号|会议密码)/i.test(location)) location = null
   if (location) reasons.push(`地点：${location}`)
+  const url = URL_CAPTURE_RE.exec(segment)?.[0] ?? null
+  const note = null
 
   const isDeadline = hit?.isDeadline ?? false
   if (isDeadline) reasons.push('含截止语义（前 / 之前 / 截止）')
@@ -367,6 +371,8 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     kind,
     channel,
     location,
+    url,
+    note,
     rawText: segment,
     confidence,
     reasons,
@@ -484,12 +490,118 @@ function mergeDuplicateTasks(tasks: ParsedTask[]): ParsedTask[] {
     }
     duplicate.channel = duplicate.channel ?? task.channel
     duplicate.location = duplicate.location ?? task.location
+    duplicate.url = duplicate.url ?? task.url ?? null
+    duplicate.note = duplicate.note ?? task.note ?? null
     if (CONF_RANK[task.confidence] > CONF_RANK[duplicate.confidence]) duplicate.confidence = task.confidence
     for (const reason of task.reasons) {
       if (!duplicate.reasons.includes(reason)) duplicate.reasons.push(reason)
     }
   }
   return out
+}
+
+
+const URL_CAPTURE_RE = /https?:\/\/[^\s，。；;)）\]】'"]+/i
+const RANGE_PAIR_RE =
+  /((?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|(?:\d{4}年)?\d{1,2}月\d{1,2}日|\d{1,2}日))\s*(?:(\d{1,2})[:：](\d{2}))?\s*(?:-|—|–|~|～|至|到)\s*((?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|(?:\d{4}年)?\d{1,2}月\d{1,2}日|\d{1,2}日))\s*(?:(\d{1,2})[:：](\d{2}))?/
+const COMPETITION_TITLE_RE = /(挑战赛|比赛|大赛|竞赛|程序设计|考试)/
+const MARKETING_RE = /(免费|获奖率|简历添彩|评综测|加分|祝取得好成绩|名额有限|先到先得)/
+
+interface DateParts {
+  date: Date
+  hour: number | null
+  minute: number | null
+}
+
+function parseDateParts(text: string, ref: Date): DateParts | null {
+  const full = /(?:(\d{4})\s*[年]?[-/.]?)?(\d{1,2})月(\d{1,2})日/.exec(text)
+  const dayOnly = /(\d{1,2})日/.exec(text)
+  const clock = /(\d{1,2})[:：](\d{2})/.exec(text)
+  let date: Date
+  if (full) date = new Date(Number(full[1] ?? ref.getFullYear()), Number(full[2]) - 1, Number(full[3]))
+  else if (dayOnly) date = new Date(ref.getFullYear(), ref.getMonth(), Number(dayOnly[1]))
+  else return null
+  return {
+    date,
+    hour: clock ? Number(clock[1]) : null,
+    minute: clock ? Number(clock[2]) : null,
+  }
+}
+
+/** 取「11月5日9:00-11月8日22:00」的起止；缺钟点时起点 09:00、终点 23:59 */
+function parseRangePair(text: string, ref: Date): { startAt: number; dueAt: number } | null {
+  const match = RANGE_PAIR_RE.exec(text)
+  if (!match) return null
+  const start = parseDateParts(match[1] + (match[2] ? ' ' + match[2] + ':' + match[3] : ''), ref)
+  const end = parseDateParts(match[4] + (match[5] ? ' ' + match[5] + ':' + match[6] : ''), ref)
+  if (!start || !end) return null
+  const startAt = setClock(start.date, start.hour ?? 9, start.minute ?? 0).getTime()
+  const dueAt = setClock(end.date, end.hour ?? 23, end.minute ?? 59).getTime()
+  return { startAt, dueAt }
+}
+
+/**
+ * 结构化多事项：编号标题 + 链接 + 考试时间区间。
+ * 只在「至少 2 个编号事项都带时间区间」时启用，避免误伤普通通知。
+ */
+export function parseStructuredNotice(raw: string, ref: Date = new Date()): ParsedTask[] {
+  const lines = raw.split(/\r?\n/).map((line) => line.trim())
+  const headings: Array<{ line: number; title: string }> = []
+  for (let i = 0; i < lines.length; i += 1) {
+    const match = /^[一二三四五六七八九十\d]+[、.．)）]\s*(.+?)\s*$/.exec(lines[i])
+    if (!match) continue
+    const title = cleanTitle(match[1]).replace(/[：:]$/, '').trim()
+    if (!title) continue
+    if (/^(?:报名|考试|学习|提交|时间|日期|地点|对象|要求|说明|注意|联系|温馨|活动)/.test(title)) continue
+    headings.push({ line: i, title })
+  }
+  if (headings.length < 2) return []
+
+  // 末尾「温馨提示」：逐条抽取，营销句丢掉
+  const tipLines: string[] = []
+  const tipIndex = lines.findIndex((line) => /温馨提示/.test(line))
+  if (tipIndex >= 0) {
+    const text = lines
+      .slice(tipIndex)
+      .join(' ')
+      .replace(/^.*?温馨提示[：:]?/, '')
+    for (const sentence of text.split(/(?<=[。；;])/)) {
+      const cleaned = sentence.trim()
+      if (cleaned && !MARKETING_RE.test(cleaned)) tipLines.push(cleaned)
+    }
+  }
+  const globalTip = tipLines.join('').trim()
+
+  const items: ParsedTask[] = []
+  headings.forEach((heading, index) => {
+    const endLine = index + 1 < headings.length ? headings[index + 1].line : lines.length
+    const blockLines = lines.slice(heading.line + 1, endLine)
+    const blockText = blockLines.join('\n')
+    const range = parseRangePair(blockText, ref)
+    if (!range) return
+    const url = URL_CAPTURE_RE.exec(blockText)?.[0] ?? null
+    const blockNote = blockLines.find((line) => /链接/.test(line) && /更新/.test(line))?.trim() ?? ''
+    const note = [blockNote ? `${blockNote}；` : '', globalTip].filter(Boolean).join('\n') || null
+    const kind: TaskKind = COMPETITION_TITLE_RE.test(`${heading.title} ${blockText}`) ? 'exam' : 'task'
+    items.push({
+      id: stableId(`structured|${heading.title}`, index),
+      title: heading.title,
+      dueAt: range.dueAt,
+      startAt: range.startAt,
+      endAt: range.dueAt,
+      kind,
+      channel: null,
+      location: null,
+      url,
+      note,
+      rawText: [lines[heading.line], ...blockLines].join('\n'),
+      confidence: 'high',
+      reasons: ['按编号识别为独立事项', '时间按考试时间区间取起止'],
+      engine: 'rule',
+      rrule: null,
+    })
+  })
+  return items.length >= 2 ? items : []
 }
 
 export interface ParseResult {
@@ -499,6 +611,11 @@ export interface ParseResult {
 
 /** 一段通知 → 一组待办 */
 export function parseNotice(raw: string, ref: Date = new Date()): ParseResult {
+  const structured = parseStructuredNotice(raw, ref)
+  if (structured.length >= 2) {
+    return { tasks: structured, warnings: [] }
+  }
+
   const segments = splitSegments(raw)
   const parsedBySegment = segments.map((segment, index) => parseSegmentCandidates(segment, ref, index))
   let tasks = mergeDuplicateTasks(parsedBySegment.flat())

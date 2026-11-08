@@ -667,8 +667,8 @@ test.describe('DB v2 → v3 迁移', () => {
       return { version, all, timed }
     })
 
-    // Dexie 内部把声明版本 ×10 存进 IndexedDB（3 → 30）
-    expect(record.version).toBe(30)
+    // Dexie 内部把声明版本 ×10 存进 IndexedDB（4 → 40）
+    expect(record.version).toBe(40)
     expect(record.all.title).toBe('老全天任务')
     expect(record.all.allDay).toBe(true)
     expect(record.all.endAt).toBeNull()
@@ -676,6 +676,8 @@ test.describe('DB v2 → v3 迁移', () => {
     expect(record.all.skipped).toBe(false)
     expect(record.timed.done).toBe(true)
     expect(record.timed.allDay).toBe(false)
+    expect(record.all.url).toBeNull()
+    expect(record.all.note).toBeNull()
   })
 })
 
@@ -1302,7 +1304,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await nav.getByRole('button', { name: /^设置/ }).click()
     await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
     const about = page.locator('.about-signature')
-    await expect(page.getByText('拾穗 v1.1.3 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('拾穗 v1.2.0 · AGPL-3.0-or-later')).toBeVisible()
     await expect(page.getByText('作者：dream-office')).toBeVisible()
     await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(
@@ -1345,5 +1347,115 @@ test.describe('v1.1.2 B 版空态与关于', () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     )
     expect(overflow360).toBeLessThanOrEqual(1)
+  })
+})
+
+
+test.describe('v1.2 结构化多事项 + DB v4', () => {
+  const COMPETITION = `关于组织参加大学生竞赛的通知
+各学院：
+一、WPS 智能办公能力挑战赛（校赛）
+报名/考试链接：https://f.kdocs.cn/g/BcUkkscR/
+考试时间：2026年11月5日9:00-11月8日22:00
+二、AI 创新应用挑战赛（校赛）
+链接：https://f.kdocs.cn/g/rPtGIP9T/
+考试时间：2026年11月5日9:00-11月8日22:00
+三、程序设计（校赛）
+考试时间：2026年11月5日14:30-2026年11月5日16:00
+链接 11 月 4 日 16:00 后更新
+温馨提示：进入链接需填写官网报名信息（UID、姓名、手机号等），信息必须与官网保持一致；未在官网报名的学生，请在赛前完成账号注册，获取 UID。
+免费参与，获奖率高，简历添彩，评综测加分，祝取得好成绩！`
+
+  test('T1. 一条通知三赛道 → 3 条候选；每条链接/备注；收录后日程可见', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('textarea').fill(COMPETITION)
+    await page.getByRole('button', { name: '开始解析' }).click()
+
+    await expect(page.locator('.candidate')).toHaveCount(3, { timeout: 15_000 })
+    await expect(page.locator('.candidate .task-link')).toHaveCount(2)
+    await expect(page.locator('.candidate .task-note')).toHaveCount(3)
+    await expect(page.locator('.candidate').first()).toContainText('WPS 智能办公能力挑战赛')
+    await expect(page.locator('.candidate').first().locator('.task-link')).toHaveAttribute(
+      'href',
+      'https://f.kdocs.cn/g/BcUkkscR/',
+    )
+
+    await page.getByRole('button', { name: '全部收录' }).click()
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.task-link')).toHaveCount(2)
+    await expect(page.locator('.task-note')).toHaveCount(3)
+    await page.locator('.task-note summary').first().click()
+    await expect(page.getByText('进入链接需填写官网报名信息', { exact: false }).first()).toBeVisible()
+  })
+
+  test('T2. DB v3 → v4 迁移：旧任务保留，url/note 补 null', async ({ page }) => {
+    await page.goto('/')
+    await page.evaluate(async () => {
+      await new Promise<void>((resolve, reject) => {
+        const del = indexedDB.deleteDatabase('shisui')
+        del.onsuccess = () => resolve()
+        del.onerror = () => reject(del.error)
+      })
+      await new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open('shisui', 3)
+        open.onupgradeneeded = () => {
+          const db = open.result
+          db.createObjectStore('tasks', { keyPath: 'id' })
+          db.createObjectStore('batches', { keyPath: 'id' })
+          db.createObjectStore('series', { keyPath: 'id' })
+        }
+        open.onsuccess = () => {
+          const db = open.result
+          const tx = db.transaction('tasks', 'readwrite')
+          tx.objectStore('tasks').put({
+            id: 'old-v3',
+            title: '旧版任务',
+            dueAt: Date.now() + 86_400_000,
+            startAt: null,
+            kind: 'task',
+            channel: null,
+            location: null,
+            rawText: '',
+            confidence: 'high',
+            reasons: [],
+            engine: 'rule',
+            createdAt: Date.now(),
+            done: false,
+            editedFields: [],
+            endAt: null,
+            allDay: false,
+            rrule: null,
+            seriesId: null,
+            recurrenceIndex: 0,
+            skipped: false,
+          })
+          tx.oncomplete = () => {
+            db.close()
+            resolve()
+          }
+          tx.onerror = () => reject(tx.error)
+        }
+        open.onerror = () => reject(open.error)
+      })
+    })
+    await page.reload()
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('旧版任务')).toBeVisible()
+
+    const migrated = await page.evaluate(
+      () =>
+        new Promise<{ url: string | null; note: string | null }>((resolve, reject) => {
+          const open = indexedDB.open('shisui')
+          open.onsuccess = () => {
+            const db = open.result
+            const req = db.transaction('tasks').objectStore('tasks').get('old-v3')
+            req.onsuccess = () => resolve({ url: req.result.url ?? null, note: req.result.note ?? null })
+            req.onerror = () => reject(req.error)
+          }
+          open.onerror = () => reject(open.error)
+        }),
+    )
+    expect(migrated.url).toBeNull()
+    expect(migrated.note).toBeNull()
   })
 })

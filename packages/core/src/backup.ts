@@ -114,6 +114,8 @@ function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTas
     kind: typeof raw.kind === 'string' ? (raw.kind as StoredTask['kind']) : 'task',
     channel: asString(raw.channel),
     location: asString(raw.location),
+    url: asString(raw.url),
+    note: asString(raw.note),
     rawText: asString(raw.rawText) ?? '',
     confidence:
       raw.confidence === 'high' || raw.confidence === 'medium' || raw.confidence === 'low'
@@ -158,6 +160,8 @@ function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSer
     kind: typeof raw.kind === 'string' ? (raw.kind as ParsedTask['kind']) : 'task',
     channel: asString(raw.channel),
     location: asString(raw.location),
+    url: asString(raw.url),
+    note: asString(raw.note),
     count: typeof raw.count === 'number' ? raw.count : null,
     until: asNumberOrNull(raw.until),
     createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : Date.now(),

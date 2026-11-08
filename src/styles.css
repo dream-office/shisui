@@ -1785,3 +1785,20 @@ em {
   .empty-state { padding: 18px 14px; }
   .empty-state .btn { width: auto; }
 }
+
+
+/* ── v1.2 url / note ───────────────────────── */
+.task-extra { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 14px; margin-top: 6px; }
+.task-link {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed currentColor;
+  white-space: nowrap;
+}
+.task-link:hover { opacity: 0.8; }
+.task-note { font-size: 12px; color: var(--muted); max-width: 100%; }
+.task-note summary { cursor: pointer; color: var(--accent); }
+.task-note p { margin: 6px 0 0; line-height: 1.7; white-space: pre-wrap; }
+.cand-note { font-size: 12px; color: var(--muted); }
+.cand-note p { margin: 6px 0 0; line-height: 1.7; white-space: pre-wrap; }

@@ -33,6 +33,29 @@
 - 已知限制改为：core 动态文本的英文结构化文案计划 **v1.2**（v1.1.0 为签名彩蛋，不含 core 重构）
 - 与 v1.0.0 Release body、README、CHANGELOG 保持一致
 
+## [1.2.0] - 2026-11-08
+
+### 新增（结构化多事项）
+
+- `ParsedTask` / `StoredTask` / `TaskSeries` 新增 **`url`**、**`note`** 字段
+- **DB v4**：迁移纯函数只补 `url=null,note=null`，幂等；旧备份缺省 null
+- **多事项抽取**：编号标题 + 链接 + 考试时间区间 → 每项独立任务（startAt/dueAt/url/note）
+  - 温馨提示按条写入；「链接 xx 后更新」只贴对应项；营销句丢弃
+  - kind=exam；URL 不进 channel/location
+- **AI prompt** 第 4 个 few-shot：一条通知多赛道、每条独立 URL/note、营销句丢弃
+- **ICS**：导出 `URL:` + `DESCRIPTION:`（note），导入还原 url/note
+- **UI**：候选卡/任务行显示「打开链接」（仅 http/https，`rel=noreferrer`）与可折叠备注
+
+### 测试
+
+- 三条赛道样本（3 条，标题/起止/URL/note 断言）+ 样本 A/B + 边界
+- 备份 url/note 往返；旧备份缺省 null；DB v3→v4 迁移；ICS url/note 往返
+- 单测 / e2e 全量、两时区
+
+### 版本
+
+- 应用 **1.2.0**；`shisui-core` **1.1.0**（数据结构变更，minor）
+
 ## [1.1.3] - 2026-11-08
 
 ### 修复（抽取质量）
