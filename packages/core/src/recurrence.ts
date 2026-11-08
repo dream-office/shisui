@@ -325,3 +325,83 @@ export function nextOccurrence(rule: RecurRule, currentStartMs: number, currentI
   if (until !== null && next.getTime() > until) return null
   return next.getTime()
 }
+
+
+export interface NextInstanceInput {
+  id: string
+  title: string
+  kind: string
+  channel?: string | null
+  location?: string | null
+  rawText?: string
+  startAt?: number | null
+  dueAt?: number | null
+  endAt?: number | null
+  allDay?: boolean
+  seriesId: string
+  recurrenceIndex: number
+}
+
+/**
+ * 用系列规则 + 当前实例，算出「下一条待办」。
+ * 返回 null 表示系列已结束（COUNT/UNTIL 用尽）。
+ * 区间实例保持时长；全天保持整天。
+ */
+export function buildNextInstance<T extends NextInstanceInput>(
+  current: T,
+  rule: RecurRule,
+  options: { nextId: string; seriesEnded?: boolean },
+): (T & { id: string; recurrenceIndex: number; seriesId: string; done: false }) | null {
+  if (options.seriesEnded) return null
+  const primary = current.startAt ?? current.dueAt ?? null
+  if (primary === null) return null
+
+  const nextMs = nextOccurrence(rule, primary, current.recurrenceIndex)
+  if (nextMs === null) return null
+
+  const next = { ...current } as T
+  const hadStart = current.startAt !== null && current.startAt !== undefined
+  const duration =
+    current.endAt !== null && current.endAt !== undefined && current.endAt > primary
+      ? current.endAt - primary
+      : null
+
+  if (hadStart) {
+    next.startAt = nextMs
+    next.dueAt = null
+  } else {
+    next.dueAt = nextMs
+    next.startAt = null
+  }
+  next.endAt = duration !== null ? nextMs + duration : null
+  next.recurrenceIndex = current.recurrenceIndex + 1
+  return {
+    ...next,
+    id: options.nextId,
+    seriesId: current.seriesId,
+    recurrenceIndex: current.recurrenceIndex + 1,
+    done: false,
+  }
+}
+
+
+/** 从标题里裁掉重复短语（「每周五」「每两周的周一」「每月31号」），避免标题残留「每」 */
+export function stripRecurrencePhrase(text: string): string {
+  let out = text
+  // 每(隔)N天
+  out = out.replace(/每\s*(?:隔\s*)?(?:\d+|[一二两三四五六七八九十]+)?\s*(?:天|日)/g, ' ')
+  // 每(隔)N周(的)?周X(、周Y…)
+  out = out.replace(
+    /每\s*(?:隔\s*)?(?:\d+|[一二两三四五六七八九十]+)?\s*个?\s*(?:周|星期|礼拜)(?:的)?(?:\s*(?:周|星期|礼拜)?[一二三四五六日天])+/g,
+    ' ',
+  )
+  // 每(隔)N个?月(的)?N号/日
+  out = out.replace(
+    /每\s*(?:隔\s*)?(?:\d+|[一二两三四五六七八九十]+)?\s*个?\s*月(?:的)?\s*(?:\d+|[一二两三四五六七八九十]+)\s*[号日]/g,
+    ' ',
+  )
+  // 共N次 / 到…日期：属于规则修饰，一并从标题去掉
+  out = out.replace(/共\s*(?:\d+|[一二两三四五六七八九十]+)\s*次/g, ' ')
+  out = out.replace(/(?:到|截止|至)\s*\d{4}年?\s*\d{1,2}月\s*\d{1,2}\s*[日号]/g, ' ')
+  return out.replace(/\s{2,}/g, ' ').trim()
+}

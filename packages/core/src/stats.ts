@@ -42,9 +42,11 @@ export function computeStats(tasks: readonly StoredTask[], ref: number): Stats {
   endDate.setDate(endDate.getDate() + 7)
   const weekEnd = endDate.getTime()
 
-  const weekTasks = tasks.filter(
-    (task) => task.dueAt !== null && task.dueAt >= weekStart && task.dueAt < weekEnd,
-  )
+  // 归属按主时刻 startAt ?? dueAt（拍板 7：多日区间按 start 归属）
+  const weekTasks = tasks.filter((task) => {
+    const at = task.startAt ?? task.dueAt
+    return at !== null && at >= weekStart && at < weekEnd
+  })
   const doneThisWeek = weekTasks.filter((task) => task.done).length
 
   const parsedTasks = tasks.filter(

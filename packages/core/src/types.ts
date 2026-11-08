@@ -49,6 +49,45 @@ export interface ParsedTask {
   choiceGroup?: string
   /** 该候选在组内的标签，如「本周」/「下周」 */
   choiceLabel?: string
+  /** 结束时刻（不含），与 ICS DTEND 一致；null = 点事件 */
+  endAt?: number | null
+  /** 全天事件 */
+  allDay?: boolean
+  /** 规范化 RRULE（创建系列用）；null = 非重复 */
+  rrule?: string | null
+  /** 所属重复系列；null = 非重复 */
+  seriesId?: string | null
+  /** 实例序号（从 0 开始），用于 COUNT 与幂等 */
+  recurrenceIndex?: number
+  /** 「跳过这一次」的标记（不等于完成，不进完成率分母） */
+  skipped?: boolean
+}
+
+/** 重复系列：规则与系列级状态（每条实例只引用 seriesId） */
+export interface TaskSeries {
+  id: string
+  /** 规范化 RRULE 子集，不带 RRULE: 前缀 */
+  rrule: string
+  /** MONTHLY 锚定日（原始日，如 31；短月 clamp 后仍然回到 31） */
+  anchorDay?: number | null
+  /** WEEKLY 锚定星期（1=周一…7=周日） */
+  anchorWeekday?: number | null
+  /** 首次实例的开始时刻（也用于导出 DTSTART） */
+  startAt: number
+  /** 结束时刻（exclusive），null = 点事件 */
+  endAt?: number | null
+  allDay?: boolean
+  title: string
+  kind: TaskKind
+  channel?: string | null
+  location?: string | null
+  /** COUNT（含首次）；null = 不限 */
+  count?: number | null
+  /** UNTIL（含当天）；null = 不限 */
+  until?: number | null
+  createdAt: number
+  /** 结束系列的时刻；非 null 表示不再生成 */
+  endedAt?: number | null
 }
 
 /** 已确认、落地到日程的事项 */

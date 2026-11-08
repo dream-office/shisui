@@ -4,9 +4,17 @@
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
 import { create } from 'zustand'
-import { createManualTask, mergeIcsImport, mergeTasks, parseNoticeBatch, splitNoticeSections } from 'shisui-core'
+import {
+  buildNextInstance,
+  createManualTask,
+  mergeIcsImport,
+  mergeTasks,
+  parseNoticeBatch,
+  parseRRule,
+  splitNoticeSections,
+} from 'shisui-core'
 import { parseNotice } from 'shisui-core'
-import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask } from 'shisui-core'
+import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask, TaskSeries } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 
@@ -27,10 +35,18 @@ interface AppState {
   history: ImportBatch[]
   /** 是否处于「多段粘贴」批量模式（预览列表改为勾选式） */
   batchMode: boolean
+  /** 重复系列（规则在系列上，实例只引用 seriesId） */
+  series: TaskSeries[]
 
   setView: (view: View) => void
   hydrate: () => Promise<void>
   loadHistory: () => Promise<void>
+  /** 完成：重复任务会同时生成下一条（同事务、幂等） */
+  completeTask: (id: string) => Promise<void>
+  /** 跳过这一次：标 skipped 并生成下一条 */
+  skipTask: (id: string) => Promise<void>
+  /** 结束系列：停止生成、保留历史 */
+  endSeries: (id: string) => Promise<void>
   parse: (raw: string) => Promise<void>
   addManualTask: (input: ManualTaskInput) => Promise<void>
   /** 把任务挪到某一天：只改日期，保留原时刻；全天任务保持 00:00 */
@@ -49,6 +65,47 @@ interface AppState {
 
 const nextTick = () => new Promise<void>((resolve) => setTimeout(resolve, 20))
 
+/** 重复任务：算下一条实例（不写库） */
+async function buildPlan(task: StoredTask): Promise<{ nextTask: ParsedTask | null; seriesPatch?: Partial<TaskSeries> }> {
+  if (!task.seriesId) return { nextTask: null }
+  const series = await repo.getSeries(task.seriesId)
+  if (!series) return { nextTask: null }
+  const rule = parseRRule(series.rrule)
+  if (!rule) return { nextTask: null }
+
+  const nextTask = buildNextInstance(
+    {
+      id: task.id,
+      title: task.title,
+      kind: task.kind,
+      channel: task.channel,
+      location: task.location,
+      rawText: task.rawText,
+      startAt: task.startAt,
+      dueAt: task.dueAt,
+      endAt: task.endAt ?? null,
+      allDay: task.allDay ?? false,
+      seriesId: task.seriesId,
+      recurrenceIndex: task.recurrenceIndex ?? 0,
+    },
+    rule,
+    { nextId: `rec_${Date.now()}_${(task.recurrenceIndex ?? 0) + 1}`, seriesEnded: Boolean(series.endedAt) },
+  )
+
+  return {
+    nextTask: nextTask
+      ? {
+          ...nextTask,
+          kind: nextTask.kind as ParsedTask['kind'],
+          confidence: 'high',
+          reasons: ['由重复规则生成'],
+          engine: 'rule',
+          rrule: null,
+        }
+      : null,
+  }
+}
+
 export const useApp = create<AppState>((set, get) => ({
   view: 'inbox',
   tasks: [],
@@ -61,12 +118,13 @@ export const useApp = create<AppState>((set, get) => ({
   llmConfig: loadLLMConfig(),
   history: [],
   batchMode: false,
+  series: [],
 
   setView: (view) => set({ view }),
 
   hydrate: async () => {
-    const [tasks, history] = await Promise.all([repo.listTasks(), repo.listBatches()])
-    set({ tasks, history, hydrated: true })
+    const [tasks, history, series] = await Promise.all([repo.listTasks(), repo.listBatches(), repo.listSeries()])
+    set({ tasks, history, series, hydrated: true })
   },
 
   loadHistory: async () => {
@@ -110,15 +168,82 @@ export const useApp = create<AppState>((set, get) => ({
     set({ tasks: await repo.listTasks() })
   },
 
+  completeTask: async (id) => {
+    const task = get().tasks.find((item) => item.id === id)
+    if (!task) return
+
+    // 非重复任务：沿用简单勾选
+    if (!task.seriesId || task.done) {
+      await repo.setDone(id, true)
+      set({ tasks: await repo.listTasks() })
+      return
+    }
+
+    const plan = await buildPlan(task)
+    await repo.settleRecurringInstance({ taskId: id, mode: 'done', nextTask: plan.nextTask, seriesPatch: plan.seriesPatch })
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+  },
+
+  skipTask: async (id) => {
+    const task = get().tasks.find((item) => item.id === id)
+    if (!task || !task.seriesId) return
+    const plan = await buildPlan(task)
+    await repo.settleRecurringInstance({ taskId: id, mode: 'skip', nextTask: plan.nextTask, seriesPatch: plan.seriesPatch })
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+  },
+
+  endSeries: async (id) => {
+    const task = get().tasks.find((item) => item.id === id)
+    if (!task || !task.seriesId) return
+    await repo.endSeries(task.seriesId, task.recurrenceIndex ?? 0)
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+  },
+
   importIcsTasks: async (parsed) => {
     const existing = get().tasks
+    const plain = parsed.filter((task) => !task.rrule)
+    const recurring = parsed.filter((task) => task.rrule)
+
+    // 普通事件：按 sourceUid 去重（新增/更新）
     const plan = mergeIcsImport(
       existing.map((task) => ({ id: task.id, sourceUid: task.sourceUid ?? null })),
-      parsed,
+      plain,
     )
     await repo.applyIcsPlan(plan)
-    set({ tasks: await repo.listTasks() })
-    return { added: plan.toInsert.length, updated: plan.toUpdate.length, skipped: plan.skipped.length }
+
+    // 重复事件：创建系列 + 首条实例（不展开实例）
+    for (const task of recurring) {
+      const rule = parseRRule(task.rrule!)
+      const seriesId = `series_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const primary = task.startAt ?? task.dueAt ?? Date.now()
+      await repo.createSeriesWithTask(
+        {
+          id: seriesId,
+          rrule: task.rrule!,
+          anchorDay: rule?.anchorDay ?? null,
+          anchorWeekday: rule?.anchorWeekday ?? null,
+          startAt: primary,
+          endAt: task.endAt ?? null,
+          allDay: task.allDay ?? false,
+          title: task.title,
+          kind: task.kind,
+          channel: task.channel,
+          location: task.location,
+          count: rule?.count ?? null,
+          until: rule?.until ?? null,
+          createdAt: Date.now(),
+          endedAt: null,
+        },
+        { ...task, seriesId, recurrenceIndex: 0, rrule: null },
+      )
+    }
+
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+    return {
+      added: plan.toInsert.length + recurring.length,
+      updated: plan.toUpdate.length,
+      skipped: plan.skipped.length,
+    }
   },
 
   parse: async (raw) => {
@@ -190,7 +315,39 @@ export const useApp = create<AppState>((set, get) => ({
     const state = get()
     const picked = state.candidates.filter((task) => ids.includes(task.id))
     if (picked.length === 0) return
-    await repo.insertTasks(picked)
+
+    const plain: ParsedTask[] = []
+    for (const task of picked) {
+      if (!task.rrule) {
+        plain.push(task)
+        continue
+      }
+      // 带重复规则的候选：创建系列 + 首条实例（同一事务）
+      const rule = parseRRule(task.rrule)
+      const seriesId = `series_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      const primary = task.startAt ?? task.dueAt ?? Date.now()
+      await repo.createSeriesWithTask(
+        {
+          id: seriesId,
+          rrule: task.rrule,
+          anchorDay: rule?.anchorDay ?? null,
+          anchorWeekday: rule?.anchorWeekday ?? null,
+          startAt: primary,
+          endAt: task.endAt ?? null,
+          allDay: task.allDay ?? false,
+          title: task.title,
+          kind: task.kind,
+          channel: task.channel,
+          location: task.location,
+          count: rule?.count ?? null,
+          until: rule?.until ?? null,
+          createdAt: Date.now(),
+          endedAt: null,
+        },
+        { ...task, seriesId, recurrenceIndex: 0, rrule: null },
+      )
+    }
+    if (plain.length > 0) await repo.insertTasks(plain)
     await repo.recordBatch({
       id: `batch_${Date.now()}`,
       rawText: picked.map((task) => task.rawText).join('\n'),
@@ -200,12 +357,18 @@ export const useApp = create<AppState>((set, get) => ({
     })
     const tasks = await repo.listTasks()
     const history = await repo.listBatches()
-    set({ tasks, history, candidates: state.candidates.filter((task) => !ids.includes(task.id)) })
+    const series = await repo.listSeries()
+    set({ tasks, history, series, candidates: state.candidates.filter((task) => !ids.includes(task.id)) })
   },
 
   toggleDone: async (id) => {
     const task = get().tasks.find((t) => t.id === id)
     if (!task) return
+    // 重复任务：完成时走「完成 + 生成下一条」的幂等事务
+    if (task.seriesId && !task.done) {
+      await get().completeTask(id)
+      return
+    }
     await repo.setDone(id, !task.done)
     set({ tasks: get().tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)) })
   },

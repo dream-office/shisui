@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { buildMonthGrid, startOfDay } from 'shisui-core'
+import { buildMonthGrid, spanDays, startOfDay } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
@@ -43,9 +43,16 @@ export default function MonthView() {
     for (const task of tasks) {
       const day = taskDay(task)
       if (day === null) continue
-      const list = map.get(day) ?? []
-      list.push(task)
-      map.set(day, list)
+      // 跨天区间：在覆盖的每一天都出现（首日到末日，按本地日期推进）
+      const days = spanDays(task)
+      for (let i = 0; i < days; i += 1) {
+        const cell = new Date(day)
+        cell.setDate(cell.getDate() + i)
+        const key = cell.getTime()
+        const list = map.get(key) ?? []
+        list.push(task)
+        map.set(key, list)
+      }
     }
     return map
   }, [tasks])
@@ -150,6 +157,7 @@ export default function MonthView() {
               >
                 <span className="day-time">{formatTime(task)}</span>
                 <span className="day-title">{task.title}</span>
+                {spanDays(task) > 1 && <span className="day-span">跨天</span>}
                 {task.location && <span className="muted">{task.location}</span>}
               </li>
             ))}

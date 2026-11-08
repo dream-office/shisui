@@ -10,6 +10,7 @@
  * - **去重**：按 `UID` 匹配（见 `mergeIcsImport`），同 UID 再导入 → 更新而不是新增。
  */
 import type { ParsedTask, TaskKind } from './types.js'
+import { parseRRule } from './recurrence.js'
 
 export interface IcsImportOptions {
   /** 生成 id 的函数；测试注入确定性实现 */
@@ -172,13 +173,6 @@ export function resolveIcsTime(prop: Property): ResolvedTime | null {
   return { ms: new Date(yN, moN - 1, dN, hN, miN, sN).getTime(), allDay: false }
 }
 
-/** 本地日期：YYYY-MM-DD（用于 warning 文案） */
-function localDateString(ms: number): string {
-  const d = new Date(ms)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
 function kindFor(resolved: { start: ResolvedTime | null; end: ResolvedTime | null }): TaskKind {
   if (resolved.start?.allDay) return 'task'
   if (resolved.start && resolved.end) return 'meeting'
@@ -207,6 +201,8 @@ interface RawEvent {
   start: Property | null
   end: Property | null
   hasRule: boolean
+  /** 原始 RRULE 值（未带 RRULE: 前缀） */
+  rruleValue: string | null
 }
 
 function collectEvents(lines: string[]): RawEvent[] {
@@ -223,7 +219,16 @@ function collectEvents(lines: string[]): RawEvent[] {
 
     if (name === 'BEGIN') {
       if (value === 'VEVENT') {
-        current = { uid: null, summary: '', description: '', location: '', start: null, end: null, hasRule: false }
+        current = {
+        uid: null,
+        summary: '',
+        description: '',
+        location: '',
+        start: null,
+        end: null,
+        hasRule: false,
+        rruleValue: null,
+      }
         depth = 1
       } else if (current) {
         depth += 1
@@ -263,6 +268,7 @@ function collectEvents(lines: string[]): RawEvent[] {
         break
       case 'RRULE':
         current.hasRule = true
+        current.rruleValue = prop.value.trim()
         break
       default:
         break
@@ -270,9 +276,6 @@ function collectEvents(lines: string[]): RawEvent[] {
   }
   return events
 }
-
-/** 带时刻但没有结束时间时，与导出规则对称：按 30 分钟计 */
-const DEFAULT_DURATION_MS = 30 * 60 * 1000
 
 /**
  * 解析 ICS 文本。永远不抛异常：坏文件返回空结果 + warning，UI 据此给出可读错误。
@@ -323,49 +326,55 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
 
     const title = event.summary.trim() || '未命名事件'
     const allDay = start?.allDay === true
-    const dueAt = allDay ? start!.ms : end?.ms ?? null
-    const startAt = allDay ? null : start?.ms ?? null
+    const startMs = start?.ms ?? end?.ms ?? null
+    if (startMs === null) {
+      skipped += 1
+      warnings.push(`「${label}」没有可用时间，已跳过`)
+      return
+    }
 
-    if (allDay) {
-      // 全天事件用 DTSTART 那一天作为到期日（与导出规则对称）；多天事件只保留首日
-      const startMsForWarn = start!.ms
-      const multiDay =
-        end !== null && end.allDay
-          ? Math.round((end.ms - startMsForWarn) / 86_400_000)
-          : 1
-      if (multiDay > 1) {
-        warnings.push(
-          `「${label}」是 ${multiDay} 天的全天事件，当前只保留首日（${localDateString(startMsForWarn)}）；其余日期未导入`,
-        )
+    // 区间：DTEND 是 exclusive；单日全天没有 DTEND 时 endAt=null（隐含 +1 天）
+    let endAt: number | null = null
+    if (end) {
+      if (allDay) {
+        endAt = end.ms > startMs ? end.ms : null
       } else {
-        warnings.push(`「${label}」是全天事件，按到期日导入`)
+        endAt = end.ms > startMs ? end.ms : null
       }
     }
-    if (event.hasRule) {
-      warnings.push(`「${label}」是重复事件，本次只导入首个实例`)
+    if (!allDay && start && !end) {
+      // 与导出对称：无 DTEND 的定时事件默认 30 分钟
+      endAt = startMs + 30 * 60 * 1000
+    }
+
+    let rrule: string | null = null
+    if (event.rruleValue) {
+      const parsed = parseRRule(event.rruleValue)
+      if (parsed) {
+        rrule = event.rruleValue
+      } else {
+        warnings.push(`「${label}」的重复规则不受支持（${event.rruleValue}），已按单次事件导入`)
+      }
     }
 
     const reasons = ['从日历文件按标准字段导入']
-    if (event.hasRule) reasons.push('重复事件仅导入首次')
-    if (!allDay && start && !end) reasons.push('没有结束时间，按 30 分钟计')
+    if (rrule) reasons.push(`重复规则：${rrule}`)
+    if (allDay) reasons.push('全天事件')
 
     const rawLines = [`[ICS 导入] ${title}`]
     if (event.description.trim()) rawLines.push(event.description.trim())
     if (event.uid) rawLines.push(`UID: ${event.uid}`)
 
-    const startMs = start?.ms ?? null
-    const endMs = allDay ? startMs : dueAt
-    const sourceUid = event.uid ?? syntheticIcsUid(title, startMs, endMs)
-    // 只有开始时间（无 DTEND）的定时事件：按 30 分钟计，与导出规则对称
-    const effectiveDueAt = allDay
-      ? startMs
-      : dueAt ?? (startAt !== null ? startAt + DEFAULT_DURATION_MS : null)
+    const sourceUid = event.uid ?? syntheticIcsUid(title, startMs, endAt)
 
     tasks.push({
       id: makeId(index, event.uid),
       title,
-      dueAt: effectiveDueAt,
-      startAt,
+      dueAt: null,
+      startAt: startMs,
+      endAt,
+      allDay,
+      rrule,
       kind: kindFor({ start, end }),
       channel: null,
       location: event.location.trim() || null,

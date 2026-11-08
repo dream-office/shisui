@@ -5,8 +5,10 @@
  * - **所有时间转成 UTC（`...Z`）**，不写 `TZID` + `VTIMEZONE`。
  *   原因：`TZID` 需要在文件里自带时区定义，各客户端对 Windows 时区名的支持不一致；
  *   UTC 是绝对时刻，任何日历都能正确换算成本地时间。
- * - **全天事件**：只把「本地时间恰好 00:00:00」的任务视为全天（`VALUE=DATE`），
- *   其余一律按带时刻的事件导出。规则单一、可预测，不用猜用户意图。
+ * - **全天事件**：`allDay: true` 或开始时刻恰好本地 00:00:00；导出 `VALUE=DATE`。
+ * - **区间**：`endAt` 是 **exclusive**，与 ICS `DTEND` 语义一致，直接照搬。
+ * - **重复任务**：一个系列**只导出一次 RRULE 主事件**（实例不重复导出），
+ *   结束系列用 `UNTIL` 截断。
  * - **折行**：按 75 字节（不是字符）折行 —— 中文一个字 3 字节，按字符折会超长。
  * - 零运行时依赖：纯字符串拼接，可在任何 JS 环境跑。
  */
@@ -18,10 +20,28 @@ export interface IcsTask {
   title: string
   dueAt: number | null
   startAt?: number | null
+  endAt?: number | null
+  allDay?: boolean
+  seriesId?: string | null
+  rrule?: string | null
   channel?: string | null
   location?: string | null
   rawText?: string
   done?: boolean
+}
+
+/** 系列主事件：一个系列只导出一次 */
+export interface IcsSeries {
+  id: string
+  rrule: string
+  startAt: number
+  endAt?: number | null
+  allDay?: boolean
+  title: string
+  channel?: string | null
+  location?: string | null
+  until?: number | null
+  endedAt?: number | null
 }
 
 export interface IcsOptions {
@@ -31,6 +51,8 @@ export interface IcsOptions {
   includeDone?: boolean
   /** 日历名（部分客户端会显示） */
   calendarName?: string
+  /** 重复系列：每个系列导出一个带 RRULE 的主事件 */
+  series?: readonly IcsSeries[]
 }
 
 const PRODID = '-//dream-office//shisui//ZH'
@@ -52,13 +74,6 @@ function toUtc(ms: number): string {
 
 function toDateOnly(ms: number): string {
   const d = new Date(ms)
-  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
-}
-
-/** 加一天后的日期（全天事件的 DTEND 是「不含」的次日） */
-function addOneDayDateOnly(ms: number): string {
-  const d = new Date(ms)
-  d.setDate(d.getDate() + 1)
   return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`
 }
 
@@ -110,70 +125,137 @@ function lines(...items: string[]): string {
   return items.filter(Boolean).map(foldLine).join('\r\n')
 }
 
-function describe(task: IcsTask): string {
-  const parts: string[] = []
-  if (task.channel) parts.push(`渠道：${task.channel}`)
-  if (task.location) parts.push(`地点：${task.location}`)
-  if (task.rawText) parts.push(`原文：${task.rawText}`)
-  return parts.join('\n')
+interface EventInput {
+  uid: string
+  title: string
+  start: number
+  end: number
+  allDay: boolean
+  location?: string | null
+  description?: string
+  rrule?: string | null
+  done?: boolean
+  /** 结束系列的时刻：附加/收紧 UNTIL */
+  until?: number | null
 }
 
-function buildEvent(task: IcsTask, dtstamp: string): string | null {
-  const start = task.startAt ?? task.dueAt
-  if (start === null || start === undefined) return null
+function buildEvent(input: EventInput, dtstamp: string): string {
+  const { start, end, allDay } = input
+  const dtstart = allDay ? `DTSTART;VALUE=DATE:${toDateOnly(start)}` : `DTSTART:${toUtc(start)}`
+  const dtend = allDay ? `DTEND;VALUE=DATE:${toDateOnly(end)}` : `DTEND:${toUtc(end)}`
 
-  const allDay = isAllDayTimestamp(start)
-  let dtstart: string
-  let dtend: string
-
-  if (allDay) {
-    dtstart = `DTSTART;VALUE=DATE:${toDateOnly(start)}`
-    dtend = `DTEND;VALUE=DATE:${addOneDayDateOnly(start)}`
-  } else {
-    const endMs =
-      task.startAt !== null && task.startAt !== undefined && task.dueAt !== null && task.dueAt !== undefined && task.dueAt > task.startAt
-        ? task.dueAt
-        : start + DEFAULT_DURATION_MS
-    dtstart = `DTSTART:${toUtc(start)}`
-    dtend = `DTEND:${toUtc(endMs)}`
-  }
-
-  const description = describe(task)
-  const body = [
+  return [
     'BEGIN:VEVENT',
-    lines(`UID:${escapeIcsText(task.id)}@shisui`),
+    lines(`UID:${escapeIcsText(input.uid)}@shisui`),
     `DTSTAMP:${dtstamp}`,
     dtstart,
     dtend,
-    lines(`SUMMARY:${escapeIcsText(task.title || '未命名')}`),
-    description ? lines(`DESCRIPTION:${escapeIcsText(description)}`) : '',
-    task.location ? lines(`LOCATION:${escapeIcsText(task.location)}`) : '',
-    task.done ? 'STATUS:COMPLETED' : 'STATUS:CONFIRMED',
+    lines(`SUMMARY:${escapeIcsText(input.title || '未命名')}`),
+    input.description ? lines(`DESCRIPTION:${escapeIcsText(input.description)}`) : '',
+    input.location ? lines(`LOCATION:${escapeIcsText(input.location)}`) : '',
+    input.rrule ? foldLine(`RRULE:${applyUntil(input.rrule, input.until)}`) : '',
+    input.done ? 'STATUS:COMPLETED' : 'STATUS:CONFIRMED',
     'END:VEVENT',
   ]
     .filter(Boolean)
     .join('\r\n')
+}
 
-  return body
+/** 把结束系列时刻作为 UNTIL 附加到 RRULE 上（已有更早的 UNTIL 则保留更早的） */
+function applyUntil(rrule: string, until?: number | null): string {
+  if (until === null || until === undefined) return rrule
+  const d = new Date(until)
+  const stamp =
+    `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}` +
+    `T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`
+
+  if (/UNTIL=([0-9TZ]+)/i.test(rrule)) {
+    const existing = /UNTIL=([0-9TZ]+)/i.exec(rrule)![1]
+    return existing < stamp ? rrule : rrule.replace(/UNTIL=[0-9TZ]+/i, `UNTIL=${stamp}`)
+  }
+  return `${rrule};UNTIL=${stamp}`
+}
+
+/** 事件结束时刻：endAt 优先；legacy dueAt（大于开始）兼容；全天 +1 天；定时默认 30 分钟 */
+function resolveEnd(input: {
+  start: number
+  endAt?: number | null
+  dueAt?: number | null
+  allDay: boolean
+}): number {
+  if (input.endAt !== null && input.endAt !== undefined && input.endAt > input.start) return input.endAt
+  if (input.allDay) {
+    const d = new Date(input.start)
+    d.setDate(d.getDate() + 1)
+    return d.getTime()
+  }
+  if (input.dueAt !== null && input.dueAt !== undefined && input.dueAt > input.start) return input.dueAt
+  return input.start + DEFAULT_DURATION_MS
 }
 
 /**
  * 待办列表 → ICS 文本。
- * 没有时间信息的任务会被跳过（日历里没法放），已完成默认跳过。
+ * - 没有时间信息的任务跳过（日历里没法放），已完成默认跳过
+ * - 重复实例（有 seriesId）不单独导出，由 options.series 统一导出一次 RRULE 主事件
  */
 export function tasksToIcs(tasks: readonly IcsTask[], options: IcsOptions = {}): string {
   const ref = options.ref ?? new Date()
   const dtstamp = toUtc(ref.getTime())
+  const seriesIds = new Set((options.series ?? []).map((item) => item.id))
 
-  const exported = tasks
+  const singles = tasks
+    .filter((task) => !task.seriesId || !seriesIds.has(task.seriesId))
     .filter((task) => (task.startAt ?? task.dueAt) !== null && (task.startAt ?? task.dueAt) !== undefined)
     .filter((task) => options.includeDone === true || task.done !== true)
+    .filter((task) => !task.seriesId || !task.rrule) // 实例不导出 RRULE
     .slice()
     .sort((a, b) => (a.startAt ?? a.dueAt ?? 0) - (b.startAt ?? b.dueAt ?? 0))
 
-  const events = exported
-    .map((task) => buildEvent(task, dtstamp))
-    .filter((event): event is string => event !== null)
+  const events = singles.map((task) => {
+    const start = (task.startAt ?? task.dueAt)!
+    const allDay = task.allDay === true || isAllDayTimestamp(start)
+    const end = resolveEnd({ start, endAt: task.endAt, dueAt: task.dueAt, allDay })
+    return buildEvent(
+      {
+        uid: task.id,
+        title: task.title,
+        start,
+        end,
+        allDay,
+        location: task.location,
+        description: [task.channel ? `渠道：${task.channel}` : '', task.rawText ? `原文：${task.rawText}` : '']
+          .filter(Boolean)
+          .join('\n'),
+        rrule: task.rrule ?? null,
+        done: task.done,
+      },
+      dtstamp,
+    )
+  })
+
+  for (const series of options.series ?? []) {
+    const allDay = series.allDay === true || isAllDayTimestamp(series.startAt)
+    const end =
+      series.endAt !== null && series.endAt !== undefined && series.endAt > series.startAt
+        ? series.endAt
+        : resolveEnd({ start: series.startAt, allDay })
+    events.push(
+      buildEvent(
+        {
+          uid: series.id,
+          title: series.title,
+          start: series.startAt,
+          end,
+          allDay,
+          location: series.location,
+          description: series.channel ? `渠道：${series.channel}` : '',
+          rrule: series.rrule,
+          until: series.endedAt ?? series.until ?? null,
+        },
+        dtstamp,
+      ),
+    )
+  }
 
   const header = [
     'BEGIN:VCALENDAR',
@@ -194,6 +276,10 @@ export function toIcsTask(task: ParsedTask & { done?: boolean }): IcsTask {
     title: task.title,
     dueAt: task.dueAt,
     startAt: task.startAt,
+    endAt: task.endAt ?? null,
+    allDay: task.allDay ?? false,
+    seriesId: task.seriesId ?? null,
+    rrule: task.rrule ?? null,
     channel: task.channel,
     location: task.location,
     rawText: task.rawText,

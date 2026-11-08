@@ -215,7 +215,7 @@ test.describe('ICS 导入', () => {
     await expect(page.locator('.ics-error')).toContainText('BEGIN:VCALENDAR', { timeout: 10_000 })
   })
 
-  test('K2. RRULE 只导入首实例，预览里有明确标注', async ({ page }) => {
+  test('K2. RRULE 作为重复任务导入（保留规则、不展开）', async ({ page }) => {
     const rruleIcs = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -238,9 +238,12 @@ test.describe('ICS 导入', () => {
       buffer: Buffer.from(rruleIcs, 'utf-8'),
     })
 
-    // 只导入 1 条 + 预览明确标注「仅导入首个实例」
+    // 不展开：8 次重复只入库 1 条，规则保留在 series 里
     await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
-    await expect(page.locator('.ics-note')).toContainText('只导入首个实例')
+    await page.getByRole('button', { name: '确认导入' }).click()
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag').first()).toBeVisible()
   })
 })
 
@@ -490,5 +493,63 @@ test.describe('错误边界（armed 开关）', () => {
     await expect(page.getByRole('alert')).toContainText('界面出了点问题')
     await page.getByRole('button', { name: '回首页' }).click()
     await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
+  })
+})
+test.describe('重复任务', () => {
+  test('S. 每周任务：收录后显示规则；完成后生成下一次', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.locator('.series-tag')).toBeVisible()
+
+    // 完成一次 → 自动生成下一次（已完成进折叠区）
+    await page.getByRole('button', { name: '标记为已完成' }).first().click()
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible({ timeout: 15_000 })
+    // 完成后的下一条也带重复标记（已完成那条在折叠区，仍在 DOM 里）
+    await expect(page.locator('.series-tag').first()).toBeVisible()
+  })
+})
+
+test.describe('多日区间', () => {
+  const ICS_MULTI = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    'UID:multi-day@example.com',
+    'SUMMARY:三天活动',
+    'DTSTART;VALUE=DATE:20261120',
+    'DTEND;VALUE=DATE:20261123',
+    'END:VEVENT',
+    'END:VCALENDAR',
+    '',
+  ].join('\r\n')
+
+  test('T. 导入多日全天：日程显示区间，月历覆盖每一天', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'multi.ics',
+      mimeType: 'text/calendar',
+      buffer: Buffer.from(ICS_MULTI, 'utf-8'),
+    })
+    await expect(page.getByText(/新增 1 \/ 更新 0/)).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '确认导入' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText(/三天活动/)).toBeVisible()
+    await expect(page.getByText(/3 天/)).toBeVisible()
+
+    await nav.getByRole('button', { name: /^月历/ }).click()
+    const day = (d: number) => new Date(2026, 10, d).getTime()
+    for (const d of [20, 21, 22]) {
+      await expect(page.locator(`.month-cell[data-day="${day(d)}"] .month-dot`)).toHaveCount(1)
+    }
+    await expect(page.locator(`.month-cell[data-day="${day(23)}"] .month-dot`)).toHaveCount(0)
   })
 })

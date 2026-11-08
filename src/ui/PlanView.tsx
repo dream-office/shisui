@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { startOfDay } from 'shisui-core'
-import { scanConflicts, weeklyLoad } from 'shisui-core'
+import { describeRule, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
 import { tasksToIcs } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -13,11 +13,23 @@ export default function PlanView() {
   const setView = useApp((s) => s.setView)
   const toggleDone = useApp((s) => s.toggleDone)
   const dropTask = useApp((s) => s.dropTask)
+  const series = useApp((s) => s.series)
+  const skipTask = useApp((s) => s.skipTask)
+  const endSeries = useApp((s) => s.endSeries)
   const now = useNow(30_000)
   const ref = useMemo(() => new Date(now), [now])
 
   const active = useMemo(() => tasks.filter((task) => !task.done), [tasks])
   const done = useMemo(() => tasks.filter((task) => task.done), [tasks])
+
+  const seriesById = useMemo(() => new Map(series.map((item) => [item.id, item])), [series])
+  const seriesLabelOf = (task: StoredTask): string | null => {
+    if (!task.seriesId) return null
+    const item = seriesById.get(task.seriesId)
+    if (!item) return '重复'
+    const rule = parseRRule(item.rrule)
+    return rule ? describeRule(rule) : item.rrule
+  }
 
   const conflicts = useMemo(() => scanConflicts(active, ref), [active, ref])
   const load = useMemo(() => weeklyLoad(active, ref), [active, ref])
@@ -47,7 +59,25 @@ export default function PlanView() {
   const exportIcs = () => {
     if (tasks.length === 0) return
     const stamp = new Date().toISOString().slice(0, 10)
-    downloadTextFile(tasksToIcs(tasks, { calendarName: '拾穗日程' }), `shisui-${stamp}.ics`, 'text/calendar;charset=utf-8')
+    downloadTextFile(
+      tasksToIcs(tasks, {
+        calendarName: '拾穗日程',
+        series: series.map((item) => ({
+          id: item.id,
+          rrule: item.rrule,
+          startAt: item.startAt,
+          endAt: item.endAt ?? null,
+          allDay: item.allDay ?? false,
+          title: item.title,
+          channel: item.channel,
+          location: item.location,
+          until: item.until ?? null,
+          endedAt: item.endedAt ?? null,
+        })),
+      }),
+      `shisui-${stamp}.ics`,
+      'text/calendar;charset=utf-8',
+    )
   }
 
   if (tasks.length === 0) {
@@ -131,6 +161,9 @@ export default function PlanView() {
                 now={now}
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
+                seriesLabel={seriesLabelOf(task)}
+                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
               />
             ))}
           </ul>
@@ -148,6 +181,9 @@ export default function PlanView() {
                 now={now}
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
+                seriesLabel={seriesLabelOf(task)}
+                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
               />
             ))}
           </ul>
@@ -165,6 +201,9 @@ export default function PlanView() {
                 now={now}
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
+                seriesLabel={seriesLabelOf(task)}
+                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
               />
             ))}
           </ul>

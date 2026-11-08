@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildNextInstance,
   daysInMonth,
   describeRule,
   looksRecurring,
@@ -182,5 +183,111 @@ describe('daysInMonth', () => {
     expect(daysInMonth(2028, 1)).toBe(29)
     expect(daysInMonth(2027, 1)).toBe(28)
     expect(daysInMonth(2026, 11)).toBe(31)
+  })
+})
+
+
+describe('buildNextInstance（完成 → 生成下一条）', () => {
+  const base = {
+    id: 'rec_1',
+    title: '交周报',
+    kind: 'task',
+    channel: '邮箱',
+    location: null,
+    rawText: '交周报',
+    startAt: null,
+    dueAt: at(2026, 11, 6, 18),
+    endAt: null,
+    allDay: false,
+    seriesId: 's_1',
+    recurrenceIndex: 0,
+  }
+
+  it('普通截止任务：下一条 dueAt 按规则推进，字段继承', () => {
+    const rule: RecurRule = { freq: 'WEEKLY', interval: 1, byDay: [5] }
+    const next = buildNextInstance(base, rule, { nextId: 'rec_2' })!
+    expect(next.id).toBe('rec_2')
+    expect(next.seriesId).toBe('s_1')
+    expect(next.recurrenceIndex).toBe(1)
+    expect(next.title).toBe('交周报')
+    expect(next.channel).toBe('邮箱')
+    expect(new Date(next.dueAt!).getDate()).toBe(13)
+    expect(new Date(next.dueAt!).getHours()).toBe(18)
+    expect(next.startAt).toBeNull()
+  })
+
+  it('定时事件：startAt 推进，dueAt 保持 null', () => {
+    const timed = { ...base, startAt: at(2026, 11, 6, 9), dueAt: null }
+    const rule: RecurRule = { freq: 'WEEKLY', interval: 1, byDay: [5] }
+    const next = buildNextInstance(timed, rule, { nextId: 'rec_2' })!
+    expect(new Date(next.startAt!).getDate()).toBe(13)
+    expect(next.dueAt).toBeNull()
+  })
+
+  it('区间实例：保持时长，endAt 随 startAt 平移', () => {
+    const interval = {
+      ...base,
+      startAt: at(2026, 11, 6, 9),
+      dueAt: null,
+      endAt: at(2026, 11, 6, 11),
+    }
+    const rule: RecurRule = { freq: 'WEEKLY', interval: 1, byDay: [5] }
+    const next = buildNextInstance(interval, rule, { nextId: 'rec_2' })!
+    expect(next.endAt! - next.startAt!).toBe(2 * 3600_000)
+  })
+
+  it('COUNT 用尽 → null', () => {
+    const rule: RecurRule = { freq: 'DAILY', interval: 1, count: 2 }
+    expect(buildNextInstance({ ...base, recurrenceIndex: 1 }, rule, { nextId: 'x' })).toBeNull()
+  })
+
+  it('系列已结束 → null', () => {
+    const rule: RecurRule = { freq: 'DAILY', interval: 1 }
+    expect(buildNextInstance(base, rule, { nextId: 'x', seriesEnded: true })).toBeNull()
+  })
+
+  it('月末锚定：下一个月的 31 号仍是 31', () => {
+    const monthly = { ...base, dueAt: at(2026, 2, 28, 18) }
+    const rule: RecurRule = { freq: 'MONTHLY', interval: 1, anchorDay: 31 }
+    const next = buildNextInstance(monthly, rule, { nextId: 'rec_2' })!
+    expect(new Date(next.dueAt!).getMonth()).toBe(2)
+    expect(new Date(next.dueAt!).getDate()).toBe(31)
+  })
+})
+
+
+describe('v0.8.0 P3：WEEKLY/MONTHLY 跨 DST + UNTIL 等值', () => {
+  it('WEEKLY 跨 DST：本地钟点仍 09:00（纽约 3-08 开始夏令时）', () => {
+    const rule: RecurRule = { freq: 'WEEKLY', interval: 1, byDay: [1] } // 每周一
+    const start = at(2026, 3, 2, 9) // 周一 09:00
+    const next = nextOccurrence(rule, start, 0)!
+    const nextDate = new Date(next)
+    expect(nextDate.getDay()).toBe(1)
+    expect(nextDate.getHours()).toBe(9)
+    expect(nextDate.getDate()).toBe(9) // 3-09 周一（跨过 3-08 DST）
+  })
+
+  it('MONTHLY 跨 DST：每月 15 日 09:00 不变', () => {
+    const rule: RecurRule = { freq: 'MONTHLY', interval: 1, anchorDay: 15 }
+    const start = at(2026, 2, 15, 9)
+    const next = nextOccurrence(rule, start, 0)!
+    const nextDate = new Date(next)
+    expect(nextDate.getMonth()).toBe(2) // 3 月
+    expect(nextDate.getDate()).toBe(15)
+    expect(nextDate.getHours()).toBe(9)
+  })
+
+  it('UNTIL 恰好等于下一次时间：仍然生成（含当天）', () => {
+    const start = at(2026, 11, 20, 9)
+    const rule: RecurRule = { freq: 'DAILY', interval: 1, until: start + 86_400_000 }
+    const next = nextOccurrence(rule, start, 0)
+    expect(next).not.toBeNull()
+    expect(next).toBe(start + 86_400_000)
+  })
+
+  it('UNTIL 比下一次少 1ms：不生成', () => {
+    const start = at(2026, 11, 20, 9)
+    const rule: RecurRule = { freq: 'DAILY', interval: 1, until: start + 86_400_000 - 1 }
+    expect(nextOccurrence(rule, start, 0)).toBeNull()
   })
 })

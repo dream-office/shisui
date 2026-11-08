@@ -15,7 +15,23 @@ export interface ConflictNote {
   taskIds: string[]
 }
 
-interface Scannable extends Pick<ParsedTask, 'id' | 'title' | 'dueAt' | 'startAt' | 'kind'> {}
+interface Scannable extends Pick<ParsedTask, 'id' | 'title' | 'dueAt' | 'startAt' | 'kind'> {
+  endAt?: number | null
+  allDay?: boolean
+}
+
+/** 事件区间 [start, end)：endAt 优先；全天隐含 +1 天；定时默认 30 分钟 */
+function intervalOf(task: Scannable): [number, number] | null {
+  const start = task.startAt ?? task.dueAt
+  if (start === null || start === undefined) return null
+  if (task.endAt !== null && task.endAt !== undefined && task.endAt > start) return [start, task.endAt]
+  if (task.allDay === true) {
+    const d = new Date(start)
+    d.setDate(d.getDate() + 1)
+    return [start, d.getTime()]
+  }
+  return [start, start + 30 * 60 * 1000]
+}
 
 const CLASH_WINDOW_MS = 2 * 3600_000
 const PILEUP_THRESHOLD = 3
@@ -23,6 +39,27 @@ const PILEUP_THRESHOLD = 3
 /** 扫描冲突：已过期 / 同一时刻撞车 / 同一天堆积 */
 export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): ConflictNote[] {
   const notes: ConflictNote[] = []
+
+  // 区间重叠：半开区间相交才算冲突（[9,10) 与 [10,11) 不算）
+  const intervals = tasks
+    .map((task) => ({ task, span: intervalOf(task) }))
+    .filter((item): item is { task: Scannable; span: [number, number] } => item.span !== null)
+  for (let i = 0; i < intervals.length; i += 1) {
+    for (let j = i + 1; j < intervals.length; j += 1) {
+      const a = intervals[i]
+      const b = intervals[j]
+      if (a.span[0] < b.span[1] && b.span[0] < a.span[1]) {
+        notes.push({
+          id: `overlap_${a.task.id}_${b.task.id}`,
+          level: 'danger',
+          title: '时间重叠',
+          detail: `「${a.task.title}」与「${b.task.title}」的时间区间有重叠。`,
+          taskIds: [a.task.id, b.task.id],
+        })
+      }
+    }
+  }
+
   const active = tasks.filter((t) => t.dueAt !== null || t.startAt !== null)
 
   // 1) 已过期但还没处理
