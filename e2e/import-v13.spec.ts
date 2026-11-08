@@ -64,8 +64,10 @@ test.describe('v1.3 图片识别', () => {
         }
         return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b)
       }
-      const fg = luminance(parse(getComputedStyle(el).color))
-      const bg = luminance(parse(getComputedStyle(el.closest('.import-modal')!).backgroundColor))
+      const fg = luminance(parse(getComputedStyle(el).color).slice(0, 3))
+      const bgRaw = parse(getComputedStyle(el.closest('.import-modal')!).backgroundColor)
+      const alpha = bgRaw.length > 3 ? bgRaw[3] : 1
+      const bg = luminance(bgRaw.slice(0, 3).map((v) => Math.round(v * alpha + 255 * (1 - alpha))))
       return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05)
     })
     expect(contrast).toBeGreaterThanOrEqual(4.5)
