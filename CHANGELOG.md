@@ -14,6 +14,9 @@
     原先 `ics.ts` 靠环境里的 `TextEncoder` 计算折行字节数 → 改为纯数学的 `utf8Length()`，
     结果与之前完全一致，且不再依赖宿主全局对象。
 - `src/styles.css` 补齐文件末尾换行。
+- **保持 React 18.3.1**：Dependabot 提议 React 19，实测构建产物从 297 KB 涨到 378 KB
+  （gzip 101 KB → 125 KB，+27%），本项目未使用 React 19 新 API、无功能收益 → 回退；
+  `@types/react` 同步保持 18.3.31。其余开发依赖保留升级（vitest 5.1.0、@vitejs/plugin-react 5.2.0）。
 
 ### 测试
 
