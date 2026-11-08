@@ -43,6 +43,9 @@ export default function App() {
     applyLang(lang)
     document.title =
       lang === 'en' ? 'Shisui — turn group messages into to-dos' : '拾穗 · 群消息变待办'
+    // PWA manifest 中英双份：按语言切换 <link rel="manifest">
+    const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')
+    if (link) link.href = lang === 'en' ? './manifest.en.webmanifest' : './manifest.webmanifest'
   }, [lang])
 
   // 错误边界自测开关：读取后立刻清掉 URL，保证刷新/回首页不会再次 armed

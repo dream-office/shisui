@@ -172,32 +172,33 @@ export default function SettingsView() {
       <section className="card" aria-labelledby="backup-title">
         <h3 id="backup-title">{t('备份与恢复')}</h3>
         <p className="muted">
-          备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。**恢复会覆盖当前全部数据**，先下载一份再恢复最稳。
-          文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。
+          {t('备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。')}
+          <strong>{t('恢复会覆盖当前全部数据')}</strong>{t('，先下载一份再恢复最稳。')}
+          {t('文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。')}
         </p>
         <label className="inline-check backup-encrypt">
           <input type="checkbox" checked={encrypt} onChange={(event) => setEncrypt(event.target.checked)} />
-          加密备份（密码至少 8 位，丢失密码无法恢复）
+          {t('加密备份（密码至少 8 位，丢失密码无法恢复）')}
         </label>
         {encrypt && (
           <div className="backup-password">
             <label className="field block">
-              <span>密码</span>
+              <span>{t('密码')}</span>
               <input
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                aria-label="备份密码"
+                aria-label={t('备份密码')}
                 autoComplete="new-password"
               />
             </label>
             <label className="field block">
-              <span>再输一次</span>
+              <span>{t('再输一次')}</span>
               <input
                 type="password"
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
-                aria-label="确认备份密码"
+                aria-label={t('确认备份密码')}
                 autoComplete="new-password"
               />
             </label>
@@ -205,10 +206,10 @@ export default function SettingsView() {
         )}
         <div className="backup-actions">
           <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void handleExport()}>
-            导出 JSON 备份
+            {t('导出 JSON 备份')}
           </button>
           <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
-            选择备份文件恢复
+            {t('选择备份文件恢复')}
           </button>
           <input
             ref={fileRef}
@@ -224,24 +225,24 @@ export default function SettingsView() {
         </div>
 
         {pendingEncrypted && (
-          <div className="restore-preview" role="region" aria-label="加密备份解锁">
-            <p>这是加密备份，输入导出时设置的密码来解锁。</p>
+          <div className="restore-preview" role="region" aria-label={t('加密备份解锁')}>
+            <p>{t('这是加密备份，输入导出时设置的密码来解锁。')}</p>
             <label className="field block">
-              <span>密码</span>
+              <span>{t('密码')}</span>
               <input
                 type="password"
                 value={decryptPassword}
                 onChange={(event) => setDecryptPassword(event.target.value)}
-                aria-label="解密密码"
+                aria-label={t('解密密码')}
                 autoComplete="off"
               />
             </label>
             <div className="backup-actions">
               <button type="button" className="btn btn-primary" disabled={busy} onClick={() => void handleDecryptPreview()}>
-                解密并预览
+                {t('解密并预览')}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setPendingEncrypted(null)}>
-                取消
+                {t('取消')}
               </button>
             </div>
           </div>
@@ -255,19 +256,22 @@ export default function SettingsView() {
         {done && <p className="import-ok">{done}</p>}
 
         {preview && (
-          <div className="restore-preview" role="region" aria-label="恢复预览">
+          <div className="restore-preview" role="region" aria-label={t('恢复预览')}>
             <p>
-              这份备份导出时间：{new Date(preview.exportedAt).toLocaleString()}，
-              含 <strong>{preview.tasks}</strong> 条任务、<strong>{preview.series}</strong> 个重复系列、
-              <strong>{preview.batches}</strong> 条历史。
+              {t('这份备份导出时间：{time}，含 {tasks} 条任务、{series} 个重复系列、{batches} 条历史。', {
+                time: new Date(preview.exportedAt).toLocaleString(),
+                tasks: preview.tasks,
+                series: preview.series,
+                batches: preview.batches,
+              })}
             </p>
-            <p className="muted">确认后会**清空当前数据并替换**，不可撤销。</p>
+            <p className="muted">{t('确认后会清空当前数据并替换，不可撤销。')}</p>
             <div className="backup-actions">
               <button type="button" className="btn btn-danger" onClick={() => void confirmRestore()}>
-                确认恢复
+                {t('确认恢复')}
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => setPreview(null)}>
-                取消
+                {t('取消')}
               </button>
             </div>
           </div>
@@ -275,14 +279,14 @@ export default function SettingsView() {
       </section>
 
       <section className="card">
-        <h3>AI 增强引擎（可选）</h3>
+        <h3>{t('AI 增强引擎（可选）')}</h3>
         <p className="muted">
-          填任意 OpenAI 兼容接口即可启用双引擎。不填也能用：规则引擎离线完成全部解析，只是对特别绕的写法容错更低。
-          Key 只保存在你自己的 localStorage，请求直接发给你填的服务商。
+          {t('填任意 OpenAI 兼容接口即可启用双引擎。不填也能用：规则引擎离线完成全部解析，只是对特别绕的写法容错更低。')}
+          {t('Key 只保存在你自己的 localStorage，请求直接发给你填的服务商。')}
         </p>
 
         <label className="field block">
-          <span>接口地址</span>
+          <span>{t('接口地址')}</span>
           <input
             value={draft.endpoint}
             onChange={(event) => setDraft({ ...draft, endpoint: event.target.value })}
@@ -292,7 +296,7 @@ export default function SettingsView() {
         </label>
 
         <label className="field block">
-          <span>模型</span>
+          <span>{t('模型')}</span>
           <input
             value={draft.model}
             onChange={(event) => setDraft({ ...draft, model: event.target.value })}
@@ -302,7 +306,7 @@ export default function SettingsView() {
         </label>
 
         <label className="field block">
-          <span>API Key</span>
+          <span>{t('API Key')}</span>
           <input
             type="password"
             value={draft.apiKey}
@@ -315,9 +319,9 @@ export default function SettingsView() {
 
         <div className="settings-actions">
           <button type="button" className="btn btn-primary" onClick={handleSave}>
-            {saved ? '已保存' : '保存'}
+            {saved ? t('已保存') : t('保存')}
           </button>
-          <span className="muted">{isLLMReady(draft) ? '已配置：解析时会尝试 AI，失败自动降级' : '未配置：只用规则引擎'}</span>
+          <span className="muted">{isLLMReady(draft) ? t('已配置：解析时会尝试 AI，失败自动降级') : t('未配置：只用规则引擎')}</span>
         </div>
       </section>
 
@@ -325,8 +329,8 @@ export default function SettingsView() {
         <h3>{t('关于拾穗')}</h3>
         <p className="muted">拾穗 v{appVersion} · AGPL-3.0-or-later</p>
         <p className="muted">
-          默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。
-          唯一会出网的情况是你自己配置了 AI 接口并触发解析。
+          {t('默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。')}
+          {t('唯一会出网的情况是你自己配置了 AI 接口并触发解析。')}
         </p>
       </section>
     </div>

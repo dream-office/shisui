@@ -21,7 +21,7 @@ function usedKeys(): string[] {
   for (const file of collectFiles(SRC)) {
     const text = readFileSync(file, 'utf-8')
     for (const match of text.matchAll(/\bt\('((?:[^'\\]|\\.)*)'/g)) {
-      keys.add(match[1].replace(/\\'/g, "'"))
+      keys.add(match[1].replace(/\\'/g, "'").replace(/\\n/g, '\n').replace(/\\t/g, '\t'))
     }
     for (const match of text.matchAll(/\bt\("((?:[^"\\]|\\.)*)"/g)) {
       keys.add(match[1])

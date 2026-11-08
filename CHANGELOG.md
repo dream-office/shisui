@@ -38,7 +38,8 @@
   - 覆盖导航/按钮/空态/错误/表单 label 与 placeholder/aria/title/设置页/使用说明
   - 日期与相对时间统一 `Intl`；`document.documentElement.lang` 与标题同步
   - 设置页中文/English 切换，默认中文，localStorage 持久化；用户输入/任务标题/原文不翻译
-  - PWA manifest 双语 name/description
+  - PWA manifest **中英两份**（`manifest.webmanifest` / `manifest.en.webmanifest`，均含 icons/share_target），按语言切换 `<link rel="manifest">`
+  - 设置页全部可见文案/label/placeholder/aria 均走字典；English 页面正文/aria/placeholder 由 e2e 中文扫描守护（允许品牌「穗」与语言自称「中文」）
 
 ### 文档与冻结
 
@@ -49,7 +50,7 @@
 ### 测试
 
 - 单测：i18n 字典完整性（扫描源码 t('…') 全部有英文）、切换、缺 key 回退
-- e2e：使用说明 H1/H2、语言切换 L1（刷新保持、html lang、标题）
+- e2e：使用说明 H1/H2、语言切换 L1（刷新保持、html lang、标题）、English 静态 UI 无中文扫描 L2 + manifest 切换
 
 ## [0.10.0] - 2026-11-08
 
@@ -122,6 +123,7 @@
 ### 已知限制
 
 - 备份不加密；撤销刷新后失效；搜索默认包含已完成（可用「只看未完成」过滤）
+- 英文界面下 core 生成的解析理由/冲突详情/ICS 警告暂为中文（v1.1 处理）
 
 ## [0.8.0] - 2026-11-08
 

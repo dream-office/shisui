@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { startOfDay } from 'shisui-core'
 import { filterTasks, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
 import { describeRule } from 'shisui-core'
-import { describeRuleI18n, getLang, undoLabelI18n } from '@/i18n'
+import { describeRuleI18n, formatWeekdayI18n, getLang, undoLabelI18n } from '@/i18n'
 import { tasksToIcs } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -220,7 +220,7 @@ export default function PlanView() {
             {load.map((value, index) => {
               const dayMs = today + index * 86_400_000
               const d = new Date(dayMs)
-              const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
+              const week = formatWeekdayI18n(d.getTime())
               return (
                 <div className="load-col" key={dayMs} title={`${value} 件`}>
                   <div className="load-track">

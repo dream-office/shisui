@@ -56,7 +56,7 @@ const EN: Record<string, string> = {
     'First time? Turn a group message into to-dos in three steps: paste → review → accept.',
 
   // 收件页
-  '把群里的消息': 'Paste the message from your group',
+  '把群里的消息': 'Paste the message from your group ',
   '粘进来': 'here',
   '，剩下的它替你记着': ', and you never miss a deadline',
   '「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——':
@@ -331,6 +331,49 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '项目群、部门群、班级群、家长群，说的是同一件事：':
+    'Project, department, class or parent groups all say the same thing: ',
+
+  '「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——':
+    '“Lab report due before Friday 23:59”, “next Wednesday 2pm, 3F meeting room”, “submit the expense report by Nov 20” —',
+
+  '备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。': 'A backup is a JSON file containing all tasks, recurring series and import history.',
+  恢复会覆盖当前全部数据: 'Restoring replaces all current data',
+  '，先下载一份再恢复最稳。': '. Download one before restoring.',
+  '文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。': 'The file is unencrypted (no AI key inside, but it may contain original notices) — keep it safe.',
+  '加密备份解锁': 'Unlock encrypted backup',
+  '这是加密备份，输入导出时设置的密码来解锁。': 'This is an encrypted backup. Enter the password used at export time.',
+  '解除密码': 'Password',
+  '恢复预览': 'Restore preview',
+  '这份备份导出时间：{time}，含 {tasks} 条任务、{series} 个重复系列、{batches} 条历史。':
+    'Exported at {time}; contains {tasks} tasks, {series} series and {batches} history entries.',
+  '确认后会清空当前数据并替换，不可撤销。': 'This replaces all current data and cannot be undone.',
+  'AI 增强引擎（可选）': 'AI enhancement (optional)',
+  '填任意 OpenAI 兼容接口即可启用双引擎。不填也能用：规则引擎离线完成全部解析，只是对特别绕的写法容错更低。':
+    'Fill in any OpenAI-compatible endpoint to enable the hybrid engine. The rule engine still works offline without it, with lower tolerance for unusual phrasing.',
+  'Key 只保存在你自己的 localStorage，请求直接发给你填的服务商。':
+    'The key is stored only in your localStorage; requests go straight to the provider you configure.',
+  '已配置：解析时会尝试 AI，失败自动降级': 'Configured: AI is tried during parsing and falls back on failure',
+  '未配置：只用规则引擎': 'Not configured: rule engine only',
+  '默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。':
+    'Offline by default: data lives in your browser IndexedDB — no account, no server, no upload.',
+  '唯一会出网的情况是你自己配置了 AI 接口并触发解析。':
+    'The only network call happens when you configure an AI endpoint and trigger parsing.',
+  '恢复会覆盖当前全部数据**，先下载一份再恢复最稳。': 'Restoring replaces all current data. Download one before restoring.',
+  '备份密码': 'Backup password',
+  '确认备份密码': 'Confirm backup password',
+  '解密密码': 'Decryption password',
+  '导出 JSON 备份': 'Export JSON backup',
+  '选择备份文件恢复': 'Choose a backup file to restore',
+  '解密并预览': 'Decrypt & preview',
+  '确认恢复': 'Restore now',
+  '已保存': 'Saved',
+  '保存': 'Save',
+  '密码': 'Password',
+  '再输一次': 'Repeat password',
+})
+
+Object.assign(EN, {
   '{n} 字': '{n} chars',
   '历史 ({n})': 'History ({n})',
   '已收录 {n} 条，去「日程」看看有没有撞车': 'Accepted {n} to-dos — check Plan for conflicts',
@@ -368,6 +411,43 @@ Object.assign(EN, {
   '全天': 'All day',
   '另有 {n} 条提示': '+{n} more warnings',
   '…另有 {n} 条': '…and {n} more',
+})
+
+Object.assign(EN, {
+  '备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。': 'A backup is a JSON file containing all tasks, recurring series and import history.',
+  恢复会覆盖当前全部数据: 'Restoring replaces all current data',
+  '，先下载一份再恢复最稳。': '. Download one before restoring.',
+  '文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。': 'The file is unencrypted (no AI key inside, but it may contain original notices) — keep it safe.',
+  '加密备份解锁': 'Unlock encrypted backup',
+  '这是加密备份，输入导出时设置的密码来解锁。': 'This is an encrypted backup. Enter the password used at export time.',
+  '解除密码': 'Password',
+  '恢复预览': 'Restore preview',
+  '这份备份导出时间：{time}，含 {tasks} 条任务、{series} 个重复系列、{batches} 条历史。':
+    'Exported at {time}; contains {tasks} tasks, {series} series and {batches} history entries.',
+  '确认后会清空当前数据并替换，不可撤销。': 'This replaces all current data and cannot be undone.',
+  'AI 增强引擎（可选）': 'AI enhancement (optional)',
+  '填任意 OpenAI 兼容接口即可启用双引擎。不填也能用：规则引擎离线完成全部解析，只是对特别绕的写法容错更低。':
+    'Fill in any OpenAI-compatible endpoint to enable the hybrid engine. The rule engine still works offline without it, with lower tolerance for unusual phrasing.',
+  'Key 只保存在你自己的 localStorage，请求直接发给你填的服务商。':
+    'The key is stored only in your localStorage; requests go straight to the provider you configure.',
+  '已配置：解析时会尝试 AI，失败自动降级': 'Configured: AI is tried during parsing and falls back on failure',
+  '未配置：只用规则引擎': 'Not configured: rule engine only',
+  '默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。':
+    'Offline by default: data lives in your browser IndexedDB — no account, no server, no upload.',
+  '唯一会出网的情况是你自己配置了 AI 接口并触发解析。':
+    'The only network call happens when you configure an AI endpoint and trigger parsing.',
+  '恢复会覆盖当前全部数据**，先下载一份再恢复最稳。': 'Restoring replaces all current data. Download one before restoring.',
+  '备份密码': 'Backup password',
+  '确认备份密码': 'Confirm backup password',
+  '解密密码': 'Decryption password',
+  '导出 JSON 备份': 'Export JSON backup',
+  '选择备份文件恢复': 'Choose a backup file to restore',
+  '解密并预览': 'Decrypt & preview',
+  '确认恢复': 'Restore now',
+  '已保存': 'Saved',
+  '保存': 'Save',
+  '密码': 'Password',
+  '再输一次': 'Repeat password',
 })
 
 Object.assign(EN, {
@@ -456,6 +536,43 @@ Object.assign(EN, {
   '年': '',
 })
 
+
+Object.assign(EN, {
+  '备份是一个 JSON 文件，包含全部任务、重复系列和历史记录。': 'A backup is a JSON file containing all tasks, recurring series and import history.',
+  恢复会覆盖当前全部数据: 'Restoring replaces all current data',
+  '，先下载一份再恢复最稳。': '. Download one before restoring.',
+  '文件不加密（备份里没有 AI Key，但可能含通知原文），请自己保管好。': 'The file is unencrypted (no AI key inside, but it may contain original notices) — keep it safe.',
+  '加密备份解锁': 'Unlock encrypted backup',
+  '这是加密备份，输入导出时设置的密码来解锁。': 'This is an encrypted backup. Enter the password used at export time.',
+  '解除密码': 'Password',
+  '恢复预览': 'Restore preview',
+  '这份备份导出时间：{time}，含 {tasks} 条任务、{series} 个重复系列、{batches} 条历史。':
+    'Exported at {time}; contains {tasks} tasks, {series} series and {batches} history entries.',
+  '确认后会清空当前数据并替换，不可撤销。': 'This replaces all current data and cannot be undone.',
+  'AI 增强引擎（可选）': 'AI enhancement (optional)',
+  '填任意 OpenAI 兼容接口即可启用双引擎。不填也能用：规则引擎离线完成全部解析，只是对特别绕的写法容错更低。':
+    'Fill in any OpenAI-compatible endpoint to enable the hybrid engine. The rule engine still works offline without it, with lower tolerance for unusual phrasing.',
+  'Key 只保存在你自己的 localStorage，请求直接发给你填的服务商。':
+    'The key is stored only in your localStorage; requests go straight to the provider you configure.',
+  '已配置：解析时会尝试 AI，失败自动降级': 'Configured: AI is tried during parsing and falls back on failure',
+  '未配置：只用规则引擎': 'Not configured: rule engine only',
+  '默认不联网：数据只存在你自己的浏览器 IndexedDB 里；没有账号、没有服务器、不上传。':
+    'Offline by default: data lives in your browser IndexedDB — no account, no server, no upload.',
+  '唯一会出网的情况是你自己配置了 AI 接口并触发解析。':
+    'The only network call happens when you configure an AI endpoint and trigger parsing.',
+  '恢复会覆盖当前全部数据**，先下载一份再恢复最稳。': 'Restoring replaces all current data. Download one before restoring.',
+  '备份密码': 'Backup password',
+  '确认备份密码': 'Confirm backup password',
+  '解密密码': 'Decryption password',
+  '导出 JSON 备份': 'Export JSON backup',
+  '选择备份文件恢复': 'Choose a backup file to restore',
+  '解密并预览': 'Decrypt & preview',
+  '确认恢复': 'Restore now',
+  '已保存': 'Saved',
+  '保存': 'Save',
+  '密码': 'Password',
+  '再输一次': 'Repeat password',
+})
 
 Object.assign(EN, {
   待核对: 'Needs review',

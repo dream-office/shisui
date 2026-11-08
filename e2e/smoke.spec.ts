@@ -1119,3 +1119,44 @@ test.describe('v1.0 中英双语', () => {
     await expect(page.locator('nav')).toContainText('收件')
   })
 })
+
+
+test.describe('v1.0 English 静态 UI', () => {
+  test('L2. manifest 切换 + English 页面无中文（静态 UI）', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('button', { name: 'English' }).click()
+
+    // manifest：英文下指向 en
+    expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toContain('manifest.en.webmanifest')
+
+    const scan = async () => {
+      return page.evaluate(() => {
+        // 允许品牌名「穗」与语言自称「中文」（English 界面上语言选项按母语显示）
+        const allowed = /穗|中文/
+        const hasCjk = (text: string) => /[\u4e00-\u9fff]/.test(text) && !allowed.test(text)
+        const parts: string[] = []
+        for (const line of document.body.innerText.split('\n')) {
+          if (hasCjk(line)) parts.push('text: ' + line.trim())
+        }
+        for (const el of Array.from(document.querySelectorAll('[aria-label],[placeholder],[title]'))) {
+          for (const attr of ['aria-label', 'placeholder', 'title']) {
+            const value = el.getAttribute(attr)
+            if (value && hasCjk(value)) parts.push(`${attr}: ${value}`)
+          }
+        }
+        return [...new Set(parts)]
+      })
+    }
+
+    const pages = ['Inbox', 'Plan', 'Calendar', 'Stats', 'Settings']
+    const found: string[] = []
+    for (const label of pages) {
+      await page.locator('nav').getByRole('button', { name: label }).click()
+      await page.waitForTimeout(150)
+      found.push(...(await scan()))
+    }
+    expect(found).toEqual([])
+  })
+})

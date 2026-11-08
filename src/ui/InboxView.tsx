@@ -147,8 +147,8 @@ export default function InboxView() {
           {t('把群里的消息')}<em>{t('粘进来')}</em>{t('，剩下的它替你记着')}
         </h2>
         <p>
-          「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——
-          项目群、部门群、班级群、家长群，说的是同一件事：<strong>{t('有个截止时间，别错过')}</strong>。
+          {t('「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——')}
+          {t('项目群、部门群、班级群、家长群，说的是同一件事：')}<strong>{t('有个截止时间，别错过')}</strong>。
         </p>
       </section>
 
@@ -171,7 +171,7 @@ export default function InboxView() {
           className="composer-input"
           value={raw}
           onChange={(event) => setRaw(event.target.value)}
-          placeholder={'例如：\n【项目群】张经理：\n1. 本周五18:00前把预算表发到财务邮箱。\n2. 下周一上午10点在 3楼会议室 开复盘会。\n\n或者学校通知：\n本周五23:59前在学习通提交实验报告三。'}
+          placeholder={t('例如：\n【项目群】张经理：\n1. 本周五18:00前把预算表发到财务邮箱。\n2. 下周一上午10点在 3楼会议室 开复盘会。\n\n或者学校通知：\n本周五23:59前在学习通提交实验报告三。')}
           rows={7}
           spellCheck={false}
         />
