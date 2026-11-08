@@ -485,7 +485,47 @@ export interface TimeHit {
  * 抽取一句话里的时间信息。
  * 返回 null 表示这句话没有可用的时间线索 —— 调用方应当把它降级为「待确认」。
  */
+
+/** 起止时间：`11月5日9:00起至12月30日23:59`、`9月1日-9月10日` 等；due 取结束日 23:59 */
+const RANGE_DATE = String.raw`(?:\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}月\d{1,2}[日号]|\d{1,2}[日号])`
+const RANGE_RE = new RegExp(
+  String.raw`(?:从|自)?\s*(` +
+    RANGE_DATE +
+    String.raw`[^\s，。；;至到~～—–－-]{0,8}?(?:起|开始)?)\s*(?:至|到|~|～|—|–|－|-)\s*(` +
+    RANGE_DATE +
+    String.raw`[^\s，。；;\n]{0,10})`,
+)
+
+function resolveDateRange(text: string, ref: Date): TimeHit | null {
+  const match = RANGE_RE.exec(text)
+  if (!match) return null
+  const endText = match[2]
+  const endDate = resolveDate(endText, ref)
+  if (!endDate) return null
+  const endClock = resolveClock(endText)
+  const at = endClock
+    ? setClock(endDate.date, endClock.hour, endClock.minute)
+    : setClock(endDate.date, 23, 59)
+  return {
+    dateMs: startOfDay(endDate.date).getTime(),
+    atMs: at.getTime(),
+    hasClock: true,
+    isDeadline: true,
+    ambiguous: false,
+    matched: match[0],
+    dateStart: match.index,
+    dateEnd: match.index + match[0].length,
+    clockStart: null,
+    clockEnd: null,
+    periodStart: null,
+    periodEnd: null,
+    note: '起止时间按结束日 23:59 处理',
+  }
+}
+
 export function extractTime(text: string, ref: Date = new Date()): TimeHit | null {
+  const rangeHit = resolveDateRange(text, ref)
+  if (rangeHit) return rangeHit
   let dateHit = resolveDate(text, ref)
   const clockHit = resolveClock(text)
 

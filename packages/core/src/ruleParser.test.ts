@@ -332,3 +332,137 @@ describe('v0.7.0 规则引擎：新时间表达与双候选', () => {
     expect(task.reasons.join(' ')).toContain('2027-01-15')
   })
 })
+
+/**
+ * v1.1.3 抽取质量：用两条匿名样本做回归（不写姓名/真实单位），
+ * 并覆盖章节/平台/时间安排/角色分工/URL/起止日/去重等边界。
+ */
+describe('v1.1.3 抽取质量样本', () => {
+  const SAMPLE_A = `教材征订补充通知
+各班：
+一、请转告本班订购该教材的同学自查缺页，并留存影像。
+二、请统计缺页数量并于11月10日23:59前反馈（留存影像）。
+三、学习（考试）平台：https://example.edu.cn/textbook
+四、时间安排：11月5日9:00起至12月30日23:59
+五、学习委员负责汇总并提醒。`
+
+  const SAMPLE_B = `军事理论课学习通知
+一、学习（考试）平台：https://mooc.example.com/military
+二、学习时间：11月5日09:00起至12月30日23:59
+三、请同学们于12月30日23:59前完成军事理论课课程学习。
+四、请同学们于12月30日23:59前完成军事理论课考试。
+五、学习委员负责统计学习进度并提醒。`
+
+  it('样本 A：订书通知按行动拆成 2 条，截止相同、无地点渠道', () => {
+    const { tasks } = parseNotice(SAMPLE_A, REF)
+    expect(tasks).toHaveLength(2)
+    const titles = tasks.map((task) => task.title)
+    expect(titles.some((title) => title.includes('转告') && title.includes('自查缺页'))).toBe(true)
+    expect(titles.some((title) => title.includes('统计缺页数量') && title.includes('反馈'))).toBe(true)
+    expect(tasks.every((task) => task.dueAt === at(11, 10, 23, 59))).toBe(true)
+    expect(tasks.every((task) => task.location === null && task.channel === null)).toBe(true)
+  })
+
+  it('样本 B：课程学习与考试拆成 2 条，due 12/30 23:59，URL 不进 channel', () => {
+    const { tasks } = parseNotice(SAMPLE_B, REF)
+    expect(tasks).toHaveLength(2)
+    const titles = tasks.map((task) => task.title)
+    expect(titles.some((title) => title.includes('课程学习'))).toBe(true)
+    expect(titles.some((title) => title === '完成军事理论课考试')).toBe(true)
+    expect(tasks.every((task) => task.dueAt === at(12, 30, 23, 59))).toBe(true)
+    expect(tasks.every((task) => task.channel === null && task.location === null && task.startAt === null)).toBe(true)
+  })
+
+  it('章节标题、纯平台/网址/时间安排、角色分工不产任务', () => {
+    const raw = `通知
+一、学习要求
+二、平台：https://example.com/a
+三、网址：https://example.com/b
+四、时间安排：11月5日至12月30日
+五、学习委员负责跟进并提醒。`
+    expect(parseNotice(raw, REF).tasks).toHaveLength(0)
+  })
+
+  it('没有行动要求的「截止时间」只是信息', () => {
+    expect(parseNotice('截止时间：11月10日23:59', REF).tasks).toHaveLength(0)
+  })
+
+  it('起止时间 due 取结束日 23:59', () => {
+    const { tasks } = parseNotice('请于9月1日起至12月30日完成课程学习。', REF)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].dueAt).toBe(at(12, 30, 23, 59))
+  })
+
+  it('起止时间带结束钟点时按结束钟点', () => {
+    const { tasks } = parseNotice('请于9月1日至12月30日18:00完成课程学习。', REF)
+    expect(tasks[0].dueAt).toBe(at(12, 30, 18, 0))
+  })
+
+  it('URL 不当地点、不占标题', () => {
+    const { tasks } = parseNotice('请于11月10日前到 https://example.com/a 提交材料。', REF)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].location).toBeNull()
+    expect(tasks[0].channel).toBeNull()
+    expect(tasks[0].title).not.toContain('http')
+  })
+
+  it('地点：显式写法优先，教材不会被当成「教」地点', () => {
+    expect(parseNotice('请于11月10日前到地点：食堂三楼 提交材料。', REF).tasks[0].location).toBe('食堂三楼')
+    expect(parseNotice('请于11月10日前统计缺页教材数量并反馈。', REF).tasks[0].location).toBeNull()
+  })
+
+  it.each([
+    ['请于11月10日前到食堂集合。', '食堂'],
+    ['请于11月10日前到操场集合。', '操场'],
+    ['请于11月10日前到宿舍楼下领取材料。', '宿舍'],
+    ['请于11月10日前到行政楼交表。', '行政楼'],
+    ['请于11月10日前到办公室签字。', '办公室'],
+    ['请于11月10日前到门口集合。', '门口'],
+  ])('地点规则：%s → %s', (raw, location) => {
+    expect(parseNotice(raw, REF).tasks[0].location).toBe(location)
+  })
+
+  it('会议号不是地点', () => {
+    const { tasks } = parseNotice('请于11月10日10:00开会，会议号 123-456-789。', REF)
+    expect(tasks[0].location).toBeNull()
+  })
+
+  it('同一天同 kind 且标题高度重叠 → 合并 1 条', () => {
+    const raw = '请于11月10日23:59前统计缺页教材数量并反馈（留存影像）。统计本班缺页教材数量并反馈（留存影像）。'
+    const { tasks } = parseNotice(raw, REF)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].title).toContain('统计缺页教材数量并反馈')
+  })
+
+  it('两个不同截止时间保留两条', () => {
+    const raw = '请于11月5日23:59前提交A表。请于12月30日23:59前提交B报告。'
+    expect(parseNotice(raw, REF).tasks).toHaveLength(2)
+  })
+
+  it('同一天但类型不同不合并', () => {
+    const raw = '11月10日23:59前提交实验报告。11月10日10:00开班会。'
+    expect(parseNotice(raw, REF).tasks).toHaveLength(2)
+  })
+
+  it('同一天同 kind 但标题不重叠不合并', () => {
+    const raw = '11月10日23:59前提交语文作业。11月10日23:59前提交数学作业。'
+    expect(parseNotice(raw, REF).tasks).toHaveLength(2)
+  })
+
+  it('平台名作为提交渠道仍可识别', () => {
+    const { tasks } = parseNotice('请于11月10日前在学习通提交实验报告三。', REF)
+    expect(tasks).toHaveLength(1)
+    expect(tasks[0].channel).toBe('学习通')
+  })
+
+  it('网址里的平台名不算渠道', () => {
+    const { tasks } = parseNotice('请于11月10日前完成学习，平台：https://mooc.example.com/military', REF)
+    expect(tasks[0].channel).toBeNull()
+  })
+
+  it('中文编号与各班前缀从标题里剥掉', () => {
+    expect(parseSegment('一、请各班统计缺页教材数量并于11月10日前反馈。', REF, 0)?.title).toBe(
+      '统计缺页教材数量并反馈',
+    )
+  })
+})

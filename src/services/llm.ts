@@ -66,13 +66,21 @@ export function buildMessages(raw: string, ref: Date) {
     '   - 截止类（前 / 之前 / 截止 / 前提交）没有钟点时默认 23:59',
     '   - 会议 / 考试 / 评审类没有钟点时默认 09:00',
     '4. 信息来源里没有的字段一律填 null。禁止编造地点、渠道、时间。',
-    '5. 一句话里有两件事就拆成两条记录。',
-    '6. 拿不准就把 confidence 设为 "low"，并说明原因。',
+    '5. 一条通知可能有多件事：按不同行动/对象拆成多条，即使截止时间相同也各保留一条；只有同一行动的重复句子才合并。',
+    '6. 章节标题（一、二、…）、纯平台/网址/时间安排、角色分工（学习委员负责…）不是待办，不要抽。',
+    '7. URL / 网址不是 channel；location 只填真实地点或线上平台名（如「学习通」），网址放原文。',
+    '8. 标题去掉编号、章节号与时间短语；标题为空或只是章节名的不要输出。',
+    '9. 拿不准就把 confidence 设为 "low"，并说明原因。',
+    '',
+    '少样本（只学判断方式，不要照抄内容）：',
+    '例1：通知含「请于11月10日23:59前统计缺页教材数量并反馈」「学习平台：https://example.edu.cn」→ 只抽 1 条 {"title":"统计缺页教材数量并反馈","kind":"task","dueAt":"2026-11-10T23:59:00+08:00","channel":null,"location":null}；网址不是条目、不是 channel。',
+    '例2：同一通知「A 表 11月5日前交」「B 报告 12月30日前交」→ 2 条，因为截止时间不同。',
+    '例3：「二、学习（考试）平台…」「四、学习委员负责跟进」→ 不抽；章节标题和角色分工不是待办。',
     '',
     '输出格式（严格 JSON，不要 markdown 代码块）：',
     '{"tasks":[{"title":"干净的一句话标题，不含时间短语","kind":"' +
       KIND_LIST.join('|') +
-      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null","location":"地点 或 null","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
+      '","dueAt":"ISO8601 或 null","startAt":"ISO8601 或 null","channel":"飞书/钉钉/邮箱/OA/学习通/纸质 等 或 null（URL/网址填 null）","location":"真实地点或线上平台名 或 null（URL 填 null）","confidence":"high|medium|low","reason":"一句话说明判断依据"}]}',
   ].join('\n')
 
   return [
@@ -97,9 +105,79 @@ export function extractJson(text: string): unknown {
 
 const CONF_SET = new Set<Confidence>(['high', 'medium', 'low'])
 
+function isUrlLike(value: string): boolean {
+  return /https?:\/\/|www\.|(?:^|[\s/])(?:[a-z0-9-]+\.)+(?:com|cn|edu|org|net|io)(?:[/\s]|$)/i.test(value)
+}
+
+function cleanTitle(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  return value
+    .replace(/^[一二三四五六七八九十百]+[、.．)）]\s*/, '')
+    .replace(/^\d{1,2}\s*[、.．)）]\s*/, '')
+    .replace(/https?:\/\/\S+/gi, ' ')
+    .replace(/^[：:，,\s、-]+/, '')
+    .trim()
+}
+
+function cleanChannel(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const channel = value.trim()
+  if (!channel || isUrlLike(channel) || channel.length > 40) return null
+  return channel
+}
+
+function cleanLocation(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const location = value.trim()
+  if (!location || isUrlLike(location) || /(?:会议号|会议密码)/.test(location)) return null
+  return location
+}
+
+function titleBigrams(title: string): Set<string> {
+  const chars = title.replace(/[^\u4e00-\u9fa5A-Za-z0-9]/g, '')
+  const grams = new Set<string>()
+  for (let i = 0; i < chars.length - 1; i += 1) grams.add(chars.slice(i, i + 2))
+  return grams
+}
+
+function titleSimilar(a: string, b: string): boolean {
+  if (!a || !b) return false
+  if (a === b || a.includes(b) || b.includes(a)) return true
+  const ga = titleBigrams(a)
+  const gb = titleBigrams(b)
+  if (!ga.size || !gb.size) return false
+  let shared = 0
+  for (const gram of ga) if (gb.has(gram)) shared += 1
+  return shared / Math.min(ga.size, gb.size) >= 0.8
+}
+
+/** 同一 due 日 + 同 kind + 标题高度重叠的 AI 行合并，避免模型自己重复输出 */
+function dedupeLlmTasks(tasks: ParsedTask[]): ParsedTask[] {
+  const out: ParsedTask[] = []
+  for (const task of tasks) {
+    const due = task.dueAt ?? task.startAt
+    const duplicate = out.find((existing) => {
+      const existingDue = existing.dueAt ?? existing.startAt
+      return existing.kind === task.kind && existingDue === due && titleSimilar(existing.title, task.title)
+    })
+    if (!duplicate) {
+      out.push(task)
+      continue
+    }
+    if (task.title.length > duplicate.title.length) duplicate.title = task.title
+    duplicate.channel = duplicate.channel ?? task.channel
+    duplicate.location = duplicate.location ?? task.location
+    duplicate.confidence = CONF_RANK[task.confidence] > CONF_RANK[duplicate.confidence] ? task.confidence : duplicate.confidence
+  }
+  return out
+}
+
+const CONF_RANK: Record<Confidence, number> = { low: 0, medium: 1, high: 2 }
+
 function toParsedTask(row: Record<string, unknown>, index: number): ParsedTask | null {
-  const title = typeof row.title === 'string' ? row.title.trim() : ''
+  const title = cleanTitle(row.title)
   if (!title) return null
+  if (/^(?:学习|考试|测评)?(?:（[^）]*）)?(?:平台|网址|链接|入口|系统)[：:]?$/.test(title)) return null
   const kind = KIND_LIST.includes(row.kind as TaskKind) ? (row.kind as TaskKind) : 'other'
   const parseTime = (value: unknown): number | null => {
     if (typeof value !== 'string' || !value) return null
@@ -117,8 +195,8 @@ function toParsedTask(row: Record<string, unknown>, index: number): ParsedTask |
     dueAt,
     startAt,
     kind,
-    channel: typeof row.channel === 'string' && row.channel.trim() ? row.channel.trim() : null,
-    location: typeof row.location === 'string' && row.location.trim() ? row.location.trim() : null,
+    channel: cleanChannel(row.channel),
+    location: cleanLocation(row.location),
     rawText: typeof row.reason === 'string' ? row.reason : '',
     confidence: confidence === 'high' ? 'medium' : confidence, // AI 单方结论封顶 medium
     reasons: [typeof row.reason === 'string' ? `AI 判断：${row.reason}` : 'AI 抽取结果'],
@@ -130,9 +208,10 @@ export function parseLLMResponse(payload: unknown): ParsedTask[] {
   if (!payload || typeof payload !== 'object') return []
   const rows = (payload as { tasks?: unknown }).tasks
   if (!Array.isArray(rows)) return []
-  return rows
+  const tasks = rows
     .map((row, index) => (row && typeof row === 'object' ? toParsedTask(row as Record<string, unknown>, index) : null))
     .filter((task): task is ParsedTask => task !== null)
+  return dedupeLlmTasks(tasks)
 }
 
 /** 真正的网络调用：流式读取 SSE，边读边回调进度 */
