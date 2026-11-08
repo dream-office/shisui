@@ -70,5 +70,5 @@
 
 - DB v2 → v3：只补字段默认值（`endAt=null`、`allDay` 按 00:00 推断等），不改写老值、不丢数据
 - DB v3 → v4：只补 `url=null, note=null`（tasks 与 series），幂等、不改写老值
-- 备份版本：`backupVersion > 1` 或 `schemaVersion > 3` 拒绝导入
+- 备份版本：`backupVersion > 1` 或 `schemaVersion > 4` 拒绝导入
 - v1.0 不做数据结构变更；新增功能不得破坏以上格式
