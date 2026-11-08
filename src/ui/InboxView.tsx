@@ -240,7 +240,7 @@ export default function InboxView() {
       {warnings.length > 0 && (
         <ul className="warnings">
           {warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
+            <li key={warning}>{t(warning)}</li>
           ))}
         </ul>
       )}
