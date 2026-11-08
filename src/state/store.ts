@@ -3,9 +3,13 @@
  * UI 只读状态、调 action，不写业务分支 —— 这是 AI 生成代码最容易糊在一起的地方，
  * 所以刻意切成 core / data / services / state / ui 五层。
  */
+import { version as appVersion } from '../../package.json'
 import { create } from 'zustand'
 import {
+  buildBackup,
   buildNextInstance,
+  normalizeTags,
+  validateBackup,
   createManualTask,
   mergeIcsImport,
   mergeTasks,
@@ -37,6 +41,15 @@ interface AppState {
   batchMode: boolean
   /** 重复系列（规则在系列上，实例只引用 seriesId） */
   series: TaskSeries[]
+  /** 搜索框（标题/原文/地点/标签；支持 #tag） */
+  searchQuery: string
+  /** 批量多选 */
+  selectedIds: string[]
+  /** 最近一次批量操作的撤销快照（内存，刷新后失效） */
+  undo: { label: string; before: StoredTask[] } | null
+  /** 专注模式 */
+  focusMode: boolean
+  focusIndex: number
 
   setView: (view: View) => void
   hydrate: () => Promise<void>
@@ -47,6 +60,21 @@ interface AppState {
   skipTask: (id: string) => Promise<void>
   /** 结束系列：停止生成、保留历史 */
   endSeries: (id: string) => Promise<void>
+  setSearchQuery: (query: string) => void
+  toggleSelection: (id: string) => void
+  clearSelection: () => void
+  selectAll: (ids: string[]) => void
+  batchSetDone: (ids: string[], done: boolean) => Promise<void>
+  batchDelete: (ids: string[]) => Promise<void>
+  undoLastBatch: () => Promise<void>
+  exportBackup: () => string
+  restoreBackup: (text: string) => Promise<{ ok: boolean; errors: string[]; counts?: { tasks: number; series: number; batches: number } }>
+  setTags: (id: string, tags: string[]) => Promise<void>
+  openFocus: () => void
+  closeFocus: () => void
+  focusNext: () => void
+  focusComplete: () => Promise<void>
+  focusSkip: () => Promise<void>
   parse: (raw: string) => Promise<void>
   addManualTask: (input: ManualTaskInput) => Promise<void>
   /** 把任务挪到某一天：只改日期，保留原时刻；全天任务保持 00:00 */
@@ -119,6 +147,11 @@ export const useApp = create<AppState>((set, get) => ({
   history: [],
   batchMode: false,
   series: [],
+  searchQuery: '',
+  selectedIds: [],
+  undo: null,
+  focusMode: false,
+  focusIndex: 0,
 
   setView: (view) => set({ view }),
 
@@ -199,6 +232,121 @@ export const useApp = create<AppState>((set, get) => ({
     if (!task || !task.seriesId) return
     await repo.endSeries(task.seriesId, task.recurrenceIndex ?? 0)
     set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
+  },
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
+
+  toggleSelection: (id) => {
+    const selected = get().selectedIds
+    set({
+      selectedIds: selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id],
+    })
+  },
+
+  clearSelection: () => set({ selectedIds: [] }),
+
+  selectAll: (ids) => set({ selectedIds: [...ids] }),
+
+  batchSetDone: async (ids, done) => {
+    const current = get().tasks
+    const before = current.filter((task) => ids.includes(task.id)).map((task) => ({ ...task }))
+    if (before.length === 0) return
+    await Promise.all(before.map((task) => repo.setDone(task.id, done)))
+    set({
+      tasks: await repo.listTasks(),
+      selectedIds: [],
+      undo: { label: done ? `批量完成 ${before.length} 件` : `批量取消完成 ${before.length} 件`, before },
+    })
+  },
+
+  batchDelete: async (ids) => {
+    const current = get().tasks
+    const before = current.filter((task) => ids.includes(task.id)).map((task) => ({ ...task }))
+    if (before.length === 0) return
+    await Promise.all(before.map((task) => repo.removeTask(task.id)))
+    set({
+      tasks: await repo.listTasks(),
+      selectedIds: [],
+      undo: { label: `批量删除 ${before.length} 件`, before },
+    })
+  },
+
+  undoLastBatch: async () => {
+    const undo = get().undo
+    if (!undo) return
+    await repo.bulkPutTasks(undo.before)
+    set({ tasks: await repo.listTasks(), undo: null })
+  },
+
+  exportBackup: () => {
+    const state = get()
+    const llm = state.llmConfig
+    const backup = buildBackup({
+      appVersion,
+      tasks: state.tasks,
+      series: state.series,
+      batches: state.history,
+      // 只导出非敏感设置：apiKey 永远不进备份
+      settings: { llm: { baseUrl: llm.endpoint, model: llm.model } },
+    })
+    return JSON.stringify(backup, null, 2)
+  },
+
+  restoreBackup: async (text) => {
+    const result = validateBackup(text)
+    if (!result.ok || !result.backup) return { ok: false, errors: result.errors }
+    await repo.replaceAll({
+      tasks: result.backup.tasks,
+      series: result.backup.series,
+      batches: result.backup.batches,
+    })
+    set({
+      tasks: await repo.listTasks(),
+      series: await repo.listSeries(),
+      history: await repo.listBatches(),
+      selectedIds: [],
+      undo: null,
+    })
+    return {
+      ok: true,
+      errors: [],
+      counts: {
+        tasks: result.backup.tasks.length,
+        series: result.backup.series.length,
+        batches: result.backup.batches.length,
+      },
+    }
+  },
+
+  setTags: async (id, tags) => {
+    await repo.updateTask(id, { tags: normalizeTags(tags), editedField: 'tags' })
+    set({ tasks: await repo.listTasks() })
+  },
+
+  openFocus: () => set({ focusMode: true, focusIndex: 0 }),
+  closeFocus: () => set({ focusMode: false }),
+  focusNext: () => set((state) => ({ focusIndex: state.focusIndex + 1 })),
+
+  focusComplete: async () => {
+    const state = get()
+    const active = state.tasks.filter((task) => !task.done && !task.skipped)
+    const task = active[state.focusIndex]
+    if (!task) return
+    await state.completeTask(task.id)
+    set({ focusIndex: 0 })
+  },
+
+  focusSkip: async () => {
+    const state = get()
+    const active = state.tasks.filter((task) => !task.done && !task.skipped)
+    const task = active[state.focusIndex]
+    if (!task) return
+    if (task.seriesId) {
+      await state.skipTask(task.id)
+      set({ focusIndex: 0 })
+    } else {
+      state.focusNext()
+    }
   },
 
   importIcsTasks: async (parsed) => {

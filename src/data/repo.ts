@@ -114,6 +114,32 @@ export async function endSeries(seriesId: string, currentIndex: number): Promise
   })
 }
 
+/** 整库替换（恢复备份用）：一个事务内清空并写入，失败自动回滚 */
+export async function replaceAll(data: {
+  tasks: StoredTask[]
+  series: TaskSeries[]
+  batches: ImportBatch[]
+}): Promise<void> {
+  await db.transaction('rw', db.tasks, db.batches, db.series, async () => {
+    await db.tasks.clear()
+    await db.batches.clear()
+    await db.series.clear()
+    await db.tasks.bulkPut(data.tasks)
+    await db.batches.bulkPut(data.batches)
+    await db.series.bulkPut(data.series)
+  })
+}
+
+/** 撤销批量操作：整条写回（新增或覆盖） */
+export async function bulkPutTasks(tasks: StoredTask[]): Promise<void> {
+  await db.tasks.bulkPut(tasks)
+}
+
+/** 撤销批量完成：按快照恢复 done 状态 */
+export async function restoreTaskStates(tasks: StoredTask[]): Promise<void> {
+  await db.tasks.bulkPut(tasks)
+}
+
 export async function recordBatch(batch: ImportBatch): Promise<void> {
   await db.batches.put(batch)
 }

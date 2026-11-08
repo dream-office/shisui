@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type ConsoleMessage, type Page, type Request } from '@playwright/test'
 
@@ -796,5 +797,131 @@ test.describe('多日区间整段拖拽', () => {
     await nav.getByRole('button', { name: /^日程/ }).click()
     // 起点 20 日 09:00 → 22 日 09:00；终点 22 日 11:00 → 24 日 11:00，长度不变（3 个日历日）
     await expect(page.getByText(/11月22日–11月24日（3 天）/)).toBeVisible()
+  })
+})
+
+
+test.describe('v0.9 备份 / 恢复', () => {
+  test('Z1. 导出 JSON → 新增数据 → 恢复：回到备份状态', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('备份里的任务')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: '导出 JSON 备份' }).click()
+    const download = await downloadPromise
+    const path = await download.path()
+    expect(path).not.toBeNull()
+    const backupText = readFileSync(path!, 'utf-8')
+    const backup = JSON.parse(backupText)
+    expect(backup.format).toBe('shisui-backup')
+    expect(backup.tasks.length).toBe(1)
+
+    // 备份后新增一条，再恢复 → 新增的应该消失
+    await nav.getByRole('button', { name: /^收件/ }).click()
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('备份后新增')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.locator('input[type="file"][accept*="json"]').setInputFiles({
+      name: 'backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(backupText, 'utf-8'),
+    })
+    await expect(page.getByRole('region', { name: '恢复预览' })).toContainText('1 条任务')
+    await page.getByRole('button', { name: '确认恢复' }).click()
+    await expect(page.getByText(/已恢复 1 条任务/)).toBeVisible()
+
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('备份里的任务')).toBeVisible()
+    await expect(page.getByText('备份后新增')).toHaveCount(0)
+  })
+
+  test('Z2. 非法备份文件：给出错误、不改数据', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('不能丢的任务')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.locator('input[type="file"][accept*="json"]').setInputFiles({
+      name: 'bad.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{not json', 'utf-8'),
+    })
+    await expect(page.getByRole('alert')).toContainText('JSON')
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('不能丢的任务')).toBeVisible()
+  })
+})
+
+test.describe('v0.9 标签 / 搜索', () => {
+  test('Z3. 加标签后 #标签 搜索', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('复习数学')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '＋标签' }).click()
+    await page.getByLabel('新标签').fill('作业')
+    await page.getByLabel('新标签').press('Enter')
+    await expect(page.getByText('#作业')).toBeVisible()
+
+    const search = page.getByLabel('搜索任务')
+    await search.fill('#作业')
+    await expect(page.getByText('复习数学')).toBeVisible()
+    await search.fill('#不存在')
+    await expect(page.getByText('复习数学')).toHaveCount(0)
+  })
+})
+
+test.describe('v0.9 批量 / 撤销', () => {
+  test('Z4. 批量完成 → 撤销恢复', async ({ page }) => {
+    await page.goto('/')
+    for (const title of ['批量甲', '批量乙']) {
+      await page.getByRole('button', { name: '手动添加' }).click()
+      await page.getByLabel('标题').fill(title)
+      await page.getByRole('button', { name: '添加', exact: true }).click()
+    }
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '多选' }).click()
+    await page.getByLabel('选择「批量甲」').check()
+    await page.getByLabel('选择「批量乙」').check()
+    await page.getByRole('button', { name: '批量完成' }).click()
+    await expect(page.getByText(/已完成 2 件/)).toBeVisible()
+
+    await page.getByRole('button', { name: /撤销「批量完成 2 件」/ }).click()
+    await expect(page.getByText(/已完成 \d+ 件/)).toHaveCount(0)
+    await expect(page.locator('.task-row', { hasText: '批量甲' })).toBeVisible()
+  })
+})
+
+test.describe('v0.9 专注模式', () => {
+  test('Z5. 专注完成重复任务：生成下一条，不丢数据', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '专注模式' }).click()
+    const focus = page.getByRole('region', { name: '专注模式' })
+    await expect(focus).toContainText('项目例会')
+    await expect(focus).toContainText('1 / 1')
+
+    await focus.getByRole('button', { name: '完成', exact: true }).click()
+    await expect(focus).toContainText('1 / 1') // 生成的下一条仍在专注里
+    await expect(page.getByText(/已完成 1 件/)).toBeVisible()
   })
 })
