@@ -9,7 +9,8 @@ const OUT = '.tmp/v010-screens'
 
 async function seed(page: import('@playwright/test').Page) {
   await page.goto('/')
-  await page.getByRole('button', { name: '工作群示例' }).click()
+  await page.getByRole('button', { name: '更多 ▾' }).click()
+  await page.getByRole('menuitem', { name: '工作群示例' }).click()
   await page.getByRole('button', { name: '开始解析' }).click()
   await page.getByRole('heading', { name: /识别到 \d+ 条待办/ }).waitFor({ timeout: 15_000 })
   await page.getByRole('button', { name: '全部收录' }).click()

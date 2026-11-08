@@ -331,6 +331,10 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '更多 ▾': 'More ▾',
+  更多操作: 'More actions',
+  示例: 'Examples',
+
   第三方许可: 'Third-party licenses',
 
   '设备内存较低，建议改用 AI 识图（不强制）。':

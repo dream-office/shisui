@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import { t } from '@/i18n'
 import { useApp } from '@/state/store'
 import { isLLMReady } from '@/services/llm'
@@ -9,6 +9,11 @@ import { ImportError, type ImportErrorCode, validateImage } from '@/services/fil
 
 interface Props {
   onText: (text: string) => void
+}
+
+export interface ImportPanelHandle {
+  openDocument: () => void
+  openImage: () => void
 }
 
 const ERROR_KEYS: Record<ImportErrorCode, string> = {
@@ -27,7 +32,7 @@ const ERROR_KEYS: Record<ImportErrorCode, string> = {
   cancelled: '已取消',
 }
 
-export default function ImportPanel({ onText }: Props) {
+const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ onText }, ref) {
   const imageMode = useApp((s) => s.imageMode)
   const llmConfig = useApp((s) => s.llmConfig)
   const setImageCandidates = useApp((s) => s.setImageCandidates)
@@ -42,6 +47,11 @@ export default function ImportPanel({ onText }: Props) {
   const [ocrNoticeOpen, setOcrNoticeOpen] = useState(false)
   const [aiConfirmOpen, setAiConfirmOpen] = useState(false)
   const [aiChecked, setAiChecked] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    openDocument: () => docInput.current?.click(),
+    openImage: () => imageInput.current?.click(),
+  }))
 
   const aiReady = isLLMReady(llmConfig)
   const lowMemory =
@@ -159,32 +169,6 @@ export default function ImportPanel({ onText }: Props) {
 
   return (
     <div className="import-panel">
-      <div className="import-actions">
-        <button
-          type="button"
-          className="btn btn-sm"
-          disabled={busy}
-          onClick={() => docInput.current?.click()}
-        >
-          {t('导入文档')}
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm"
-          disabled={busy || imageMode === 'off' || (imageMode === 'ai' && !aiReady)}
-          title={
-            imageMode === 'off'
-              ? t('图片识别已关闭')
-              : imageMode === 'ai' && !aiReady
-                ? t('未配置 AI 接口，无法使用 AI 识图')
-                : undefined
-          }
-          onClick={() => imageInput.current?.click()}
-        >
-          {t('识别图片')}
-        </button>
-        <span className="muted import-hint">{t('PDF / DOCX / TXT / MD · 图片 png/jpg/webp')}</span>
-      </div>
       <input
         ref={docInput}
         type="file"
@@ -312,4 +296,6 @@ export default function ImportPanel({ onText }: Props) {
       )}
     </div>
   )
-}
+})
+
+export default ImportPanel

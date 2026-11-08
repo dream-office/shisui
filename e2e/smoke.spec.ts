@@ -2,6 +2,12 @@ import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type ConsoleMessage, type Page, type Request } from '@playwright/test'
 
+
+/** v1.3.1：示例/导入入口收进「更多」菜单 */
+async function openMore(page: import('@playwright/test').Page) {
+  await page.getByRole('button', { name: '更多 ▾' }).click()
+}
+
 /**
  * 冒烟用例，覆盖四条「用户最先遇到的路径」：
  *
@@ -46,7 +52,8 @@ test.describe('主路径', () => {
   test('B. 示例数据 → 解析 → 收录 → 日程可见', async ({ page }) => {
     await page.goto('/')
 
-    await page.getByRole('button', { name: '学校通知示例' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '学校通知示例' }).click()
     await expect(page.locator('#notice')).not.toHaveValue('')
 
     await page.getByRole('button', { name: '开始解析' }).click()
@@ -97,7 +104,8 @@ test.describe('隐私', () => {
 
     await page.goto('/')
     // 走一遍主路径，确保解析/收录也不触发外部请求
-    await page.getByRole('button', { name: '工作群示例' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '工作群示例' }).click()
     await page.getByRole('button', { name: '开始解析' }).click()
     await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: '全部收录' }).click()
@@ -125,7 +133,8 @@ test.describe('手动添加', () => {
 test.describe('历史', () => {
   test('F. 收录后历史留有记录，可重新解析', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '学校通知示例' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '学校通知示例' }).click()
     await page.getByRole('button', { name: '开始解析' }).click()
     await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
     await page.getByRole('button', { name: '全部收录' }).click()
@@ -179,7 +188,8 @@ test.describe('ICS 导入', () => {
   ].join('\r\n')
 
   async function pickFile(page: Page) {
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'test.ics',
       mimeType: 'text/calendar',
@@ -207,7 +217,8 @@ test.describe('ICS 导入', () => {
 
   test('K. 坏文件给出可读错误，不崩', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'bad.ics',
       mimeType: 'text/calendar',
@@ -232,7 +243,8 @@ test.describe('ICS 导入', () => {
     ].join('\r\n')
 
     await page.goto('/')
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'rrule.ics',
       mimeType: 'text/calendar',
@@ -546,7 +558,8 @@ test.describe('多日区间', () => {
 
   test('T. 导入多日全天：日程显示区间，月历覆盖每一天', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'multi.ics',
       mimeType: 'text/calendar',
@@ -697,7 +710,8 @@ test.describe('跨月区间', () => {
 
   test('V. 20 日 → 次月 2 日：列表显示区间、月历两个月都有标记', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'cross.ics',
       mimeType: 'text/calendar',
@@ -780,7 +794,8 @@ test.describe('多日区间整段拖拽', () => {
 
   test('Y. 整段拖拽 20→22：区间整体平移、长度不变', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '导入 .ics' }).click()
+    await openMore(page)
+    await page.getByRole('menuitem', { name: '导入 .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'span.ics',
       mimeType: 'text/calendar',
@@ -1166,7 +1181,8 @@ test.describe('v1.0 English 静态 UI', () => {
 
     // 动态：解析示例 → 候选页；收录 → Plan 有数据
     await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
-    await page.getByRole('button', { name: 'Work example' }).click()
+    await page.getByRole('button', { name: 'More ▾' }).click()
+    await page.getByRole('menuitem', { name: 'Work example' }).click()
     await page.getByRole('button', { name: 'Parse', exact: true }).click()
     await expect(page.getByRole('heading', { name: /Found \d+ to-dos/ })).toBeVisible({ timeout: 15_000 })
     for (const item of await scan()) found.add(item)
@@ -1304,7 +1320,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await nav.getByRole('button', { name: /^设置/ }).click()
     await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
     const about = page.locator('.about-signature')
-    await expect(page.getByText('拾穗 v1.3.0 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('拾穗 v1.3.1 · AGPL-3.0-or-later')).toBeVisible()
     await expect(page.getByText('作者：dream-office')).toBeVisible()
     await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(

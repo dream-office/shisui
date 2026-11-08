@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { appendClipboardText } from 'shisui-core'
 import { useApp } from '@/state/store'
+import { isLLMReady } from '@/services/llm'
 import { SAMPLE_NOTICE, SAMPLE_WORK } from 'shisui-core'
 import BatchPreview from './BatchPreview'
 import CandidateCard from './CandidateCard'
@@ -9,7 +10,7 @@ import HistoryPanel from './HistoryPanel'
 import IcsImportPanel from './IcsImportPanel'
 import ManualAddForm from './ManualAddForm'
 import EmptyState from './EmptyState'
-import ImportPanel from './ImportPanel'
+import ImportPanel, { type ImportPanelHandle } from './ImportPanel'
 import { useNow } from './useNow'
 
 /**
@@ -69,8 +70,61 @@ export default function InboxView() {
   const [sharedFrom, setSharedFrom] = useState<string | null>(null)
   const history = useApp((s) => s.history)
   const candidates = useApp((s) => s.candidates)
+  const imageMode = useApp((s) => s.imageMode)
+  const llmConfig = useApp((s) => s.llmConfig)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null)
+  const moreWrapRef = useRef<HTMLDivElement>(null)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+  const importRef = useRef<ImportPanelHandle>(null)
   const batchMode = useApp((s) => s.batchMode)
+
+  useEffect(() => {
+    if (!moreOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (moreWrapRef.current && !moreWrapRef.current.contains(event.target as Node)) setMoreOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMoreOpen(false)
+        moreButtonRef.current?.focus()
+      }
+    }
+    const menu = moreMenuRef.current
+    const reposition = () => {
+      const button = moreButtonRef.current
+      if (!button || !menu) return
+      const rect = button.getBoundingClientRect()
+      const vh = window.innerHeight
+      const vw = window.innerWidth
+      const width = Math.min(260, vw - 24)
+      const maxHeight = Math.max(120, vh - 16)
+      const natural = menu.scrollHeight
+      const height = Math.min(natural, maxHeight)
+      const belowTop = rect.bottom + 6
+      const aboveTop = rect.top - height - 6
+      // 优先下方；下方放不下且上方空间更大则放上方
+      let top = belowTop + height <= vh - 8 ? belowTop : aboveTop
+      // 最终钳制：无论选哪边都保证完整落在视口内；超高时 top=8 + 内部滚动
+      top = Math.max(8, Math.min(top, vh - height - 8))
+      const left = Math.max(8, Math.min(rect.right - width, vw - width - 8))
+      setMenuPos({ top, left, width, maxHeight: height })
+    }
+    reposition()
+    document.addEventListener('pointerdown', onPointerDown)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('resize', reposition)
+    window.addEventListener('scroll', reposition)
+    menu?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus({ preventScroll: true })
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('resize', reposition)
+      window.removeEventListener('scroll', reposition)
+    }
+  }, [moreOpen])
 
   // 「本周日」当天会产出本周/下周两个候选：同组默认选「本周」，UI 里可切换
   const choiceGroups = useMemo(() => {
@@ -191,12 +245,6 @@ export default function InboxView() {
           <button type="button" className="btn" onClick={() => void pasteFromClipboard()} disabled={parsing}>
             {t('粘贴分享内容')}
           </button>
-          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_WORK)} disabled={parsing}>
-            {t('工作群示例')}
-          </button>
-          <button type="button" className="btn" onClick={() => setRaw(SAMPLE_NOTICE)} disabled={parsing}>
-            {t('学校通知示例')}
-          </button>
           <button type="button" className="btn btn-ghost" onClick={() => setRaw('')} disabled={parsing || !raw}>
             {t('清空')}
           </button>
@@ -206,12 +254,105 @@ export default function InboxView() {
           <button type="button" className="btn btn-ghost" onClick={() => setHistoryOpen((open) => !open)} disabled={parsing}>
             {history.length > 0 ? t('历史 ({n})', { n: history.length }) : t('历史')}
           </button>
-          <button type="button" className="btn btn-ghost" onClick={() => setIcsOpen((open) => !open)} disabled={parsing}>
-            {t('导入 .ics')}
-          </button>
+          <div className="more-wrap" ref={moreWrapRef}>
+            <button
+              ref={moreButtonRef}
+              type="button"
+              className="btn btn-ghost"
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              aria-controls="composer-more-menu"
+              onClick={() => setMoreOpen((open) => !open)}
+              disabled={parsing}
+            >
+              {t('更多 ▾')}
+            </button>
+            {moreOpen && (
+              <div
+                id="composer-more-menu"
+                className="more-menu"
+                role="menu"
+                aria-label={t('更多操作')}
+                ref={moreMenuRef}
+                style={
+                  menuPos
+                    ? { top: menuPos.top, left: menuPos.left, width: menuPos.width, maxHeight: menuPos.maxHeight }
+                    : { visibility: 'hidden' }
+                }
+              >
+                <p className="more-group-title">{t('示例')}</p>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="more-item"
+                  onClick={() => {
+                    setRaw(SAMPLE_WORK)
+                    setMoreOpen(false)
+                  }}
+                >
+                  {t('工作群示例')}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="more-item"
+                  onClick={() => {
+                    setRaw(SAMPLE_NOTICE)
+                    setMoreOpen(false)
+                  }}
+                >
+                  {t('学校通知示例')}
+                </button>
+                <p className="more-group-title">{t('导入')}</p>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="more-item"
+                  onClick={() => {
+                    setIcsOpen(true)
+                    setMoreOpen(false)
+                  }}
+                >
+                  {t('导入 .ics')}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="more-item"
+                  onClick={() => {
+                    setMoreOpen(false)
+                    importRef.current?.openDocument()
+                  }}
+                >
+                  {t('导入文档')}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="more-item"
+                  disabled={imageMode === 'off' || (imageMode === 'ai' && !isLLMReady(llmConfig))}
+                  title={
+                    imageMode === 'off'
+                      ? t('图片识别已关闭')
+                      : imageMode === 'ai' && !isLLMReady(llmConfig)
+                        ? t('未配置 AI 接口，无法使用 AI 识图')
+                        : undefined
+                  }
+                  onClick={() => {
+                    setMoreOpen(false)
+                    importRef.current?.openImage()
+                  }}
+                >
+                  {t('识别图片')}
+                </button>
+                <p className="more-hint">{t('PDF / DOCX / TXT / MD · 图片 png/jpg/webp')}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <ImportPanel
+          ref={importRef}
           onText={(text) => {
             setRaw(text)
             requestAnimationFrame(() => textareaRef.current?.focus())
