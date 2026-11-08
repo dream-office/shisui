@@ -114,6 +114,32 @@ describe('importIcs', () => {
     expect(result.warnings).toHaveLength(0)
   })
 
+  it('多天全天事件：warning 带天数与首日日期（动态生成，不写死）', () => {
+    const ics = wrap(
+      event([
+        'UID:multi',
+        'SUMMARY:三天活动',
+        'DTSTART;VALUE=DATE:20261120',
+        'DTEND;VALUE=DATE:20261123',
+      ]),
+    )
+    const result = importIcs(ics, { makeId })
+
+    // 只保留首日
+    expect(result.tasks).toHaveLength(1)
+    expect(result.tasks[0].dueAt).toBe(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())
+
+    const warning = result.warnings.find((text) => text.includes('天')) ?? ''
+    expect(warning).toContain('是 3 天的全天事件')
+    expect(warning).toContain('只保留首日（2026-11-20）')
+  })
+
+  it('单日全天事件的 warning 保持原措辞', () => {
+    const ics = wrap(event(['UID:one-day', 'SUMMARY:单日全天', 'DTSTART;VALUE=DATE:20261120', 'DTEND;VALUE=DATE:20261121']))
+    const result = importIcs(ics, { makeId })
+    expect(result.warnings.some((text) => text.includes('是全天事件，按到期日导入'))).toBe(true)
+  })
+
   it('嵌套 VALARM 不会把其属性当成事件字段', () => {
     const ics = wrap(
       event([

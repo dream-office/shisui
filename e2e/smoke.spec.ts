@@ -312,6 +312,55 @@ test.describe('月视图', () => {
     }))
     expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
   })
+
+  test('C6. 点击某天只显示当天任务', async ({ page }) => {
+    await page.goto('/')
+
+    // 两天各加一条（用 datetime-local 指定日期，避免依赖“今天”）
+    const addTask = async (title: string, when: string) => {
+      await page.getByRole('button', { name: '手动添加' }).click()
+      await page.getByLabel('标题').fill(title)
+      await page.getByLabel('截止时间').fill(when)
+      await page.getByRole('button', { name: '添加', exact: true }).click()
+    }
+    await addTask('二十号的活', '2026-11-20T18:00')
+    await addTask('二十一号的活', '2026-11-21T09:00')
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime()
+    await page.locator(`.month-cell[data-day="${day(2026, 11, 20)}"]`).click()
+
+    const list = page.locator('.month-day')
+    await expect(list).toContainText('二十号的活')
+    await expect(list).not.toContainText('二十一号的活')
+  })
+
+  test('C8. 跨月拖拽：拖到相邻月份日期后月份与日期正确', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('月底跨月')
+    await page.getByLabel('截止时间').fill('2026-11-30T18:00')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^月历/ }).click()
+
+    const day = (y: number, m: number, d: number) => new Date(y, m - 1, d).getTime()
+    await page.locator(`.month-cell[data-day="${day(2026, 11, 30)}"]`).click()
+
+    const source = page.locator('.day-task', { hasText: '月底跨月' })
+    await expect(source).toBeVisible()
+    // 12 月 1 日这一格在 11 月的网格里是「下月」格子，可以接收拖拽
+    const target = page.locator(`.month-cell[data-day="${day(2026, 12, 1)}"]`)
+    await expect(target).toHaveCount(1)
+    await source.dragTo(target)
+
+    const dayCard = page.locator('.month-day')
+    await expect(dayCard).toContainText('12月1日')
+    await expect(dayCard).toContainText('月底跨月')
+  })
 })
 
 test.describe('PWA', () => {

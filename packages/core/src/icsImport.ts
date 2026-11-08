@@ -172,6 +172,13 @@ export function resolveIcsTime(prop: Property): ResolvedTime | null {
   return { ms: new Date(yN, moN - 1, dN, hN, miN, sN).getTime(), allDay: false }
 }
 
+/** 本地日期：YYYY-MM-DD（用于 warning 文案） */
+function localDateString(ms: number): string {
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 function kindFor(resolved: { start: ResolvedTime | null; end: ResolvedTime | null }): TaskKind {
   if (resolved.start?.allDay) return 'task'
   if (resolved.start && resolved.end) return 'meeting'
@@ -320,8 +327,19 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
     const startAt = allDay ? null : start?.ms ?? null
 
     if (allDay) {
-      // 全天事件用 DTSTART 那一天作为到期日（与导出规则对称）
-      warnings.push(`「${label}」是全天事件，按到期日导入`)
+      // 全天事件用 DTSTART 那一天作为到期日（与导出规则对称）；多天事件只保留首日
+      const startMsForWarn = start!.ms
+      const multiDay =
+        end !== null && end.allDay
+          ? Math.round((end.ms - startMsForWarn) / 86_400_000)
+          : 1
+      if (multiDay > 1) {
+        warnings.push(
+          `「${label}」是 ${multiDay} 天的全天事件，当前只保留首日（${localDateString(startMsForWarn)}）；其余日期未导入`,
+        )
+      } else {
+        warnings.push(`「${label}」是全天事件，按到期日导入`)
+      }
     }
     if (event.hasRule) {
       warnings.push(`「${label}」是重复事件，本次只导入首个实例`)

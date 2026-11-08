@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { startOfDay } from 'shisui-core'
+import { buildMonthGrid, startOfDay } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
@@ -13,21 +13,6 @@ function dayStartOf(ms: number): number {
 function taskDay(task: StoredTask): number | null {
   const at = task.startAt ?? task.dueAt
   return at === null ? null : dayStartOf(at)
-}
-
-function monthCells(anchor: Date): number[] {
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1, 0, 0, 0, 0)
-  const mondayBasedOffset = (first.getDay() + 6) % 7 // 周一为一周第一天
-  const start = new Date(first)
-  start.setDate(first.getDate() - mondayBasedOffset)
-
-  const cells: number[] = []
-  for (let i = 0; i < 42; i += 1) {
-    const day = new Date(start)
-    day.setDate(start.getDate() + i)
-    cells.push(day.getTime())
-  }
-  return cells
 }
 
 function formatTime(task: StoredTask): string {
@@ -65,7 +50,7 @@ export default function MonthView() {
     return map
   }, [tasks])
 
-  const cells = useMemo(() => monthCells(anchor), [anchor])
+  const cells = useMemo(() => buildMonthGrid(anchor), [anchor])
   const selectedTasks = byDay.get(selected) ?? []
   const monthLabel = `${anchor.getFullYear()} 年 ${anchor.getMonth() + 1} 月`
 
