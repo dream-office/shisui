@@ -84,7 +84,8 @@ test.describe('v1.3 图片识别', () => {
     await page.goto('/')
     await page.evaluate(() => window.localStorage.setItem('shisui.imageMode', 'off'))
     await page.reload()
-    const imageButton = page.getByRole('button', { name: '识别图片' })
+    await page.getByRole('button', { name: '更多 ▾' }).click()
+    const imageButton = page.getByRole('menuitem', { name: '识别图片' })
     await expect(imageButton).toBeDisabled()
     await expect(imageButton).toHaveAttribute('title', '图片识别已关闭')
 

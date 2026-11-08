@@ -1821,3 +1821,49 @@ em {
 .is-disabled { opacity: 0.6; }
 
 .import-warn { color: #b26a00; }
+
+
+/* ── v1.3.1 收件工具栏「更多」菜单 ───────────── */
+.composer-actions { position: relative; }
+.more-wrap { display: inline-flex; }
+.more-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  width: min(260px, calc(100vw - 24px));
+  padding: 8px;
+  background: var(--surface, #fff);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(21, 23, 43, 0.16);
+}
+.more-group-title {
+  margin: 6px 8px 4px;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.more-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.more-item:hover,
+.more-item:focus-visible { background: var(--accent-soft); }
+.more-item:disabled { opacity: 0.55; cursor: not-allowed; }
+.more-hint {
+  margin: 6px 8px 2px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted);
+}
