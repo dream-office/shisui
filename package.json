@@ -1,6 +1,6 @@
 {
   "name": "shisui",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "把群消息里散落的截止时间捡起来：解析成带绝对时间的待办，并自动体检冲突。纯前端、本地优先，公司群/项目群/班级群通用。",

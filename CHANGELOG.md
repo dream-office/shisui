@@ -5,6 +5,14 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-08
+
+### 维护
+
+- 工具链升级：TypeScript **7.0.2**、Vitest **5.1.0**、@vitejs/plugin-react **5.2.0**；CI actions（checkout / setup-node / pnpm）同步升级。
+- **React 保持 18.3.1**：Dependabot 提议 19，实测包体 +80 KB（gzip +24 KB）且无功能需求 → 回退。
+- 无用户可见行为变化；重新构建并部署 Pages，站点版本同步为 0.5.1。
+
 ### 变更
 
 - **TypeScript 5.9 → 7.0.2**（原生编译器重写）。迁移要动两处：
