@@ -42,6 +42,9 @@ try {
   writeFileSync(join(work, '.nojekyll'), '')
 
   git(['init', '-b', 'gh-pages'], work)
+  // 临时仓库不继承本仓库的 user 配置，显式写 noreply，避免把个人邮箱写进 gh-pages 提交
+  git(['config', 'user.name', 'dream-office'], work)
+  git(['config', 'user.email', 'dream-office@users.noreply.github.com'], work)
   git(['add', '-A'], work)
   git(['commit', '-m', `deploy: ${new Date().toISOString()}`], work)
   git(['remote', 'add', 'origin', remote], work)
