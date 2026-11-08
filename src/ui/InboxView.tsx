@@ -307,7 +307,7 @@ export default function InboxView() {
 
       {accepted > 0 && (
         <div className="toast">
-          已收录 {accepted} 条，去「日程」看看有没有撞车
+          {t('已收录 {n} 条，去「日程」看看有没有撞车', { n: accepted })}
         </div>
       )}
 

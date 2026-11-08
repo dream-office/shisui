@@ -1174,6 +1174,11 @@ test.describe('v1.0 English 静态 UI', () => {
     await page.waitForTimeout(200)
     for (const item of await scan()) found.add(item)
 
+    // 收录后回收件页：覆盖 toast「Accepted N to-dos…」
+    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.waitForTimeout(200)
+    for (const item of await scan()) found.add(item)
+
     expect([...found]).toEqual([])
   })
 })
