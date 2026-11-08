@@ -259,3 +259,105 @@ describe('v0.9 专注模式', () => {
     useApp.getState().closeFocus()
   })
 })
+
+
+describe('v0.10 系列编辑', () => {
+  beforeEach(async () => {
+    const repo = await import('@/data/repo')
+    await repo.clearAll()
+  })
+
+  const makeSeries = async () => {
+    const { useApp } = await import('./store')
+    const { parseNotice } = await import('shisui-core')
+    const parsed = parseNotice('每周五9点项目例会', new Date(2026, 10, 6, 8, 0, 0))
+    useApp.setState({ candidates: parsed.tasks })
+    await useApp.getState().acceptCandidates(parsed.tasks.map((task) => task.id))
+    return useApp
+  }
+
+  it('改这一次：只改当前实例，series 不动', async () => {
+    const useApp = await makeSeries()
+    const repo = await import('@/data/repo')
+    const task = (await repo.listTasks())[0]
+    const seriesBefore = (await repo.listSeries())[0]
+
+    await useApp.getState().editTaskFields(task.id, { title: '只改一次' })
+    const after = (await repo.listTasks())[0]
+    const seriesAfter = (await repo.listSeries())[0]
+    expect(after.title).toBe('只改一次')
+    expect(seriesAfter.title).toBe(seriesBefore.title)
+  })
+
+  it('改整个系列：series + 当前/未来未完成同步，已完成历史不动', async () => {
+    const useApp = await makeSeries()
+    const repo = await import('@/data/repo')
+    const first = (await repo.listTasks())[0]
+
+    // 完成一次 → 生成下一条（index=1）
+    await useApp.getState().completeTask(first.id)
+    const tasks = await repo.listTasks()
+    const done = tasks.find((task) => task.done)!
+    const active = tasks.find((task) => !task.done)!
+    expect(done.title).toBe('项目例会')
+    expect(active.title).toBe('项目例会')
+
+    // 对当前活动实例改整个系列
+    await useApp.getState().editSeriesFields(active.id, { title: '改系列标题', tags: ['例会'] })
+
+    const after = await repo.listTasks()
+    const doneAfter = after.find((task) => task.id === done.id)!
+    const activeAfter = after.find((task) => task.id === active.id)!
+    const seriesAfter = (await repo.listSeries())[0]
+    expect(seriesAfter.title).toBe('改系列标题')
+    expect(seriesAfter.tags).toEqual(['例会'])
+    expect(activeAfter.title).toBe('改系列标题')
+    expect(activeAfter.tags).toEqual(['例会'])
+    // 已完成历史不动
+    expect(doneAfter.title).toBe('项目例会')
+    expect(doneAfter.tags ?? []).toEqual([])
+  })
+
+  it('改整个系列时间：只改时刻、日期与 anchor 不变，未来实例跟随', async () => {
+    const useApp = await makeSeries()
+    const repo = await import('@/data/repo')
+    const first = (await repo.listTasks())[0]
+    await useApp.getState().completeTask(first.id) // 生成下一条
+    const tasks = await repo.listTasks()
+    const done = tasks.find((task) => task.done)!
+    const active = tasks.find((task) => !task.done)!
+    const seriesBefore = (await repo.listSeries())[0]
+
+    // 把时刻改成 10:30（日期是随便给的 20 日，应被忽略）
+    await useApp.getState().editSeriesFields(active.id, {
+      primaryTime: new Date(2026, 10, 20, 10, 30, 0).getTime(),
+    })
+
+    const activeAfter = (await repo.listTasks()).find((task) => task.id === active.id)!
+    const seriesAfter = (await repo.listSeries())[0]
+    expect(new Date(activeAfter.startAt!).getHours()).toBe(10)
+    expect(new Date(activeAfter.startAt!).getMinutes()).toBe(30)
+    expect(new Date(activeAfter.startAt!).getDate()).toBe(new Date(active.startAt!).getDate()) // 日期不变
+    expect(new Date(seriesAfter.startAt).getHours()).toBe(10)
+    expect(new Date(seriesAfter.startAt).getDate()).toBe(new Date(seriesBefore.startAt).getDate())
+    expect(seriesAfter.anchorWeekday).toBe(seriesBefore.anchorWeekday)
+    expect(seriesAfter.rrule).toBe(seriesBefore.rrule)
+    // 历史不动
+    const doneAfter = (await repo.listTasks()).find((task) => task.id === done.id)!
+    expect(doneAfter.startAt).toBe(done.startAt)
+  })
+
+  it('无 series 任务：editSeriesFields 不产生任何修改', async () => {
+    const { useApp } = await import('./store')
+    const repo = await import('@/data/repo')
+    const { parseNotice } = await import('shisui-core')
+    const parsed = parseNotice('周五前交报告', new Date(2026, 10, 8, 9, 0, 0))
+    useApp.setState({ candidates: parsed.tasks })
+    await useApp.getState().acceptCandidates(parsed.tasks.map((task) => task.id))
+    const before = await repo.listTasks()
+
+    await useApp.getState().editSeriesFields(before[0].id, { title: '不该生效' })
+    const after = await repo.listTasks()
+    expect(after[0].title).toBe(before[0].title)
+  })
+})

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { countdown, formatClock, formatDayLabel, spanDays, toggleTag } from 'shisui-core'
+import { countdown, formatClock, formatDayLabel, normalizeTags, spanDays, toggleTag } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
+import type { TaskEditFields } from '@/state/store'
 
 interface Props {
   task: StoredTask
@@ -17,6 +18,29 @@ interface Props {
   onSelect?: () => void
   /** 标签编辑（选中/未选中都可用） */
   onTagsChange?: (tags: string[]) => void
+  /** 改这一次 */
+  onEditOnce?: (fields: TaskEditFields) => void
+  /** 改整个系列（仅 seriesId 存在时提供） */
+  onEditSeries?: (fields: TaskEditFields) => void
+}
+
+const KIND_OPTIONS: Array<{ value: StoredTask['kind']; label: string }> = [
+  { value: 'task', label: '任务' },
+  { value: 'meeting', label: '会议' },
+  { value: 'review', label: '评审' },
+  { value: 'signup', label: '报名' },
+  { value: 'payment', label: '缴费' },
+  { value: 'approval', label: '审批' },
+  { value: 'survey', label: '问卷' },
+  { value: 'exam', label: '考试' },
+  { value: 'other', label: '其他' },
+]
+
+function toDatetimeLocal(ms: number | null): string {
+  if (ms === null) return ''
+  const d = new Date(ms)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 export default function TaskRow({
@@ -31,9 +55,21 @@ export default function TaskRow({
   selected,
   onSelect,
   onTagsChange,
+  onEditOnce,
+  onEditSeries,
 }: Props) {
   const [editingTags, setEditingTags] = useState(false)
   const [draftTag, setDraftTag] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [scope, setScope] = useState<'once' | 'series'>('once')
+  const [draft, setDraft] = useState({
+    title: task.title,
+    time: toDatetimeLocal(task.startAt ?? task.dueAt),
+    channel: task.channel ?? '',
+    location: task.location ?? '',
+    kind: task.kind,
+    tags: (task.tags ?? []).join(', '),
+  })
   const at = task.startAt ?? task.dueAt
   const cd = at !== null && task.done === false ? countdown(at, new Date(now)) : null
   const days = spanDays(task)
@@ -46,11 +82,32 @@ export default function TaskRow({
       : null
 
   const tags = task.tags ?? []
+  const canEditSeries = Boolean(task.seriesId && onEditSeries)
 
   const addTag = () => {
     if (!onTagsChange || !draftTag.trim()) return
     onTagsChange(toggleTag(tags, draftTag, true))
     setDraftTag('')
+  }
+
+  const saveEdit = () => {
+    const fields: TaskEditFields = {
+      title: draft.title,
+      kind: draft.kind,
+      channel: draft.channel,
+      location: draft.location,
+      tags: normalizeTags(draft.tags.split(/[,，\s]+/).filter(Boolean)),
+    }
+    if (draft.time) {
+      const parsed = new Date(draft.time).getTime()
+      if (Number.isFinite(parsed)) fields.primaryTime = parsed
+    }
+    if (canEditSeries && scope === 'series') {
+      onEditSeries?.(fields)
+    } else {
+      onEditOnce?.(fields)
+    }
+    setEditing(false)
   }
 
   return (
@@ -138,10 +195,91 @@ export default function TaskRow({
             )}
           </div>
         )}
+
+        {editing && (
+          <div className="task-editor" role="group" aria-label="编辑任务">
+            <label className="field block">
+              <span>标题</span>
+              <input
+                value={draft.title}
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                aria-label="编辑标题"
+              />
+            </label>
+            <label className="field block">
+              <span>时间</span>
+              <input
+                type="datetime-local"
+                value={draft.time}
+                onChange={(event) => setDraft({ ...draft, time: event.target.value })}
+                aria-label="编辑时间"
+              />
+            </label>
+            <div className="edit-inline">
+              <label className="field block">
+                <span>类型</span>
+                <select
+                  value={draft.kind}
+                  onChange={(event) => setDraft({ ...draft, kind: event.target.value as StoredTask['kind'] })}
+                  aria-label="编辑类型"
+                >
+                  {KIND_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field block">
+                <span>渠道</span>
+                <input value={draft.channel} onChange={(event) => setDraft({ ...draft, channel: event.target.value })} aria-label="编辑渠道" />
+              </label>
+              <label className="field block">
+                <span>地点</span>
+                <input value={draft.location} onChange={(event) => setDraft({ ...draft, location: event.target.value })} aria-label="编辑地点" />
+              </label>
+            </div>
+            <label className="field block">
+              <span>标签（逗号分隔）</span>
+              <input value={draft.tags} onChange={(event) => setDraft({ ...draft, tags: event.target.value })} aria-label="编辑标签" />
+            </label>
+
+            {canEditSeries && (
+              <fieldset className="scope-choice">
+                <legend>改哪里</legend>
+                <label>
+                  <input type="radio" name={`scope-${task.id}`} checked={scope === 'once'} onChange={() => setScope('once')} />
+                  只改这一次
+                </label>
+                <label>
+                  <input type="radio" name={`scope-${task.id}`} checked={scope === 'series'} onChange={() => setScope('series')} />
+                  改整个系列（当前 + 未来未完成）
+                </label>
+                {scope === 'series' && (
+                  <p className="muted edit-hint">改整个系列只改时刻，日期与重复规则保持不变。</p>
+                )}
+              </fieldset>
+            )}
+
+            <div className="edit-actions">
+              <button type="button" className="btn btn-primary btn-sm" onClick={saveEdit}>
+                保存
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>
+                取消
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="task-right">
         {cd && <span className={`countdown tone-${cd.tone}`}>{cd.text}</span>}
+        {!task.done && onEditOnce && (
+          <button type="button" className="icon-btn" onClick={() => setEditing((value) => !value)} aria-label="编辑任务" title="编辑任务">
+            ✎
+          </button>
+        )}
         {!task.done && onSkip && (
           <button type="button" className="icon-btn" onClick={onSkip} aria-label="跳过这一次" title="跳过这一次">
             ⏭

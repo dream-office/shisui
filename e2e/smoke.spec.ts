@@ -925,3 +925,40 @@ test.describe('v0.9 专注模式', () => {
     await expect(page.getByText(/已完成 1 件/)).toBeVisible()
   })
 })
+
+
+test.describe('v0.10 系列编辑', () => {
+  test('Z6. 改整个系列：当前实例与 series 同步更新', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+
+    await page.getByLabel('编辑标题').fill('改名后的例会')
+    await page.getByLabel('改整个系列（当前 + 未来未完成）').check()
+    await page.getByRole('button', { name: '保存' }).first().click()
+
+    await expect(page.locator('.task-row', { hasText: '改名后的例会' })).toBeVisible()
+  })
+
+  test('Z7. 改这一次：普通任务只改当前标题', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('原名')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+    await page.getByLabel('编辑标题').fill('改后名')
+    await page.getByRole('button', { name: '保存' }).first().click()
+
+    await expect(page.locator('.task-row', { hasText: '改后名' })).toBeVisible()
+    await expect(page.getByText('原名')).toHaveCount(0)
+  })
+})

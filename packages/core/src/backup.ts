@@ -162,6 +162,11 @@ function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSer
     until: asNumberOrNull(raw.until),
     createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : Date.now(),
     endedAt: asNumberOrNull(raw.endedAt),
+    tags: Array.isArray(raw.tags)
+      ? raw.tags
+          .filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+          .map((tag) => tag.trim().replace(/^#+/, '').toLowerCase())
+      : [],
   }
 }
 

@@ -31,6 +31,8 @@ export default function PlanView() {
   const focusMode = useApp((s) => s.focusMode)
   const openFocus = useApp((s) => s.openFocus)
   const [batchMode, setBatchMode] = useState(false)
+  const editTaskFields = useApp((s) => s.editTaskFields)
+  const editSeriesFields = useApp((s) => s.editSeriesFields)
   const [onlyOpen, setOnlyOpen] = useState(false)
   const now = useNow(30_000)
   const ref = useMemo(() => new Date(now), [now])
@@ -253,6 +255,8 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
               />
             ))}
           </ul>
@@ -277,6 +281,8 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
               />
             ))}
           </ul>
@@ -301,6 +307,8 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
               />
             ))}
           </ul>
