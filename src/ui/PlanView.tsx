@@ -222,7 +222,7 @@ export default function PlanView() {
               const d = new Date(dayMs)
               const week = formatWeekdayI18n(d.getTime())
               return (
-                <div className="load-col" key={dayMs} title={`${value} 件`}>
+                <div className="load-col" key={dayMs} title={t('{n} 件', { n: value })}>
                   <div className="load-track">
                     <div className={`load-fill ${index === 0 ? 'is-today' : ''}`} style={{ height: `${(value / maxLoad) * 100}%` }} />
                   </div>

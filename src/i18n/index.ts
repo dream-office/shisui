@@ -331,6 +331,26 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '有低置信度条目，已高亮标出，请人工核对': 'Some items have low confidence and are highlighted — please review before accepting.',
+  邮箱: 'Email',
+  飞书: 'Feishu',
+  企业微信: 'WeCom',
+  钉钉: 'DingTalk',
+  'OA/审批系统': 'OA / Approval',
+  学习通: 'Learning platform',
+  腾讯会议: 'Tencent Meeting',
+  线下: 'Offline',
+
+  '批量模式：{sections} 段 → {tasks} 条（去重 {duplicates} 条）':
+    'Batch mode: {sections} sections → {tasks} items ({duplicates} duplicates merged)',
+  '规则引擎识别 {n} 条': 'Rule engine found {n} items',
+  '规则 {rule} 条 + AI {ai} 条 → 合并后 {merged} 条（{agreed} 条双引擎一致，{llmOnly} 条 AI 补充）':
+    'Rules {rule} + AI {ai} → {merged} merged ({agreed} agreed by both, {llmOnly} AI-only)',
+
+  '报销/缴费': 'Payment / Reimbursement',
+  高置信: 'High confidence',
+  需确认: 'Needs confirmation',
+
   '项目群、部门群、班级群、家长群，说的是同一件事：':
     'Project, department, class or parent groups all say the same thing: ',
 

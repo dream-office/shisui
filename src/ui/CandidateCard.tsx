@@ -3,23 +3,7 @@ import type { ParsedTask, TaskKind } from 'shisui-core'
 import { fromLocalInput, toLocalInput } from 'shisui-core'
 import { countdownI18n, formatWhenI18n } from '@/i18n'
 
-const KIND_LABEL: Record<TaskKind, string> = {
-  task: '任务',
-  meeting: '会议',
-  review: '评审',
-  signup: '报名',
-  payment: '报销/缴费',
-  approval: '审批',
-  survey: '问卷',
-  exam: '考试',
-  other: '其他',
-}
-
-const CONF_LABEL = {
-  high: '高置信',
-  medium: '待核对',
-  low: '需确认',
-} as const
+import { CONF_LABEL, KIND_LABEL } from './candidateLabels'
 
 interface Props {
   task: ParsedTask
@@ -87,7 +71,7 @@ export default function CandidateCard({ task, now, onUpdate, onAccept, onDismiss
       </div>
 
       <div className="chips">
-        {task.channel && <span className="chip">{t('渠道 · {v}', { v: task.channel })}</span>}
+        {task.channel && <span className="chip">{t('渠道 · {v}', { v: t(task.channel) })}</span>}
         {task.location && <span className="chip">{t('地点 · {v}', { v: task.location })}</span>}
         {task.dueAt === null && task.startAt !== null && <span className="chip chip-warn">{t('缺截止时间')}</span>}
       </div>

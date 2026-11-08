@@ -24,6 +24,7 @@ import { parseNotice } from 'shisui-core'
 import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask, TaskSeries } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
+import { t } from '@/i18n'
 
 export type View = 'inbox' | 'plan' | 'calendar' | 'stats' | 'settings'
 export type Lang = 'zh' | 'en'
@@ -567,7 +568,7 @@ export const useApp = create<AppState>((set, get) => ({
         parsing: false,
         stage: '',
         batchMode: true,
-        engineNote: `批量模式：${batch.sections} 段 → ${batch.tasks.length} 条（去重 ${batch.duplicates.length} 条）`,
+        engineNote: t('批量模式：{sections} 段 → {tasks} 条（去重 {duplicates} 条）', { sections: batch.sections, tasks: batch.tasks.length, duplicates: batch.duplicates.length }),
       })
       return
     }
@@ -575,7 +576,7 @@ export const useApp = create<AppState>((set, get) => ({
     const ruleResult = parseNotice(trimmed, ref)
     const warnings = [...ruleResult.warnings]
     let tasks = ruleResult.tasks
-    let engineNote = `规则引擎识别 ${ruleResult.tasks.length} 条`
+    let engineNote = t('规则引擎识别 {n} 条', { n: ruleResult.tasks.length })
 
     const config = get().llmConfig
     if (isLLMReady(config)) {
@@ -590,7 +591,7 @@ export const useApp = create<AppState>((set, get) => ({
         })
         const report = mergeTasks(ruleResult.tasks, llmTasks)
         tasks = report.tasks
-        engineNote = `规则 ${report.ruleCount} 条 + AI ${report.llmCount} 条 → 合并后 ${report.tasks.length} 条（${report.agreedCount} 条双引擎一致，${report.llmOnlyCount} 条 AI 补充）`
+        engineNote = t('规则 {rule} 条 + AI {ai} 条 → 合并后 {merged} 条（{agreed} 条双引擎一致，{llmOnly} 条 AI 补充）', { rule: report.ruleCount, ai: report.llmCount, merged: report.tasks.length, agreed: report.agreedCount, llmOnly: report.llmOnlyCount })
       } catch (error) {
         const message = error instanceof Error ? error.message : '未知错误'
         warnings.push(`AI 引擎没跑通（${message}），已自动回退到规则引擎，功能不受影响`)

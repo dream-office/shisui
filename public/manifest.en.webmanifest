@@ -1,8 +1,8 @@
 {
-  "name": "Shisui · shisui",
+  "name": "Shisui · group messages to to-dos",
   "short_name": "Shisui",
   "description": "Turn group messages into to-dos. Local-first, nothing uploaded.",
-  "lang": "zh-CN",
+  "lang": "en",
   "dir": "ltr",
   "start_url": "./",
   "scope": "./",

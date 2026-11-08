@@ -1122,41 +1122,58 @@ test.describe('v1.0 中英双语', () => {
 
 
 test.describe('v1.0 English 静态 UI', () => {
-  test('L2. manifest 切换 + English 页面无中文（静态 UI）', async ({ page }) => {
+  test('L2. manifest 切换 + English 页面无中文（含解析/候选/Plan 有数据）', async ({ page }) => {
     await page.goto('/')
-    const nav = page.getByRole('navigation', { name: '主视图' })
-    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
     await page.getByRole('button', { name: 'English' }).click()
 
-    // manifest：英文下指向 en
     expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toContain('manifest.en.webmanifest')
+    const manifest = await (await page.request.get('/manifest.en.webmanifest')).json()
+    expect(manifest.lang).toBe('en')
+    expect(manifest.name).toContain('group messages to to-dos')
 
-    const scan = async () => {
-      return page.evaluate(() => {
-        // 允许品牌名「穗」与语言自称「中文」（English 界面上语言选项按母语显示）
+    const scan = async () =>
+      page.evaluate(() => {
+        // 允许品牌「穗」与语言自称「中文」；用户内容/任务标题/reasons/ICS 警告不在扫描范围
         const allowed = /穗|中文/
+        const skip = '.task-title,.candidate-title,.raw,.reasons,.warnings,.chips,.task-tags,.tag,.series-tag,.history-item,.task-meta,.conflicts,textarea,input,select,script,style'
         const hasCjk = (text: string) => /[\u4e00-\u9fff]/.test(text) && !allowed.test(text)
-        const parts: string[] = []
-        for (const line of document.body.innerText.split('\n')) {
-          if (hasCjk(line)) parts.push('text: ' + line.trim())
-        }
-        for (const el of Array.from(document.querySelectorAll('[aria-label],[placeholder],[title]'))) {
+        const parts = new Set<string>()
+        for (const el of Array.from(document.body.querySelectorAll('*'))) {
+          if (el.closest(skip)) continue
+          for (const node of Array.from(el.childNodes)) {
+            if (node.nodeType === Node.TEXT_NODE) {
+              const value = (node.textContent ?? '').trim()
+              if (value && hasCjk(value)) parts.add('text: ' + value)
+            }
+          }
           for (const attr of ['aria-label', 'placeholder', 'title']) {
             const value = el.getAttribute(attr)
-            if (value && hasCjk(value)) parts.push(`${attr}: ${value}`)
+            if (value && hasCjk(value)) parts.add(`${attr}: ${value}`)
           }
         }
-        return [...new Set(parts)]
+        return [...parts]
       })
+
+    const found = new Set<string>()
+    for (const label of ['Inbox', 'Calendar', 'Stats', 'Settings']) {
+      await page.locator('nav').getByRole('button', { name: label }).click()
+      await page.waitForTimeout(120)
+      for (const item of await scan()) found.add(item)
     }
 
-    const pages = ['Inbox', 'Plan', 'Calendar', 'Stats', 'Settings']
-    const found: string[] = []
-    for (const label of pages) {
-      await page.locator('nav').getByRole('button', { name: label }).click()
-      await page.waitForTimeout(150)
-      found.push(...(await scan()))
-    }
-    expect(found).toEqual([])
+    // 动态：解析示例 → 候选页；收录 → Plan 有数据
+    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('button', { name: 'Work example' }).click()
+    await page.getByRole('button', { name: 'Parse', exact: true }).click()
+    await expect(page.getByRole('heading', { name: /Found \d+ to-dos/ })).toBeVisible({ timeout: 15_000 })
+    for (const item of await scan()) found.add(item)
+
+    await page.getByRole('button', { name: 'Accept all' }).click()
+    await page.locator('nav').getByRole('button', { name: 'Plan' }).click()
+    await page.waitForTimeout(200)
+    for (const item of await scan()) found.add(item)
+
+    expect([...found]).toEqual([])
   })
 })
