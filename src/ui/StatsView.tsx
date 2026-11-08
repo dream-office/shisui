@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
 import { useMemo } from 'react'
+import EmptyState from './EmptyState'
 import { computeStats } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
@@ -27,6 +28,7 @@ export default function StatsView() {
   const tasks = useApp((s) => s.tasks)
   const now = useNow(60_000)
   const stats = useMemo(() => computeStats(tasks, now), [tasks, now])
+  const setView = useApp((s) => s.setView)
 
   return (
     <section className="stats-view">
@@ -34,6 +36,16 @@ export default function StatsView() {
         <h2>{t('统计')}</h2>
         <span className="muted">{t('全部在本地计算')}</span>
       </div>
+
+      {stats.total === 0 && (
+        <div className="card">
+          <EmptyState
+            title={t('还没有数据')}
+            body={t('收录第一条待办后，这里会显示你的完成率与解析质量。')}
+            action={{ label: t('去收件'), onClick: () => setView('inbox') }}
+          />
+        </div>
+      )}
 
       <div className="metric-grid">
         <MetricBar

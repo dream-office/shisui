@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { sortFocusQueue } from 'shisui-core'
 import { useApp } from '@/state/store'
 import TaskRow from './TaskRow'
+import EmptyState from './EmptyState'
 
 /** 专注模式：一次只处理一件，完成/跳过/下一条；完成与跳过复用重复系列语义 */
 export default function FocusView() {
@@ -39,7 +40,12 @@ export default function FocusView() {
       </div>
 
       {current === undefined ? (
-        <p className="muted">{t('没有未完成的任务了，休息一下。')}</p>
+        <EmptyState
+          compact
+          title={t('今天先到这里')}
+          body={t('没有未完成的任务了，休息一下。')}
+          action={{ label: t('退出专注'), onClick: closeFocus }}
+        />
       ) : (
         <div className="focus-body">
           <TaskRow

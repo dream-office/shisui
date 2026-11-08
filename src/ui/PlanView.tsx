@@ -1,5 +1,6 @@
 import { t } from '@/i18n'
 import { useMemo, useState } from 'react'
+import EmptyState from './EmptyState'
 import { startOfDay } from 'shisui-core'
 import { filterTasks, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
 import { describeRule } from 'shisui-core'
@@ -121,11 +122,11 @@ export default function PlanView() {
   if (tasks.length === 0) {
     return (
       <div className="empty card">
-        <h3>{t('日程还是空的')}</h3>
-        <p>{t('去「收件」贴一段群通知，解析完收录进来，这里就会自动排好并做冲突体检。')}</p>
-        <button type="button" className="btn btn-primary" onClick={() => setView('inbox')}>
-          {t('去贴通知')}
-        </button>
+        <EmptyState
+          title={t('日程还是空的')}
+          body={t('去「收件」贴一段群通知，解析完收录进来，这里就会自动排好并做冲突体检。')}
+          action={{ label: t('去贴通知'), onClick: () => setView('inbox') }}
+        />
       </div>
     )
   }
