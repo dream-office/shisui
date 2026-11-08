@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { sortFocusQueue } from 'shisui-core'
 import { useApp } from '@/state/store'
 import TaskRow from './TaskRow'
 
@@ -13,16 +14,7 @@ export default function FocusView() {
   const series = useApp((s) => s.series)
   const now = Date.now()
 
-  const active = useMemo(
-    () =>
-      tasks
-        .filter((task) => !task.done && !task.skipped)
-        .sort(
-          (a, b) =>
-            (a.startAt ?? a.dueAt ?? Infinity) - (b.startAt ?? b.dueAt ?? Infinity) || a.createdAt - b.createdAt,
-        ),
-    [tasks],
-  )
+  const active = useMemo(() => sortFocusQueue(tasks), [tasks])
   const safeIndex = active.length === 0 ? 0 : focusIndex % active.length
   const current = active[safeIndex]
   const [busy, setBusy] = useState(false)

@@ -7,6 +7,7 @@ import { version as appVersion } from '../../package.json'
 import { create } from 'zustand'
 import {
   buildBackup,
+  sortFocusQueue,
   buildNextInstance,
   normalizeTags,
   validateBackup,
@@ -46,7 +47,7 @@ interface AppState {
   /** 批量多选 */
   selectedIds: string[]
   /** 最近一次批量操作的撤销快照（内存，刷新后失效） */
-  undo: { label: string; before: StoredTask[] } | null
+  undo: { label: string; before: StoredTask[]; generatedIds?: string[] } | null
   /** 专注模式 */
   focusMode: boolean
   focusIndex: number
@@ -221,7 +222,13 @@ export const useApp = create<AppState>((set, get) => ({
 
   skipTask: async (id) => {
     const task = get().tasks.find((item) => item.id === id)
-    if (!task || !task.seriesId) return
+    if (!task) return
+    // 非重复任务：只标 skipped（历史保留、专注队列排除），不生成下一条
+    if (!task.seriesId) {
+      await repo.updateTask(id, { skipped: true, done: false, editedField: 'skipped' })
+      set({ tasks: await repo.listTasks() })
+      return
+    }
     const plan = await buildPlan(task)
     await repo.settleRecurringInstance({ taskId: id, mode: 'skip', nextTask: plan.nextTask, seriesPatch: plan.seriesPatch })
     set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
@@ -251,11 +258,31 @@ export const useApp = create<AppState>((set, get) => ({
     const current = get().tasks
     const before = current.filter((task) => ids.includes(task.id)).map((task) => ({ ...task }))
     if (before.length === 0) return
-    await Promise.all(before.map((task) => repo.setDone(task.id, done)))
+    const beforeIds = new Set(before.map((task) => task.id))
+
+    // 完成时复用单条完成语义：重复任务会生成下一条；这些新实例必须进撤销范围，
+    // 否则撤销后留下「幽灵下一条」
+    for (const task of before) {
+      if (done) {
+        await get().completeTask(task.id)
+      } else {
+        await repo.setDone(task.id, false)
+      }
+    }
+
+    const after = await repo.listTasks()
+    const generatedIds = after
+      .filter((task) => !beforeIds.has(task.id) && !task.done)
+      .map((task) => task.id)
+
     set({
-      tasks: await repo.listTasks(),
+      tasks: after,
       selectedIds: [],
-      undo: { label: done ? `批量完成 ${before.length} 件` : `批量取消完成 ${before.length} 件`, before },
+      undo: {
+        label: done ? `批量完成 ${before.length} 件` : `批量取消完成 ${before.length} 件`,
+        before,
+        generatedIds: done ? generatedIds : [],
+      },
     })
   },
 
@@ -274,8 +301,12 @@ export const useApp = create<AppState>((set, get) => ({
   undoLastBatch: async () => {
     const undo = get().undo
     if (!undo) return
+    // 先删掉批量操作生成的下一条，再恢复原快照，活跃实例数回到操作前
+    for (const id of undo.generatedIds ?? []) {
+      await repo.removeTask(id)
+    }
     await repo.bulkPutTasks(undo.before)
-    set({ tasks: await repo.listTasks(), undo: null })
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries(), undo: null })
   },
 
   exportBackup: () => {
@@ -329,7 +360,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   focusComplete: async () => {
     const state = get()
-    const active = state.tasks.filter((task) => !task.done && !task.skipped)
+    const active = sortFocusQueue(state.tasks)
     const task = active[state.focusIndex]
     if (!task) return
     await state.completeTask(task.id)
@@ -338,15 +369,12 @@ export const useApp = create<AppState>((set, get) => ({
 
   focusSkip: async () => {
     const state = get()
-    const active = state.tasks.filter((task) => !task.done && !task.skipped)
+    const active = sortFocusQueue(state.tasks)
     const task = active[state.focusIndex]
     if (!task) return
-    if (task.seriesId) {
-      await state.skipTask(task.id)
-      set({ focusIndex: 0 })
-    } else {
-      state.focusNext()
-    }
+    // 普通任务也落 skipped=true（历史保留、专注队列排除），不生成下一条
+    await state.skipTask(task.id)
+    set({ focusIndex: 0 })
   },
 
   importIcsTasks: async (parsed) => {

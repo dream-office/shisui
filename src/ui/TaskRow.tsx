@@ -142,7 +142,7 @@ export default function TaskRow({
 
       <div className="task-right">
         {cd && <span className={`countdown tone-${cd.tone}`}>{cd.text}</span>}
-        {task.seriesId && !task.done && onSkip && (
+        {!task.done && onSkip && (
           <button type="button" className="icon-btn" onClick={onSkip} aria-label="跳过这一次" title="跳过这一次">
             ⏭
           </button>

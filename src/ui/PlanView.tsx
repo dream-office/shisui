@@ -247,7 +247,7 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
                 selectionMode={batchMode}
                 selected={selectedIds.includes(task.id)}
@@ -271,7 +271,7 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
                 selectionMode={batchMode}
                 selected={selectedIds.includes(task.id)}
@@ -295,7 +295,7 @@ export default function PlanView() {
                 onToggle={() => void toggleDone(task.id)}
                 onDelete={() => void dropTask(task.id)}
                 seriesLabel={seriesLabelOf(task)}
-                onSkip={task.seriesId ? () => void skipTask(task.id) : undefined}
+                onSkip={() => void skipTask(task.id)}
                 onEndSeries={task.seriesId ? () => void endSeries(task.id) : undefined}
                 selectionMode={batchMode}
                 selected={selectedIds.includes(task.id)}
