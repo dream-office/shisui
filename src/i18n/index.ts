@@ -331,6 +331,9 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '设备内存较低，建议改用 AI 识图（不强制）。':
+    'This device has limited memory — AI vision may work better (not enforced).',
+
   导入文档: 'Import document',
   识别图片: 'Recognize image',
   'PDF / DOCX / TXT / MD · 图片 png/jpg/webp': 'PDF / DOCX / TXT / MD · images png/jpg/webp',

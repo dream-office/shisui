@@ -139,3 +139,31 @@ test.describe('v1.3 图片识别', () => {
     await expect(page.getByRole('radio', { name: /^AI 识图/ })).toBeDisabled()
   })
 })
+
+
+test.describe('v1.3 更多边界', () => {
+  test('I5. 低内存设备提示建议 AI（不强制）', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'deviceMemory', { configurable: true, get: () => 2 })
+    })
+    await page.goto('/')
+    await imageInput(page).setInputFiles(join(FIX, 'photo.png'))
+    await page.getByRole('button', { name: '本地 OCR（离线）' }).click()
+    await expect(page.getByText('设备内存较低，建议改用 AI 识图（不强制）。')).toBeVisible()
+    await expect(page.getByRole('button', { name: '同意并开始识别' })).toBeEnabled()
+  })
+
+  test('I6. OCR 失败给可读提示，不静默降级到 AI', async ({ page }) => {
+    const requests: string[] = []
+    page.on('request', (request) => requests.push(request.url()))
+    await page.addInitScript(() => {
+      ;(window as any).__DSH_TEST_OCR__ = { error: 'mock failure' }
+    })
+    await page.goto('/')
+    await imageInput(page).setInputFiles(join(FIX, 'photo.png'))
+    await page.getByRole('button', { name: '本地 OCR（离线）' }).click()
+    await page.getByRole('button', { name: '同意并开始识别' }).click()
+    await expect(page.locator('.import-error')).toContainText('本地识别失败')
+    expect(requests.some((url) => url.includes('chat/completions'))).toBe(false)
+  })
+})

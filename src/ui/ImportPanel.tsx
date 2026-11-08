@@ -44,6 +44,10 @@ export default function ImportPanel({ onText }: Props) {
   const [aiChecked, setAiChecked] = useState(false)
 
   const aiReady = isLLMReady(llmConfig)
+  const lowMemory =
+    typeof navigator !== 'undefined' &&
+    typeof (navigator as Navigator & { deviceMemory?: number }).deviceMemory === 'number' &&
+    ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) < 4
   const showError = (code: ImportErrorCode) => setError(t(ERROR_KEYS[code] ?? '操作失败，请重试'))
   const reset = () => {
     setError(null)
@@ -252,6 +256,7 @@ export default function ImportPanel({ onText }: Props) {
               <li>{t('首次使用需下载语言包（约 5–10MB），缓存后可离线。')}</li>
               <li>{t('占用内存；单页识别约 2–8 秒（桌面）/ 5–15 秒（手机），低端设备可能卡顿。')}</li>
               <li>{t('手写、暗光、复杂排版识别率有限，请人工核对后再收录。')}</li>
+              {lowMemory && <li className="import-warn">{t('设备内存较低，建议改用 AI 识图（不强制）。')}</li>}
             </ul>
             <div className="import-modal-actions">
               <button
