@@ -215,6 +215,17 @@ export function validateBackup(raw: unknown): BackupValidation {
     try {
       data = JSON.parse(raw)
     } catch {
+      const text = raw.trim()
+      // 以 { 开头但括号未闭合：多半是下载/传输被截断，给专门提示
+      const opens = (text.match(/[{\[]/g) ?? []).length
+      const closes = (text.match(/[}\]]/g) ?? []).length
+      if ((text.startsWith('{') || text.startsWith('[')) && opens > closes) {
+        return {
+          ok: false,
+          errors: ['备份文件不完整（可能被截断），请重新导出后再恢复'],
+          backup: null,
+        }
+      }
       return { ok: false, errors: ['不是合法的 JSON 文件'], backup: null }
     }
   }

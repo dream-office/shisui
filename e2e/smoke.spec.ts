@@ -852,9 +852,9 @@ test.describe('v0.9 备份 / 恢复', () => {
     await page.locator('input[type="file"][accept*="json"]').setInputFiles({
       name: 'bad.json',
       mimeType: 'application/json',
-      buffer: Buffer.from('{not json', 'utf-8'),
+      buffer: Buffer.from('{"format":"shisui-backup","tasks":[', 'utf-8'),
     })
-    await expect(page.getByRole('alert')).toContainText('JSON')
+    await expect(page.getByRole('alert')).toContainText('不完整')
     await nav.getByRole('button', { name: /^日程/ }).click()
     await expect(page.getByText('不能丢的任务')).toBeVisible()
   })

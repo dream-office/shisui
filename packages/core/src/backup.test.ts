@@ -64,9 +64,17 @@ describe('validateBackup', () => {
   })
 
   it('不是 JSON → 失败，给可读原因', () => {
-    const result = validateBackup('{oops')
+    const result = validateBackup('oops, not json')
     expect(result.ok).toBe(false)
     expect(result.errors[0]).toContain('JSON')
+    expect(result.backup).toBeNull()
+  })
+
+  it('被截断的 JSON → 专门提示（不误报成「不是 JSON」）', () => {
+    const result = validateBackup('{"format":"shisui-backup","tasks":[{"id":"t1"')
+    expect(result.ok).toBe(false)
+    expect(result.errors[0]).toContain('不完整')
+    expect(result.errors[0]).toContain('截断')
     expect(result.backup).toBeNull()
   })
 

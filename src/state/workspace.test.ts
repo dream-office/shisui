@@ -49,7 +49,7 @@ describe('v0.9 备份 / 恢复', () => {
     const { useApp } = await import('./store')
     const repo = await import('@/data/repo')
     const before = await makeTasks(useApp)
-    const result = await useApp.getState().restoreBackup('{not json')
+    const result = await useApp.getState().restoreBackup('oops, not json')
     expect(result.ok).toBe(false)
     expect(result.errors[0]).toContain('JSON')
     expect(await repo.listTasks()).toHaveLength(before.length)
