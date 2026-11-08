@@ -76,6 +76,22 @@ export default function CandidateCard({ task, now, onUpdate, onAccept, onDismiss
         {task.dueAt === null && task.startAt !== null && <span className="chip chip-warn">{t('缺截止时间')}</span>}
       </div>
 
+      {(task.url || task.note) && (
+        <div className="task-extra">
+          {task.url && /^https?:\/\//i.test(task.url) && (
+            <a className="task-link" href={task.url} target="_blank" rel="noreferrer">
+              {t('打开链接')}
+            </a>
+          )}
+          {task.note && (
+            <details className="task-note">
+              <summary>{t('备注')}</summary>
+              <p>{task.note}</p>
+            </details>
+          )}
+        </div>
+      )}
+
       <details className="reasons">
         <summary>{t('为什么这么判断（{n}）', { n: task.reasons.length })}</summary>
         <ul>

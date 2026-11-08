@@ -4,6 +4,8 @@ import {
   isLocalMidnight,
   isSpanning,
   migrateTaskV2toV3,
+  migrateTaskV3toV4,
+  migrateSeriesV3toV4,
   primaryTime,
   spanDays,
   taskEndMs,
@@ -89,5 +91,22 @@ describe('isLocalMidnight', () => {
     expect(isLocalMidnight(new Date(2026, 10, 20, 0, 0, 0, 0).getTime())).toBe(true)
     expect(isLocalMidnight(new Date(2026, 10, 20, 0, 0, 0, 1).getTime())).toBe(false)
     expect(isLocalMidnight(new Date(2026, 10, 20, 9, 0, 0, 0).getTime())).toBe(false)
+  })
+})
+
+
+describe('v3 → v4（url / note）', () => {
+  it('旧任务补 null，已有值保留，幂等', () => {
+    const old = { id: 'a', title: '旧', url: 'https://x.example/a', note: '备注' }
+    expect(migrateTaskV3toV4(old)).toEqual({ ...old })
+    const bare = { id: 'b', title: 'b' }
+    const migrated = migrateTaskV3toV4(bare)
+    expect(migrated.url).toBeNull()
+    expect(migrated.note).toBeNull()
+    expect(migrateTaskV3toV4(migrated)).toEqual(migrated)
+  })
+
+  it('系列迁移同规则', () => {
+    expect(migrateSeriesV3toV4({ id: 's', title: 's' })).toMatchObject({ url: null, note: null })
   })
 })

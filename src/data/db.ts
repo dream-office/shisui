@@ -3,7 +3,7 @@
  * 这不只是「省事」，而是这个产品的隐私卖点 —— 班级群通知里往往有学号、手机号、成绩。
  */
 import Dexie, { type Table } from 'dexie'
-import { migrateTaskV2toV3 } from 'shisui-core'
+import { migrateSeriesV3toV4, migrateTaskV2toV3, migrateTaskV3toV4 } from 'shisui-core'
 import type { ImportBatch, StoredTask, TaskSeries } from 'shisui-core'
 
 export class ShisuiDB extends Dexie {
@@ -38,6 +38,27 @@ export class ShisuiDB extends Dexie {
             Object.assign(task, migrateTaskV2toV3(task))
           }),
       )
+    // v4：结构化多事项（url / note）；只补默认值，索引不变
+    this.version(4)
+      .stores({
+        tasks: 'id, dueAt, startAt, endAt, done, kind, createdAt, sourceUid, seriesId, allDay',
+        batches: 'id, createdAt',
+        series: 'id, startAt',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('tasks')
+          .toCollection()
+          .modify((task: Record<string, unknown>) => {
+            Object.assign(task, migrateTaskV3toV4(task))
+          })
+        await tx
+          .table('series')
+          .toCollection()
+          .modify((series: Record<string, unknown>) => {
+            Object.assign(series, migrateSeriesV3toV4(series))
+          })
+      })
   }
 }
 

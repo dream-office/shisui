@@ -203,6 +203,22 @@ export default function TaskRow({
           </div>
         )}
 
+        {(task.url || task.note) && (
+          <div className="task-extra">
+            {task.url && /^https?:\/\//i.test(task.url) && (
+              <a className="task-link" href={task.url} target="_blank" rel="noreferrer">
+                {t('打开链接')}
+              </a>
+            )}
+            {task.note && (
+              <details className="task-note">
+                <summary>{t('备注')}</summary>
+                <p>{task.note}</p>
+              </details>
+            )}
+          </div>
+        )}
+
         {editing && (
           <div className="task-editor" role="group" aria-label={t('编辑任务')}>
             <label className="field block">

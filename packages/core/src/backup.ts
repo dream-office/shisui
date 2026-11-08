@@ -2,7 +2,7 @@
  * JSON 备份 / 恢复（纯函数）：
  * - 导出：固定格式 + schemaVersion + 导出时间 + 数据快照
  * - 恢复：**先完整校验，再交给调用方落库**；非法文件绝不改动现有数据
- * - 兼容：v2/v3 旧备份缺新字段时补默认值（复用 migrateTaskV2toV3），未知字段一律丢弃
+ * - 兼容：v2/v3/v4 旧备份缺新字段时补默认值（复用 migrateTaskV2toV3），未知字段一律丢弃
  *
  * 安全取舍：恢复时按白名单逐字段映射，不把备份 JSON 原样 spread 进数据库，
  * 避免恶意/损坏文件带进多余字段或原型污染。
@@ -13,8 +13,8 @@ import { migrateTaskV2toV3 } from './migrate.js'
 export const BACKUP_FORMAT = 'shisui-backup'
 /** 备份格式版本：未来格式升级时递增；旧版本仍可导入 */
 export const BACKUP_VERSION = 1
-/** 备份数据对应的 DB 版本（当前 v3） */
-export const BACKUP_SCHEMA_VERSION = 3
+/** 备份数据对应的 DB 版本（当前 v4） */
+export const BACKUP_SCHEMA_VERSION = 4
 
 export interface BackupSettings {
   /** 只备份非敏感偏好（不导出 AI apiKey） */
@@ -64,7 +64,7 @@ function asNumberOrNull(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null
 }
 
-/** 白名单映射一条任务；缺字段按 v2/v3 迁移默认补齐；未知字段丢弃 */
+/** 白名单映射一条任务；缺字段按 v2/v3/v4 迁移默认补齐；未知字段丢弃 */
 function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTask | null {
   if (!isRecord(raw)) {
     errors.push(`第 ${index + 1} 条任务不是对象`)
@@ -114,6 +114,8 @@ function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTas
     kind: typeof raw.kind === 'string' ? (raw.kind as StoredTask['kind']) : 'task',
     channel: asString(raw.channel),
     location: asString(raw.location),
+    url: asString(raw.url),
+    note: asString(raw.note),
     rawText: asString(raw.rawText) ?? '',
     confidence:
       raw.confidence === 'high' || raw.confidence === 'medium' || raw.confidence === 'low'
@@ -158,6 +160,8 @@ function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSer
     kind: typeof raw.kind === 'string' ? (raw.kind as ParsedTask['kind']) : 'task',
     channel: asString(raw.channel),
     location: asString(raw.location),
+    url: asString(raw.url),
+    note: asString(raw.note),
     count: typeof raw.count === 'number' ? raw.count : null,
     until: asNumberOrNull(raw.until),
     createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : Date.now(),

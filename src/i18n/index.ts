@@ -331,6 +331,9 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  打开链接: 'Open link',
+  备注: 'Note',
+
   '输入群消息': 'Type a group message',
   '从一条群通知开始': 'Start with a group notice',
   '贴一段群消息，拾穗会替你拆成待办。': 'Paste a group message and Shisui will break it into to-dos.',

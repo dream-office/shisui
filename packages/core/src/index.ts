@@ -27,3 +27,5 @@ export * from './focus.js'
 export * from './seriesEdit.js'
 export * from './cryptoBackup.js'
 export * from './paste.js'
+
+export { migrateTaskV3toV4, migrateSeriesV3toV4 } from './migrate.js'

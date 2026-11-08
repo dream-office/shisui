@@ -260,3 +260,10 @@ if (kind === 'other' && !hasDeadlineWord && !hit?.hasClock) return null
 - 应用 dev 时直接吃核心包**源码**（alias 到 `packages/core/src/index.ts`），不 build 也能跑；
   但要把 `shisui-core` 发到 npm，必须先 `pnpm --filter shisui-core build`。
 - 两套 LICENSE 并存，必须在 README 里写清楚哪部分适用哪份 —— 否则读者会以为整个仓库都是 MIT。
+
+## 2026-11-08 · v1.1.3 抽取质量
+
+- 口径修正：**一条通知可有多件事**，按行动拆；去重只针对同一行动 + 同一截止 + 同类。
+- AI prompt 增 3 个 few-shot（多件事按行动拆、两个不同截止才拆、章节/平台/角色不抽），并明确 URL 不进 channel/location。
+- 规则层：章节/平台/时间安排/角色说明跳过；起止时间取结束日 23:59；URL 清洗；地点规则扩展；标题去编号/班级/虚词。
+- 后处理：`parseLLMResponse` 与 `mergeTasks` 清洗 URL channel、合并重复行；通知只有唯一截止时，没写时间的行动句沿用该截止（不改变按行动拆分）。

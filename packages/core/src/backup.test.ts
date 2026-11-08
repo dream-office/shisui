@@ -155,3 +155,50 @@ describe('validateBackup', () => {
     expect(result.backup!.tasks[0].tags).toEqual(['作业', '复习'])
   })
 })
+
+
+describe('v1.2 备份 schema 4 兼容', () => {
+  it('旧 v3 备份仍可导入，url/note 补 null；schemaVersion=4 才拒绝后续版本', () => {
+    const base = buildBackup({
+      tasks: [
+        {
+          id: 't1',
+          title: '旧任务',
+          dueAt: Date.now() + 1000,
+          startAt: null,
+          endAt: null,
+          allDay: false,
+          rrule: null,
+          seriesId: null,
+          recurrenceIndex: 0,
+          skipped: false,
+          kind: 'task',
+          channel: null,
+          location: null,
+          rawText: '',
+          confidence: 'high',
+          reasons: [],
+          engine: 'rule',
+          createdAt: Date.now(),
+          done: false,
+          editedFields: [],
+        },
+      ],
+      series: [],
+      batches: [],
+      settings: {},
+    })
+    const old = JSON.parse(JSON.stringify(base)) as Record<string, any>
+    old.schemaVersion = 3
+    delete old.tasks[0].url
+    delete old.tasks[0].note
+    const restored = validateBackup(old)
+    expect(restored.ok).toBe(true)
+    expect(restored.backup?.tasks[0].url).toBeNull()
+    expect(restored.backup?.tasks[0].note).toBeNull()
+
+    const future = JSON.parse(JSON.stringify(base)) as Record<string, any>
+    future.schemaVersion = BACKUP_SCHEMA_VERSION + 1
+    expect(validateBackup(future).ok).toBe(false)
+  })
+})
