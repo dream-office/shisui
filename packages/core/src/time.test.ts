@@ -239,3 +239,14 @@ describe('v0.7.0 「下周日」口径（下一周的周日）', () => {
     expect(hit.dateMs).toBe(day(11, 15))
   })
 })
+describe('v0.7.0 「下周日」再钉一条周三视角', () => {
+  it('今天周三 11-04 → 本周日 11-08、下周日 11-15', () => {
+    const wednesday = new Date(2026, 10, 4, 9, 0, 0)
+    const thisSunday = extractTime('本周日交报告', wednesday)!
+    const nextSunday = extractTime('下周日交报告', wednesday)!
+    const followingSunday = extractTime('下下周日交报告', wednesday)!
+    expect(thisSunday.dateMs).toBe(day(11, 8))
+    expect(nextSunday.dateMs).toBe(day(11, 15))
+    expect(followingSunday.dateMs).toBe(day(11, 22))
+  })
+})
