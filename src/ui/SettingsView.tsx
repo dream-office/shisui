@@ -145,6 +145,13 @@ export default function SettingsView() {
             <strong>版本</strong>：v{appVersion} · 应用本体 AGPL-3.0-or-later，解析核心 <code>shisui-core</code> 为 MIT。
           </li>
           <li>
+            <strong>源码</strong>：
+            <a href="https://github.com/dream-office/shisui" target="_blank" rel="noreferrer">
+              github.com/dream-office/shisui
+            </a>
+            （AGPL §13：通过网络使用本应用的，有权获取对应源码；仓库始终公开）。
+          </li>
+          <li>
             <strong>第三方</strong>：
             <a href="./licenses/THIRD_PARTY_NOTICES.md" target="_blank" rel="noreferrer">
               依赖与许可声明

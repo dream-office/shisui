@@ -5,7 +5,59 @@
 
 ## [Unreleased]
 
+### 变更
+
+- **TypeScript 5.9 → 7.0.2**（原生编译器重写）。迁移要动两处：
+  - TS7 **移除了 `baseUrl`**，`paths` 必须写相对路径 → 删 `baseUrl`，
+    改为 `"@/*": ["./src/*"]`、`"shisui-core": ["./packages/core/src/index.ts"]`。
+  - TS7 **不再自动包含 `@types/node`**：`shisui-core` 的 `tsconfig.build.json` 只声明了 ES2022 lib，
+    原先 `ics.ts` 靠环境里的 `TextEncoder` 计算折行字节数 → 改为纯数学的 `utf8Length()`，
+    结果与之前完全一致，且不再依赖宿主全局对象。
+- `src/styles.css` 补齐文件末尾换行。
+
+### 测试
+
+- 迁移后：`typecheck` 0 · 105 单测 · `build` 0 · core build（40 个产物）+ `smoke:core`（27 导出）0 ·
+  Playwright 9 条全绿。评估时还确认：**只跑 `vitest` 会漏掉 TS 配置问题**（它走 esbuild，不经过 tsc）。
+
 （下一个版本的计划见 [docs/ROADMAP.md](docs/ROADMAP.md)）
+
+## [0.5.0] - 2026-11-07
+
+**与真实日程打通：导出 ICS；装到桌面：PWA。**
+
+### 新增
+
+- **ICS 导出**（日程页「导出 .ics」）：把当前待办导出成 `.ics`，可导入系统日历 / Google Calendar。
+  - 时间一律转成 **UTC**（`...Z`），不写 `TZID` + `VTIMEZONE` —— 各客户端对时区名支持不一致，UTC 最稳
+  - **本地时间恰好 00:00** 的任务按**全天事件**导出（`VALUE=DATE`），其余按带时刻事件
+  - 只有截止时间的任务默认排 30 分钟；有开始+截止时用两者之差
+  - TEXT 转义（反斜杠 / 分号 / 逗号 / 换行）与 **按 75 字节折行**（中文一个字 3 字节，按字符折会超长）
+  - 纯函数 `tasksToIcs()` 在 `shisui-core`，零运行时依赖，11 条单测覆盖
+- **PWA**：`manifest.webmanifest` + 手写 Service Worker（不引入 `vite-plugin-pwa`）
+  - 可安装、**离线能打开**：导航请求 network-first、失败回退缓存的应用外壳；静态资源 cache-first
+  - **只处理同源 GET**，跨域请求一律放行 → 「默认零网络请求」的承诺不受影响
+  - **更新不自动接管**：新版本装好先提示，用户点「刷新」才 `skipWaiting` + reload（避免操作中途换页丢输入）
+  - **不缓存业务数据**：缓存里只有应用外壳与静态资源；待办本来就在 IndexedDB
+  - 开发环境不注册 SW（避免干扰 HMR）
+
+### 变更
+
+- **补充 AGPL §13 源码入口**：页脚与「关于」页都链到
+  [github.com/dream-office/shisui](https://github.com/dream-office/shisui)，
+  并附 LICENSE。AGPL 第 13 条要求：通过网络使用本应用的，有权获取对应源码。
+  页脚链接由 E2E 断言守护（删掉即红）。
+- 版本 0.4.0 → **0.5.0**；`shisui-core` → **0.4.0**（新增 `tasksToIcs` / `isAllDayTimestamp` / `escapeIcsText`）。
+- Playwright 的 `webServer` 改为「先 build 再 preview」：PWA 只在生产构建注册，dev server 测不了离线。
+- **图标改为 PNG**（192 / 512 / maskable 512 / apple-touch-icon 180）：iOS 不认 SVG 形式的
+  `apple-touch-icon`，只给 SVG 会导致 iOS 添加到主屏时没有图标。SVG 保留作为 `sizes: any` 的补充。
+- Service Worker 的缓存写入包进 `event.waitUntil()`：否则 Worker 可能在写缓存前被浏览器终止，
+  表现为「偶尔离线打不开」。`put()` 现在返回 Promise，便于等待。
+
+### 测试
+
+- 单元测试 94 → **105**（ICS 11 条：UTC 转换 / 全天判定 / 转义 / 折行 / 排序 / 跳过规则）。
+- 端到端 6 → **9** 条：新增 G ICS 下载（校验文件内容与转义）、H 离线可打开、I manifest 可访问。
 
 ## [0.4.0] - 2026-11-07
 
