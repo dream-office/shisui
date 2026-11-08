@@ -227,8 +227,8 @@ function resolveDate(text: string, ref: Date): DateHit | null {
       forcedClock: { hour: 18, minute: 0 },
       deadlineHint: true,
       note: useToday
-        ? '今天是工作日且未到 18:00 → 今天 18:00'
-        : '已过 18:00 或今天不是工作日 → 下一个工作日 18:00',
+        ? '今天是工作日，未到 18:00 → 今天 18:00'
+        : '已过 18:00/今天非工作日 → 下一个工作日 18:00',
     }
   }
 
