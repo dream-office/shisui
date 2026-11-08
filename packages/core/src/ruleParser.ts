@@ -252,7 +252,11 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     reasons.push(`时间短语「${hit.matched}」`)
     if (hit.note) reasons.push(hit.note)
   }
-  if (rrule) title = stripRecurrencePhrase(title)
+  if (rrule) {
+    title = stripRecurrencePhrase(title)
+    // 时间短语先被剥掉时可能留下孤立的「每」（如「每周五9点…」→「每…」）
+    if (title.startsWith('每')) title = title.replace(/^每\s*/, '')
+  }
   title = cleanTitle(title)
   if (!title) title = cleanTitle(segment).slice(0, 28)
 

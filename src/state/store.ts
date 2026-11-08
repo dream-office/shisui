@@ -7,7 +7,9 @@ import { version as appVersion } from '../../package.json'
 import { create } from 'zustand'
 import {
   buildBackup,
+  clockOf,
   sortFocusQueue,
+  withClock,
   buildNextInstance,
   normalizeTags,
   validateBackup,
@@ -71,6 +73,10 @@ interface AppState {
   exportBackup: () => string
   restoreBackup: (text: string) => Promise<{ ok: boolean; errors: string[]; counts?: { tasks: number; series: number; batches: number } }>
   setTags: (id: string, tags: string[]) => Promise<void>
+  /** 改这一次：只改当前实例（含时间），不动 series */
+  editTaskFields: (id: string, fields: TaskEditFields) => Promise<void>
+  /** 改整个系列：series + 当前/未来未完成实例；历史不动 */
+  editSeriesFields: (id: string, fields: TaskEditFields) => Promise<void>
   openFocus: () => void
   closeFocus: () => void
   focusNext: () => void
@@ -90,6 +96,17 @@ interface AppState {
   dropTask: (id: string) => Promise<void>
   clearAll: () => Promise<void>
   saveLLM: (config: LLMConfig) => void
+}
+
+/** 编辑任务字段（改这一次 / 改整个系列共用） */
+export interface TaskEditFields {
+  title?: string
+  kind?: ParsedTask['kind']
+  channel?: string | null
+  location?: string | null
+  tags?: string[]
+  /** 主时刻（仅改这一次支持） */
+  primaryTime?: number | null
 }
 
 const nextTick = () => new Promise<void>((resolve) => setTimeout(resolve, 20))
@@ -352,6 +369,89 @@ export const useApp = create<AppState>((set, get) => ({
   setTags: async (id, tags) => {
     await repo.updateTask(id, { tags: normalizeTags(tags), editedField: 'tags' })
     set({ tasks: await repo.listTasks() })
+  },
+
+  editTaskFields: async (id, fields) => {
+    const current = get().tasks.find((task) => task.id === id)
+    if (!current) return
+    const patch: Partial<StoredTask> = {}
+    if (fields.title !== undefined) patch.title = fields.title.trim()
+    if (fields.kind !== undefined) patch.kind = fields.kind
+    if (fields.channel !== undefined) patch.channel = fields.channel?.trim() || null
+    if (fields.location !== undefined) patch.location = fields.location?.trim() || null
+    if (fields.tags !== undefined) patch.tags = normalizeTags(fields.tags)
+
+    // 改这一次的时间：只动当前实例；区间任务整体平移保持时长
+    if (fields.primaryTime !== undefined && fields.primaryTime !== null) {
+      const oldPrimary = current.startAt ?? current.dueAt
+      if (oldPrimary !== null) {
+        const delta = fields.primaryTime - oldPrimary
+        if (current.startAt !== null) patch.startAt = fields.primaryTime
+        if (current.dueAt !== null) patch.dueAt = fields.primaryTime
+        if (current.endAt !== null && current.endAt !== undefined) patch.endAt = current.endAt + delta
+      }
+    }
+
+    await repo.updateTask(id, { ...patch, editedField: 'title' })
+    set({ tasks: await repo.listTasks() })
+  },
+
+  editSeriesFields: async (id, fields) => {
+    const current = get().tasks.find((task) => task.id === id)
+    if (!current || !current.seriesId) return
+    const seriesPatch: Partial<TaskSeries> = {}
+    const taskPatch: Partial<StoredTask> = {}
+    if (fields.title !== undefined) {
+      seriesPatch.title = fields.title.trim()
+      taskPatch.title = fields.title.trim()
+    }
+    if (fields.kind !== undefined) {
+      seriesPatch.kind = fields.kind
+      taskPatch.kind = fields.kind
+    }
+    if (fields.channel !== undefined) {
+      seriesPatch.channel = fields.channel?.trim() || null
+      taskPatch.channel = fields.channel?.trim() || null
+    }
+    if (fields.location !== undefined) {
+      seriesPatch.location = fields.location?.trim() || null
+      taskPatch.location = fields.location?.trim() || null
+    }
+    if (fields.tags !== undefined) {
+      seriesPatch.tags = normalizeTags(fields.tags)
+      taskPatch.tags = normalizeTags(fields.tags)
+    }
+    // 改整个系列改时间：只改时刻、日期不变，频率/anchor 不动
+    const clockEdits: Array<{ id: string; startAt?: number | null; dueAt?: number | null; endAt?: number | null }> = []
+    if (fields.primaryTime !== undefined && fields.primaryTime !== null) {
+      const clock = clockOf(fields.primaryTime)
+      const series = await repo.getSeries(current.seriesId)
+      if (series) seriesPatch.startAt = withClock(series.startAt, clock)
+      // 当前 + 未来未完成（与 repo 同步规则一致）逐个换时刻
+      for (const task of get().tasks) {
+        if (task.seriesId !== current.seriesId) continue
+        if ((task.recurrenceIndex ?? 0) < (current.recurrenceIndex ?? 0)) continue
+        if (task.done || task.skipped) continue
+        const oldPrimary = task.startAt ?? task.dueAt
+        if (oldPrimary === null) continue
+        const nextPrimary = withClock(oldPrimary, clock)
+        const delta = nextPrimary - oldPrimary
+        clockEdits.push({
+          id: task.id,
+          startAt: task.startAt !== null ? nextPrimary : null,
+          dueAt: task.dueAt !== null ? nextPrimary : null,
+          endAt: task.endAt !== null && task.endAt !== undefined ? task.endAt + delta : task.endAt,
+        })
+      }
+    }
+    await repo.editSeriesAndInstances({
+      seriesId: current.seriesId,
+      fromIndex: current.recurrenceIndex ?? 0,
+      seriesPatch,
+      taskPatch,
+      clockEdits,
+    })
+    set({ tasks: await repo.listTasks(), series: await repo.listSeries() })
   },
 
   openFocus: () => set({ focusMode: true, focusIndex: 0 }),

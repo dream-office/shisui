@@ -94,7 +94,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span>数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器</span>
+        <span>数据只存在本地浏览器里（IndexedDB），不上传服务器</span>
         <span className="footer-sep">·</span>
         <span>规则引擎离线可用，接不接 AI 都能跑</span>
         <span className="footer-sep">·</span>

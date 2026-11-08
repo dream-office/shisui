@@ -31,6 +31,8 @@ export default function PlanView() {
   const focusMode = useApp((s) => s.focusMode)
   const openFocus = useApp((s) => s.openFocus)
   const [batchMode, setBatchMode] = useState(false)
+  const editTaskFields = useApp((s) => s.editTaskFields)
+  const editSeriesFields = useApp((s) => s.editSeriesFields)
   const [onlyOpen, setOnlyOpen] = useState(false)
   const now = useNow(30_000)
   const ref = useMemo(() => new Date(now), [now])
@@ -44,6 +46,17 @@ export default function PlanView() {
   const visibleDone = useMemo(() => (onlyOpen ? [] : filterTasks(done, searchQuery)), [done, searchQuery, onlyOpen])
 
   const seriesById = useMemo(() => new Map(series.map((item) => [item.id, item])), [series])
+  const seriesAffectedCountOf = (task: StoredTask): number => {
+    if (!task.seriesId) return 0
+    return tasks.filter(
+      (item) =>
+        item.seriesId === task.seriesId &&
+        (item.recurrenceIndex ?? 0) >= (task.recurrenceIndex ?? 0) &&
+        !item.done &&
+        !item.skipped,
+    ).length
+  }
+
   const seriesLabelOf = (task: StoredTask): string | null => {
     if (!task.seriesId) return null
     const item = seriesById.get(task.seriesId)
@@ -253,6 +266,9 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
+                seriesAffectedCount={seriesAffectedCountOf(task)}
               />
             ))}
           </ul>
@@ -277,6 +293,9 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
+                seriesAffectedCount={seriesAffectedCountOf(task)}
               />
             ))}
           </ul>
@@ -301,6 +320,9 @@ export default function PlanView() {
                 selected={selectedIds.includes(task.id)}
                 onSelect={() => toggleSelection(task.id)}
                 onTagsChange={(tags) => void setTags(task.id, tags)}
+                onEditOnce={(fields) => void editTaskFields(task.id, fields)}
+                onEditSeries={(fields) => void editSeriesFields(task.id, fields)}
+                seriesAffectedCount={seriesAffectedCountOf(task)}
               />
             ))}
           </ul>

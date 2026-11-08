@@ -90,6 +90,8 @@ export interface TaskSeries {
   createdAt: number
   /** 结束系列的时刻；非 null 表示不再生成 */
   endedAt?: number | null
+  /** 系列标签（改整个系列时同步到实例） */
+  tags?: string[]
 }
 
 /** 已确认、落地到日程的事项 */

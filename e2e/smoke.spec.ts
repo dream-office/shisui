@@ -29,7 +29,7 @@ test.describe('首屏', () => {
 
     await expect(page.getByRole('heading', { name: '拾穗' })).toBeVisible()
     await expect(page.getByText('群里散落的截止时间，替你捡起来')).toBeVisible()
-    await expect(page.getByText('数据只存在你自己的浏览器里（IndexedDB），不上传任何服务器')).toBeVisible()
+    await expect(page.getByText('数据只存在本地浏览器里（IndexedDB），不上传服务器')).toBeVisible()
 
     // AGPL §13：通过网络使用本应用的人必须能拿到源码入口，页脚不许被删
     const sourceLink = page.getByRole('link', { name: /源码/ })
@@ -362,7 +362,7 @@ test.describe('月视图', () => {
     await source.dragTo(target)
 
     const dayCard = page.locator('.month-day')
-    await expect(dayCard).toContainText('12月1日')
+    await expect(dayCard).toContainText('12 月 1 日')
     await expect(dayCard).toContainText('月底跨月')
   })
 })
@@ -923,5 +923,123 @@ test.describe('v0.9 专注模式', () => {
     await focus.getByRole('button', { name: '完成', exact: true }).click()
     await expect(focus).toContainText('1 / 1') // 生成的下一条仍在专注里
     await expect(page.getByText(/已完成 1 件/)).toBeVisible()
+  })
+})
+
+
+test.describe('v0.10 系列编辑', () => {
+  test('Z6. 改整个系列：当前实例与 series 同步更新', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('群消息原文').fill('每周五9点项目例会')
+    await page.getByRole('button', { name: '开始解析' }).click()
+    await expect(page.getByRole('heading', { name: /识别到 \d+ 条待办/ })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: '全部收录' }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+
+    // 先记下 once 模式下的日期部分
+    const originalDate = (await page.getByLabel('编辑时间').inputValue()).slice(0, 10)
+
+    await page.getByLabel('编辑标题').fill('改名后的例会')
+    await page.getByLabel('改整个系列（当前 + 未来未完成）').check()
+    // series 模式只能改时刻，不能改日期
+    await expect(page.getByLabel('编辑时间', { exact: true })).toHaveCount(0)
+    const clockInput = page.getByLabel('编辑时间（只改时刻）')
+    await expect(clockInput).toBeVisible()
+    await clockInput.fill('10:30')
+    // 二次确认文案：明确将同步的未完成实例条数
+    await expect(page.getByText(/将同步 \d+ 个未完成实例/)).toBeVisible()
+    await page.getByRole('button', { name: '保存' }).first().click()
+
+    // 再打开一次：切回 once 模式时日期应保持原样
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+    const afterDate = (await page.getByLabel('编辑时间').inputValue()).slice(0, 10)
+    expect(afterDate).toBe(originalDate)
+
+    await expect(page.locator('.task-row', { hasText: '改名后的例会' })).toBeVisible()
+  })
+
+  test('Z7. 改这一次：普通任务只改当前标题', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('原名')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '编辑任务' }).first().click()
+    await page.getByLabel('编辑标题').fill('改后名')
+    await page.getByRole('button', { name: '保存' }).first().click()
+
+    await expect(page.locator('.task-row', { hasText: '改后名' })).toBeVisible()
+    await expect(page.getByText('原名')).toHaveCount(0)
+  })
+})
+
+
+test.describe('v0.10 加密备份', () => {
+  test('Z8. 加密导出 → 错误密码拒绝 → 正确密码恢复', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '手动添加' }).click()
+    await page.getByLabel('标题').fill('加密备份里的任务')
+    await page.getByRole('button', { name: '添加', exact: true }).click()
+
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^设置/ }).click()
+    await page.getByRole('checkbox', { name: /加密备份/ }).check()
+    await page.getByLabel('备份密码', { exact: true }).fill('shisui-pass-123')
+    await page.getByLabel('确认备份密码').fill('shisui-pass-123')
+
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: '导出 JSON 备份' }).click()
+    const download = await downloadPromise
+    const path = await download.path()
+    const encryptedText = readFileSync(path!, 'utf-8')
+    const envelope = JSON.parse(encryptedText)
+    expect(envelope.format).toBe('shisui-backup-encrypted')
+    expect(envelope.encryptedVersion).toBe(1)
+    expect(envelope.kdf.iterations).toBe(310000)
+
+    // 错误密码：拒绝且不动数据
+    await page.locator('input[type="file"][accept*="json"]').setInputFiles({
+      name: 'backup-enc.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(encryptedText, 'utf-8'),
+    })
+    await expect(page.getByRole('region', { name: '加密备份解锁' })).toBeVisible()
+    await page.getByLabel('解密密码').fill('wrong-pass-123')
+    await page.getByRole('button', { name: '解密并预览' }).click()
+    await expect(page.getByRole('alert')).toContainText('密码错误')
+
+    // 正确密码：预览 → 恢复
+    await page.getByLabel('解密密码').fill('shisui-pass-123')
+    await page.getByRole('button', { name: '解密并预览' }).click()
+    await expect(page.getByRole('region', { name: '恢复预览' })).toContainText('1 条任务')
+    await page.getByRole('button', { name: '确认恢复' }).click()
+    await expect(page.getByText(/已恢复 1 条任务/)).toBeVisible()
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await expect(page.getByText('加密备份里的任务')).toBeVisible()
+  })
+})
+
+
+test.describe('v0.10 iOS 剪贴板替代', () => {
+  test('Z9. 粘贴分享内容：追加到输入末尾，不覆盖', async ({ page }) => {
+    await page.goto('/')
+    // 模拟 iOS 场景：剪贴板里有群消息，输入框已有内容
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { readText: async () => '周一9点开会' },
+      })
+    })
+    await page.getByLabel('群消息原文').fill('已有内容\n')
+
+    await page.getByRole('button', { name: '粘贴分享内容' }).click()
+    const value = await page.getByLabel('群消息原文').inputValue()
+    // 精确等于：末尾已有换行时不重复补，只保留单个分隔换行
+    expect(value).toBe('已有内容\n周一9点开会')
   })
 })

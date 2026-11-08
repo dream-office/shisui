@@ -2,7 +2,7 @@
  * 仓储层：UI 与会话状态只通过这组函数碰数据，不直接写 Dexie。
  * 好处是「换存储介质」不用改 UI —— 以后要同步到云端，只改这一层。
  */
-import { normalizeTags } from 'shisui-core'
+import { instancesToSync, normalizeTags } from 'shisui-core'
 import type { ImportBatch, ParsedTask, StoredTask, TaskSeries } from 'shisui-core'
 import { db } from './db'
 
@@ -148,6 +148,34 @@ export async function bulkPutTasks(tasks: StoredTask[]): Promise<void> {
 /** 撤销批量完成：按快照恢复 done 状态 */
 export async function restoreTaskStates(tasks: StoredTask[]): Promise<void> {
   await db.tasks.bulkPut(tasks)
+}
+
+/** 改整个系列：series 展示字段 + 当前/未来未完成实例，同一事务 */
+export async function editSeriesAndInstances(input: {
+  seriesId: string
+  fromIndex: number
+  seriesPatch: Partial<TaskSeries>
+  taskPatch: Partial<StoredTask>
+  /** 逐实例只换时刻（日期/规则不变） */
+  clockEdits?: Array<{ id: string; startAt?: number | null; dueAt?: number | null; endAt?: number | null }>
+}): Promise<void> {
+  await db.transaction('rw', db.tasks, db.series, async () => {
+    const series = await db.series.get(input.seriesId)
+    if (!series) return
+    await db.series.put({ ...series, ...input.seriesPatch })
+
+    const instances = await db.tasks.where('seriesId').equals(input.seriesId).toArray()
+    const targets = instancesToSync(instances, input.seriesId, input.fromIndex)
+    const patch: Partial<StoredTask> = { ...input.taskPatch }
+    if (Array.isArray(patch.tags)) patch.tags = normalizeTags(patch.tags)
+    const clockById = new Map((input.clockEdits ?? []).map((item) => [item.id, item]))
+    await db.tasks.bulkPut(
+      targets.map((task) => {
+        const clock = clockById.get(task.id)
+        return clock ? { ...task, ...patch, ...clock } : { ...task, ...patch }
+      }),
+    )
+  })
 }
 
 export async function recordBatch(batch: ImportBatch): Promise<void> {
