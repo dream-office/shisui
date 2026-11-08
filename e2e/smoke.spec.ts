@@ -941,6 +941,8 @@ test.describe('v0.10 系列编辑', () => {
 
     await page.getByLabel('编辑标题').fill('改名后的例会')
     await page.getByLabel('改整个系列（当前 + 未来未完成）').check()
+    // 二次确认文案：明确将同步的未完成实例条数
+    await expect(page.getByText(/将同步 \d+ 个未完成实例/)).toBeVisible()
     await page.getByRole('button', { name: '保存' }).first().click()
 
     await expect(page.locator('.task-row', { hasText: '改名后的例会' })).toBeVisible()

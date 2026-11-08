@@ -22,6 +22,8 @@ interface Props {
   onEditOnce?: (fields: TaskEditFields) => void
   /** 改整个系列（仅 seriesId 存在时提供） */
   onEditSeries?: (fields: TaskEditFields) => void
+  /** 改整个系列将同步的未完成实例数（当前 + 未来未完成） */
+  seriesAffectedCount?: number
 }
 
 const KIND_OPTIONS: Array<{ value: StoredTask['kind']; label: string }> = [
@@ -57,6 +59,7 @@ export default function TaskRow({
   onTagsChange,
   onEditOnce,
   onEditSeries,
+  seriesAffectedCount,
 }: Props) {
   const [editingTags, setEditingTags] = useState(false)
   const [draftTag, setDraftTag] = useState('')
@@ -256,7 +259,10 @@ export default function TaskRow({
                   改整个系列（当前 + 未来未完成）
                 </label>
                 {scope === 'series' && (
-                  <p className="muted edit-hint">改整个系列只改时刻，日期与重复规则保持不变。</p>
+                  <p className="muted edit-hint">
+                    改整个系列只改时刻，日期与重复规则保持不变；
+                    将同步 {seriesAffectedCount ?? 1} 个未完成实例（已完成/已跳过历史不动）。
+                  </p>
                 )}
               </fieldset>
             )}
