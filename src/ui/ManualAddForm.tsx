@@ -1,6 +1,6 @@
-import { t } from '@/i18n'
+import { t, tCore } from '@/i18n'
 import { useState, type FormEvent } from 'react'
-import type { TaskKind } from 'shisui-core'
+import { ManualTaskError, type TaskKind } from 'shisui-core'
 import { useApp } from '@/state/store'
 
 const KINDS: { value: TaskKind; label: string }[] = [
@@ -55,7 +55,7 @@ export default function ManualAddForm({ onClose }: { onClose: () => void }) {
       await addManualTask({ title, dueAt, kind, channel, location })
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('添加失败'))
+      setError(err instanceof ManualTaskError ? tCore({ code: `manual.error.${err.code === 'manual.emptyTitle' ? 'emptyTitle' : 'noTime'}` }, err.message) : err instanceof Error ? err.message : t('添加失败'))
     } finally {
       setSaving(false)
     }

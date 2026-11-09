@@ -10,6 +10,7 @@
  * - **去重**：按 `UID` 匹配（见 `mergeIcsImport`），同 UID 再导入 → 更新而不是新增。
  */
 import type { ParsedTask, TaskKind } from './types.js'
+import { message, type LocalizedMessage } from './messages.js'
 import { parseRRule } from './recurrence.js'
 
 export interface IcsImportOptions {
@@ -20,6 +21,7 @@ export interface IcsImportOptions {
 export interface IcsImportResult {
   tasks: ParsedTask[]
   warnings: string[]
+  warningCodes?: LocalizedMessage[]
   /** 解析失败 / 不支持而被跳过的事件数 */
   skipped: number
 }
@@ -287,16 +289,23 @@ function collectEvents(lines: string[]): RawEvent[] {
  */
 export function importIcs(text: string, options: IcsImportOptions = {}): IcsImportResult {
   const warnings: string[] = []
+  const warningCodes: LocalizedMessage[] = []
   const tasks: ParsedTask[] = []
   let skipped = 0
 
   if (!text || !/BEGIN:VCALENDAR/i.test(text)) {
-    return { tasks: [], warnings: ['这不是一个 iCalendar 文件（缺少 BEGIN:VCALENDAR）'], skipped: 0 }
+    return {
+      tasks: [],
+      warnings: ['这不是一个 iCalendar 文件（缺少 BEGIN:VCALENDAR）'],
+      warningCodes: [message('ics.notCalendar')],
+      skipped: 0,
+    }
   }
   if (/BEGIN:VEVENT/i.test(text) && !/END:VEVENT/i.test(text)) {
     return {
       tasks: [],
       warnings: ['文件不完整：有 BEGIN:VEVENT 却没有 END:VEVENT，可能被截断了'],
+      warningCodes: [message('ics.incomplete')],
       skipped: 1,
     }
   }
@@ -318,14 +327,21 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
           ? `「${label}」的时区 ${tz} 无法识别，已跳过（不会猜时区）`
           : `「${label}」的时间格式无法解析（${event.start.value}），已跳过`,
       )
+      warningCodes.push(
+        tz
+          ? message('ics.badTimezone', { label, tz })
+          : message('ics.badStart', { label, value: event.start.value }),
+      )
       return
     }
     if (event.end && end === null) {
       warnings.push(`「${label}」的结束时间无法解析，已忽略结束时间`)
+      warningCodes.push(message('ics.badEnd', { label }))
     }
     if (!start && !end) {
       skipped += 1
       warnings.push(`「${label}」没有开始时间，已跳过`)
+      warningCodes.push(message('ics.noStart', { label }))
       return
     }
 
@@ -335,6 +351,7 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
     if (startMs === null) {
       skipped += 1
       warnings.push(`「${label}」没有可用时间，已跳过`)
+      warningCodes.push(message('ics.noTime', { label }))
       return
     }
 
@@ -359,12 +376,20 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
         rrule = event.rruleValue
       } else {
         warnings.push(`「${label}」的重复规则不受支持（${event.rruleValue}），已按单次事件导入`)
+        warningCodes.push(message('ics.unsupportedRrule', { label, rrule: event.rruleValue }))
       }
     }
 
     const reasons = ['从日历文件按标准字段导入']
-    if (rrule) reasons.push(`重复规则：${rrule}`)
-    if (allDay) reasons.push('全天事件')
+    const reasonCodes = [message('reason.icsImport')]
+    if (rrule) {
+      reasons.push(`重复规则：${rrule}`)
+      reasonCodes.push(message('reason.recurrence', { rule: rrule }))
+    }
+    if (allDay) {
+      reasons.push('全天事件')
+      reasonCodes.push(message('reason.allDay'))
+    }
 
     const rawLines = [`[ICS 导入] ${title}`]
     if (event.description.trim()) rawLines.push(event.description.trim())
@@ -393,7 +418,7 @@ export function importIcs(text: string, options: IcsImportOptions = {}): IcsImpo
     })
   })
 
-  return { tasks, warnings, skipped }
+  return { tasks, warnings, warningCodes, skipped }
 }
 
 /** 按 sourceUid 去重：同 UID 已存在 → 覆盖更新；不存在的 → 新增；无 UID（理论上不会出现）→ 新增 */

@@ -3,6 +3,7 @@
  * 这是产品从「能解析」升级到「真正省心」的关键一步。
  */
 import type { ParsedTask } from './types.js'
+import { message, type LocalizedMessage } from './messages.js'
 import { startOfDay } from './time.js'
 
 export type ConflictLevel = 'danger' | 'warn'
@@ -12,6 +13,8 @@ export interface ConflictNote {
   level: ConflictLevel
   title: string
   detail: string
+  titleCode?: LocalizedMessage
+  detailCode?: LocalizedMessage
   taskIds: string[]
 }
 
@@ -54,6 +57,8 @@ export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): Confl
           level: 'danger',
           title: '时间重叠',
           detail: `「${a.task.title}」与「${b.task.title}」的时间区间有重叠。`,
+          titleCode: message('conflict.overlap.title'),
+          detailCode: message('conflict.overlap.detail', { a: a.task.title, b: b.task.title }),
           taskIds: [a.task.id, b.task.id],
         })
       }
@@ -71,6 +76,8 @@ export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): Confl
         level: 'danger',
         title: `「${task.title}」已经过期`,
         detail: '如果还没完成，尽快补交，或联系通知发起人说明情况。',
+        titleCode: message('conflict.overdue.title', { title: task.title }),
+        detailCode: message('conflict.overdue.detail'),
         taskIds: [task.id],
       })
     }
@@ -90,6 +97,8 @@ export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): Confl
         level: 'warn',
         title: '两件事几乎同时截止',
         detail: `「${prev.title}」和「${cur.title}」相距不到 2 小时，建议把其中一件提前做掉。`,
+        titleCode: message('conflict.clash.title'),
+        detailCode: message('conflict.clash.detail', { a: prev.title, b: cur.title }),
         taskIds: [prev.id, cur.id],
       })
     }
@@ -110,6 +119,8 @@ export function scanConflicts(tasks: Scannable[], ref: Date = new Date()): Confl
         level: 'warn',
         title: `这一天堆了 ${list.length} 件事`,
         detail: `当天有：${list.map((t) => `「${t.title}」`).join('、')}，建议提前分批完成。`,
+        titleCode: message('conflict.pileup.title', { count: list.length }),
+        detailCode: message('conflict.pileup.detail', { names: list.map((t) => t.title).join('、') }),
         taskIds: list.map((t) => t.id),
       })
     }

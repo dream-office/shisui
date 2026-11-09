@@ -33,6 +33,24 @@
 - 已知限制改为：core 动态文本的英文结构化文案计划 **v1.3**（v1.1.0 为签名彩蛋，不含 core 重构）
 - 与 v1.0.0 Release body、README、CHANGELOG 保持一致
 
+## [1.4.0] - 2026-11-09
+
+### 新增（core 动态文本英文结构化）
+
+- `shisui-core` 新增 `LocalizedMessage { code, params }`（`messages.ts`）：
+  - `ParsedTask.reasonCodes`、`ParseResult/BatchParseResult.warningCodes`、`ConflictNote.titleCode/detailCode`、`IcsImportResult.warningCodes`、`BackupValidation.errorCodes`、`ManualTaskError.code`、`choiceCode`
+  - 旧字符串字段（`reasons/warnings/title/detail`）全部保留，双轨一致
+- app 新增 `src/i18n/core.ts` + `tCore()`：参数插值、嵌套参数（kind/channel 标签）、缺 key 回退旧中文；英文界面现已覆盖解析理由、冲突提示、ICS 导入警告、备份/解密错误、二选一标签
+- 兼容：**DB 保持 v4**（`reasonCodes` 非索引可选字段，无迁移）；**backup schema 保持 4**（additive，旧备份可导入、缺 code 回退中文）；ICS 文本导出格式不变；旧 `format.ts` 标记 deprecated，不删除
+- 版本：app **1.4.0** / core **1.2.0**
+
+### 测试
+
+- core 双轨断言 9 组（reasons 对齐、冲突四类、ICS、batch、manual、背书/备份、time note）
+- app `tCore` 中英渲染/缺键回退
+- English e2e：解析 reasons、冲突提示、ICS warning、备份错误均无 core 中文
+- 旧备份/旧任务回退不崩；CJK 扫描扩展到 core 动态文本
+
 ## [1.3.1] - 2026-11-08
 
 ### 调整（收件工具栏收窄）

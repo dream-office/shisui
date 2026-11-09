@@ -1,7 +1,7 @@
-import { t, formatDateOnlyI18n } from '@/i18n'
+import { t, tCore, formatDateOnlyI18n } from '@/i18n'
 import { useState, type ChangeEvent } from 'react'
 import { importIcs, mergeIcsImport } from 'shisui-core'
-import type { ParsedTask } from 'shisui-core'
+import type { LocalizedMessage, ParsedTask } from 'shisui-core'
 import { useApp } from '@/state/store'
 
 function formatWhen(task: ParsedTask): string {
@@ -25,6 +25,7 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ParsedTask[] | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
+  const [warningCodes, setWarningCodes] = useState<LocalizedMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ added: number; updated: number; skipped: number } | null>(null)
   const [busy, setBusy] = useState(false)
@@ -54,8 +55,10 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
         makeId: (index, uid) => `ics_${Date.now()}_${index}_${(uid ?? 'noid').replace(/[^a-zA-Z0-9-_@.]/g, '_')}`,
       })
       setWarnings(out.warnings)
+      setWarningCodes(out.warningCodes ?? [])
       if (out.tasks.length === 0) {
-        setError(out.warnings[0] ?? t('这个文件里没有可以导入的事件'))
+        const firstCode = out.warningCodes?.[0]
+      setError(tCore(firstCode, out.warnings[0]) || t('这个文件里没有可以导入的事件'))
         return
       }
       setParsed(out.tasks)
@@ -74,6 +77,7 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
       setResult(counts)
       setParsed(null)
       setWarnings([])
+      setWarningCodes([])
     } catch (err) {
       setError(err instanceof Error ? err.message : t('写入失败，已回滚'))
     } finally {
@@ -105,8 +109,8 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
 
       {warnings.length > 0 && (
         <ul className="ics-warnings">
-          {warnings.slice(0, 6).map((warning) => (
-            <li key={warning}>{warning}</li>
+          {warnings.slice(0, 6).map((warning, index) => (
+            <li key={`${index}-${warning}`}>{tCore(warningCodes[index], warning)}</li>
           ))}
           {warnings.length > 6 && <li>{t('另有 {n} 条提示', { n: warnings.length - 6 })}</li>}
         </ul>

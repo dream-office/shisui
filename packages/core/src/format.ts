@@ -28,6 +28,7 @@ export function formatDayLabel(ms: number, ref: Date = new Date()): string {
 }
 
 /** 完整展示：明天 20:00 / 11月18日 23:59 */
+/** @deprecated v1.4：UI 已改用 src/i18n 的 Intl 版本；此文件仅保留兼容，勿在新代码使用。 */
 export function formatWhen(ms: number, ref: Date = new Date()): string {
   return `${formatDayLabel(ms, ref)} ${formatClock(ms)}`
 }

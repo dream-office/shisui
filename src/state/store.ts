@@ -17,11 +17,12 @@ import {
   mergeIcsImport,
   mergeTasks,
   parseNoticeBatch,
+  message,
   parseRRule,
   splitNoticeSections,
 } from 'shisui-core'
 import { parseNotice } from 'shisui-core'
-import type { ImportBatch, ManualTaskInput, ParsedTask, StoredTask, TaskSeries } from 'shisui-core'
+import type { ImportBatch, LocalizedMessage, ManualTaskInput, ParsedTask, StoredTask, TaskSeries } from 'shisui-core'
 import * as repo from '@/data/repo'
 import { isLLMReady, loadLLMConfig, parseWithLLM, saveLLMConfig, type LLMConfig } from '@/services/llm'
 import { t } from '@/i18n'
@@ -36,6 +37,7 @@ interface AppState {
   hydrated: boolean
   candidates: ParsedTask[]
   warnings: string[]
+  warningCodes?: LocalizedMessage[]
   parsing: boolean
   /** 解析过程中的实时状态文案，直接展示给用户看 */
   stage: string
@@ -82,7 +84,7 @@ interface AppState {
   batchDelete: (ids: string[]) => Promise<void>
   undoLastBatch: () => Promise<void>
   exportBackup: () => string
-  restoreBackup: (text: string) => Promise<{ ok: boolean; errors: string[]; counts?: { tasks: number; series: number; batches: number } }>
+  restoreBackup: (text: string) => Promise<{ ok: boolean; errors: string[]; errorCodes?: LocalizedMessage[]; counts?: { tasks: number; series: number; batches: number } }>
   setTags: (id: string, tags: string[]) => Promise<void>
   /** 改这一次：只改当前实例（含时间），不动 series */
   editTaskFields: (id: string, fields: TaskEditFields) => Promise<void>
@@ -401,7 +403,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   restoreBackup: async (text) => {
     const result = validateBackup(text)
-    if (!result.ok || !result.backup) return { ok: false, errors: result.errors }
+    if (!result.ok || !result.backup) return { ok: false, errors: result.errors, errorCodes: result.errorCodes }
     await repo.replaceAll({
       tasks: result.backup.tasks,
       series: result.backup.series,
@@ -417,6 +419,7 @@ export const useApp = create<AppState>((set, get) => ({
     return {
       ok: true,
       errors: [],
+      errorCodes: [],
       counts: {
         tasks: result.backup.tasks.length,
         series: result.backup.series.length,
@@ -588,11 +591,11 @@ export const useApp = create<AppState>((set, get) => ({
   parse: async (raw) => {
     const trimmed = raw.trim()
     if (!trimmed) {
-      set({ warnings: ['先贴一段通知进来吧'], candidates: [], engineNote: null, batchMode: false })
+      set({ warnings: ['先贴一段通知进来吧'], warningCodes: [message('warning.emptyInput')], candidates: [], engineNote: null, batchMode: false })
       return
     }
 
-    set({ parsing: true, stage: '规则引擎正在切分通知…', warnings: [], candidates: [], engineNote: null, batchMode: false })
+    set({ parsing: true, stage: '规则引擎正在切分通知…', warnings: [], warningCodes: [], candidates: [], engineNote: null, batchMode: false })
     await nextTick()
 
     const ref = new Date()
@@ -604,6 +607,7 @@ export const useApp = create<AppState>((set, get) => ({
       set({
         candidates: batch.tasks,
         warnings: batch.warnings,
+        warningCodes: batch.warningCodes ?? [],
         parsing: false,
         stage: '',
         batchMode: true,
@@ -614,6 +618,7 @@ export const useApp = create<AppState>((set, get) => ({
 
     const ruleResult = parseNotice(trimmed, ref)
     const warnings = [...ruleResult.warnings]
+    const warningCodes = [...(ruleResult.warningCodes ?? [])]
     let tasks = ruleResult.tasks
     let engineNote = t('规则引擎识别 {n} 条', { n: ruleResult.tasks.length })
 
@@ -632,12 +637,13 @@ export const useApp = create<AppState>((set, get) => ({
         tasks = report.tasks
         engineNote = t('规则 {rule} 条 + AI {ai} 条 → 合并后 {merged} 条（{agreed} 条双引擎一致，{llmOnly} 条 AI 补充）', { rule: report.ruleCount, ai: report.llmCount, merged: report.tasks.length, agreed: report.agreedCount, llmOnly: report.llmOnlyCount })
       } catch (error) {
-        const message = error instanceof Error ? error.message : '未知错误'
-        warnings.push(`AI 引擎没跑通（${message}），已自动回退到规则引擎，功能不受影响`)
+        const errorMessage = error instanceof Error ? error.message : '未知错误'
+        warnings.push(`AI 引擎没跑通（${errorMessage}），已自动回退到规则引擎，功能不受影响`)
+        warningCodes.push(message('warning.aiFallback'))
       }
     }
 
-    set({ candidates: tasks, warnings, parsing: false, stage: '', engineNote })
+    set({ candidates: tasks, warnings, warningCodes, parsing: false, stage: '', engineNote })
   },
 
   updateCandidate: (id, patch) => {
@@ -727,7 +733,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   clearAll: async () => {
     await repo.clearAll()
-    set({ tasks: [], candidates: [], warnings: [], engineNote: null })
+    set({ tasks: [], candidates: [], warnings: [], warningCodes: [], engineNote: null })
   },
 
   saveLLM: (config) => {

@@ -1,7 +1,7 @@
 import { t } from '@/i18n'
 import type { ParsedTask, TaskKind } from 'shisui-core'
 import { fromLocalInput, toLocalInput } from 'shisui-core'
-import { countdownI18n, formatWhenI18n } from '@/i18n'
+import { countdownI18n, formatWhenI18n, tCore } from '@/i18n'
 
 import { CONF_LABEL, KIND_LABEL } from './candidateLabels'
 
@@ -95,7 +95,7 @@ export default function CandidateCard({ task, now, onUpdate, onAccept, onDismiss
       <details className="reasons">
         <summary>{t('为什么这么判断（{n}）', { n: task.reasons.length })}</summary>
         <ul>
-          {task.reasons.map((reason) => (
+          {(task.reasonCodes?.length ? task.reasonCodes.map((message) => tCore(message)) : task.reasons).map((reason) => (
             <li key={reason}>{reason}</li>
           ))}
         </ul>
