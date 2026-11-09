@@ -26,7 +26,17 @@ updates:
           - patch
     labels:
       - dependencies
-
+    # major 升级单独处理（延后到专门的升级分支）：
+    # 1.5.0 稳定版不引入 major 变更；Dependabot 不再为这些依赖开 major PR。
+    ignore:
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
   # GitHub Actions 的版本（checkout / setup-node / pnpm 等）
   - package-ecosystem: github-actions
     directory: "/"
