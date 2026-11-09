@@ -750,6 +750,29 @@ Object.assign(EN, {
   改哪里: 'Apply to',
 })
 
+Object.assign(EN, {
+  '收录第一条待办后，这里会显示完成率、逾期、冲突与专注时长。':
+    'Accept your first to-do to see completion, overdue, conflicts and focus time here.',
+  '近 7 天专注': 'Focus in the last 7 days',
+  '进入日程页的「专注模式」开始计时':
+    'Open Focus mode on the Plan page to start tracking.',
+  '共 {n} 次 · 今天 {m} 分钟': '{n} sessions · {m} min today',
+  '未完成逾期分布': 'Open overdue distribution',
+  '共 {n} 件': '{n} items',
+  '当前没有逾期任务': 'No overdue tasks right now',
+  '1 天内': 'Within 1 day',
+  '1–3 天': '1–3 days',
+  '3–7 天': '3–7 days',
+  '7 天以上': 'Over 7 days',
+  '按当前未完成任务计算': 'Based on current open tasks',
+  '时间重叠': 'Time overlap',
+  '截止撞车': 'Deadline clash',
+  '同日堆积': 'Same-day pile-up',
+  '{n} 分钟': '{n} min',
+  '{h} 小时': '{h} h',
+  '{h} 小时 {m} 分钟': '{h} h {m} min',
+})
+
 let currentLang: Lang = 'zh'
 
 export function getLang(): Lang {

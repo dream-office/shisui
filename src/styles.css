@@ -1544,6 +1544,20 @@ em {
 .metric-track { margin: 10px 0; height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; flex: none; }
 .metric-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.3s ease; }
 .metric-hint { margin: 0; padding-top: 10px; margin-top: auto; font-size: 12.5px; line-height: 1.6; }
+.stats-panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+.stats-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.stats-panel-head h3 { margin: 0; font-size: 14px; }
+.stats-panel-head .muted { font-size: 12px; }
+.stats-empty { font-size: 12.5px; }
+.bucket-list { display: flex; flex-direction: column; gap: 8px; }
+.bucket-row { display: grid; grid-template-columns: 66px minmax(0, 1fr) 28px; align-items: center; gap: 10px; font-size: 12.5px; }
+.bucket-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+.bucket-track { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bucket-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--warn), var(--danger)); }
+.conflict-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.conflict-item { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.conflict-label { font-size: 12px; color: var(--muted); }
+.conflict-count { font-size: 20px; font-variant-numeric: tabular-nums; line-height: 1; }
 
 /* ── 错误边界 ─────────────────────────────────── */
 .error-boundary { margin-top: 16px; }
@@ -1567,6 +1581,8 @@ em {
 /* ── 窄屏（320/360）：不横向溢出、按钮够大 ───────── */
 @media (max-width: 480px) {
   .metric-grid { grid-template-columns: 1fr; }
+  .conflict-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bucket-row { grid-template-columns: 58px minmax(0, 1fr) 24px; gap: 8px; }
   .tabs { flex-wrap: wrap; }
   .tabs .tab { min-height: 40px; padding: 8px 10px; }
   .btn { min-height: 38px; }

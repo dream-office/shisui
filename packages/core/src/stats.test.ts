@@ -120,3 +120,83 @@ describe('归属按 startAt（拍板 7）', () => {
     expect(stats.weekTotal).toBe(1)
   })
 })
+
+describe('未完成逾期分布', () => {
+  it('按 1 天内 / 1-3 天 / 3-7 天 / 7 天以上分桶，完成和跳过不算', () => {
+    const tasks = [
+      task({ id: 'a', dueAt: at(11, 11, 9) }), // 1 小时
+      task({ id: 'b', dueAt: at(11, 9, 12) }), // 1 天 22 小时
+      task({ id: 'c', dueAt: at(11, 6, 12) }), // 5 天
+      task({ id: 'd', dueAt: at(10, 20, 12) }), // 22 天
+      task({ id: 'done', dueAt: at(11, 1, 12), done: true }),
+      task({ id: 'skipped', dueAt: at(11, 1, 12), skipped: true }),
+      task({ id: 'no-time' }),
+    ]
+    const stats = computeStats(tasks, REF)
+    expect(stats.overdue).toBe(4)
+    expect(stats.overdueBuckets.map((bucket) => bucket.count)).toEqual([1, 1, 1, 1])
+    // 每个条目只进一个桶；逾期分布和冲突体检的「已过期」应该同口径
+    expect(stats.overdueBuckets.reduce((sum, bucket) => sum + bucket.count, 0)).toBe(stats.overdue)
+    expect(stats.conflicts.overdue).toBe(stats.overdue)
+  })
+
+  it('没有 dueAt 时按 startAt 判断逾期', () => {
+    const taskWithStart = task({ id: 'meeting', startAt: REF - 2 * 3_600_000 })
+    const stats = computeStats([taskWithStart], REF)
+    expect(stats.overdue).toBe(1)
+    expect(stats.overdueBuckets[0].count).toBe(1)
+  })
+
+  it('正好 1 天 / 3 天 / 7 天分别落在 1–3 天 / 3–7 天 / 7 天以上', () => {
+    const DAY = 86_400_000
+    const tasks = [
+      task({ id: 'one-day', dueAt: REF - DAY }),
+      task({ id: 'three-days', dueAt: REF - 3 * DAY }),
+      task({ id: 'seven-days', dueAt: REF - 7 * DAY }),
+    ]
+    const stats = computeStats(tasks, REF)
+    expect(stats.overdue).toBe(3)
+    expect(stats.overdueBuckets.map((bucket) => bucket.count)).toEqual([0, 1, 1, 1])
+  })
+})
+
+describe('冲突体检计数', () => {
+  it('时间重叠与截止撞车分别计数，完成的任务不参与', () => {
+    const ref = new Date(2026, 10, 11, 10, 0, 0).getTime()
+    const tasks = [
+      task({ id: 'a', dueAt: new Date(2026, 10, 11, 12, 0, 0).getTime() }),
+      task({ id: 'b', dueAt: new Date(2026, 10, 11, 12, 15, 0).getTime() }),
+      task({
+        id: 'done',
+        dueAt: new Date(2026, 10, 11, 12, 30, 0).getTime(),
+        done: true,
+      }),
+    ]
+    const stats = computeStats(tasks, ref)
+    expect(stats.conflicts.overlap).toBe(1)
+    expect(stats.conflicts.clash).toBe(1)
+    expect(stats.conflicts.overdue).toBe(0)
+    expect(stats.conflicts.total).toBe(2)
+  })
+
+  it('完成与跳过的条目不参与任何冲突计数', () => {
+    const ref = new Date(2026, 10, 11, 10, 0, 0).getTime()
+    const due = (h: number, m = 0) => new Date(2026, 10, 11, h, m, 0).getTime()
+    const tasks = [
+      task({ id: 'open-a', dueAt: due(12, 0) }),
+      task({ id: 'open-b', dueAt: due(12, 15) }),
+      task({ id: 'done-c', dueAt: due(12, 20), done: true }),
+      task({ id: 'skipped-d', dueAt: due(12, 25), skipped: true }),
+      task({ id: 'done-past', dueAt: due(9, 0), done: true }),
+      task({ id: 'skipped-past', dueAt: due(8, 0), skipped: true }),
+      task({ id: 'no-time' }),
+    ]
+    const stats = computeStats(tasks, ref)
+    expect(stats.overdue).toBe(0)
+    expect(stats.conflicts.overdue).toBe(0)
+    expect(stats.conflicts.overlap).toBe(1) // 只有 open-a × open-b
+    expect(stats.conflicts.clash).toBe(1) // 只有 open-a → open-b
+    expect(stats.conflicts.pileup).toBe(0) // 当天只剩 2 件未完成
+    expect(stats.conflicts.total).toBe(2)
+  })
+})

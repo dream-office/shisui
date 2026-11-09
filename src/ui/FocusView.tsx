@@ -1,7 +1,8 @@
 import { t } from '@/i18n'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { sortFocusQueue } from 'shisui-core'
 import { useApp } from '@/state/store'
+import { beginFocusSession, endFocusSession } from '@/services/focusLog'
 import TaskRow from './TaskRow'
 import EmptyState from './EmptyState'
 
@@ -20,6 +21,31 @@ export default function FocusView() {
   const safeIndex = active.length === 0 ? 0 : focusIndex % active.length
   const current = active[safeIndex]
   const [busy, setBusy] = useState(false)
+
+  // 专注计时跟随「页面可见」：退出专注、切走标签页、关闭/刷新时落一条记录，
+  // 回到页面再继续计时；真正的异常残留（如进程被杀）由 focusLog 的 4 小时上限兜底。
+  useEffect(() => {
+    beginFocusSession()
+    const end = () => {
+      endFocusSession()
+    }
+    const resume = () => {
+      beginFocusSession()
+    }
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') end()
+      else resume()
+    }
+    window.addEventListener('pagehide', end)
+    window.addEventListener('pageshow', resume)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      window.removeEventListener('pagehide', end)
+      window.removeEventListener('pageshow', resume)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      end()
+    }
+  }, [])
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true)

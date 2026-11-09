@@ -415,7 +415,75 @@ test.describe('统计', () => {
     await expect(page.getByText('本周完成率')).toBeVisible()
     await expect(page.getByText('解析手改率')).toBeVisible()
     await expect(page.getByText('全部在本地计算')).toBeVisible()
+    await expect(page.getByText('未完成逾期分布')).toBeVisible()
+    await expect(page.getByText('冲突体检')).toBeVisible()
+    await expect(page.getByText('近 7 天专注')).toBeVisible()
     await expect(page.locator('.metric-value').first()).toHaveText('—')
+  })
+
+  test('Q2. 有数据时显示逾期分桶/冲突计数/专注时长；320px 不溢出', async ({ page }) => {
+    await page.goto('/')
+
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const localInput = (ms: number) => {
+      const d = new Date(ms)
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+    const now = Date.now()
+    // 一条 2 小时前（逾期 1 天内）+ 两条 2 小时后且只差 15 分钟（时间重叠 + 截止撞车）
+    const seeded: Array<[string, number]> = [
+      ['逾期测试任务', now - 2 * 3_600_000],
+      ['撞车甲', now + 2 * 3_600_000],
+      ['撞车乙', now + 2.25 * 3_600_000],
+    ]
+    for (const [title, dueAt] of seeded) {
+      await page.getByRole('button', { name: '手动添加' }).click()
+      await page.getByLabel('标题').fill(title)
+      await page.getByLabel('截止时间').fill(localInput(dueAt))
+      await page.getByRole('button', { name: '添加', exact: true }).click()
+    }
+
+    // 专注模式：把刚开始的计时回拨 90 秒，退出时就能落一条真实记录（不用等 1 分钟）
+    const nav = page.getByRole('navigation', { name: '主视图' })
+    await nav.getByRole('button', { name: /^日程/ }).click()
+    await page.getByRole('button', { name: '专注模式' }).click()
+    await expect(page.locator('.focus')).toBeVisible()
+    await page.waitForFunction(() => window.sessionStorage.getItem('shisui.focus.active') !== null)
+    await page.evaluate(() => {
+      const raw = window.sessionStorage.getItem('shisui.focus.active')
+      if (!raw) throw new Error('focus session did not start')
+      const active = JSON.parse(raw) as { startedAt: number; loadId: string }
+      active.startedAt -= 90_000
+      window.sessionStorage.setItem('shisui.focus.active', JSON.stringify(active))
+    })
+    await page.locator('.focus').getByRole('button', { name: '退出专注' }).click()
+
+    await nav.getByRole('button', { name: /^统计/ }).click()
+    await expect(page.getByText('还没有数据')).toHaveCount(0)
+    await expect(page.getByText('未完成逾期分布')).toBeVisible()
+    await expect(page.getByText('共 1 件')).toBeVisible()
+    await expect(
+      page.locator('.bucket-row').filter({ hasText: '1 天内' }).locator('strong'),
+    ).toHaveText('1')
+
+    const conflictCount = (label: string) =>
+      page.locator('.conflict-item').filter({ hasText: label }).locator('.conflict-count')
+    await expect(conflictCount('已过期')).toHaveText('1')
+    await expect(conflictCount('时间重叠')).toHaveText('1')
+    await expect(conflictCount('截止撞车')).toHaveText('1')
+    await expect(conflictCount('同日堆积')).toHaveText('0')
+
+    const focusCard = page.locator('.metric').filter({ hasText: '近 7 天专注' })
+    await expect(focusCard.locator('.metric-value')).toHaveText('2 分钟')
+    await expect(focusCard).toContainText('共 1 次 · 今天 2 分钟')
+
+    // 有数据时窄屏布局也不能横向溢出
+    await page.setViewportSize({ width: 320, height: 720 })
+    const size = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }))
+    expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
   })
 })
 
@@ -1320,7 +1388,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await nav.getByRole('button', { name: /^设置/ }).click()
     await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
     const about = page.locator('.about-signature')
-    await expect(page.getByText('拾穗 v1.4.0 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('拾穗 v1.5.0 · AGPL-3.0-or-later')).toBeVisible()
     await expect(page.getByText('作者：dream-office')).toBeVisible()
     await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(
