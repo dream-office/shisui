@@ -66,6 +66,9 @@ test.describe('v1.4 core 动态文本英文', () => {
     await page.locator('.ics-import input[type="file"]').setInputFiles({
       name: 'bad.ics', mimeType: 'text/calendar', buffer: Buffer.from('not a calendar'),
     })
-    await expect(page.locator('.ics-warnings, .ics-error').first()).toContainText('not an iCalendar')
+    await expect(page.locator('.ics-error')).toContainText('not an iCalendar')
+    const icsText = await page.locator('.ics-import').innerText()
+    expect((icsText.match(/not an iCalendar/g) ?? []).length, 'warning 只出现一次').toBe(1)
+    await expect(page.locator('.ics-warnings li')).toHaveCount(0)
   })
 })

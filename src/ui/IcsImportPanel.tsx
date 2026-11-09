@@ -37,6 +37,19 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
           parsed,
         )
       : null
+  const shownWarnings = (() => {
+    const seen = new Set<string>()
+    const rows: { text: string; key: string }[] = []
+    warnings.forEach((warning, index) => {
+      const code = warningCodes[index]
+      const key = code ? `${code.code}:${JSON.stringify(code.params ?? {})}` : warning
+      if (seen.has(key)) return
+      seen.add(key)
+      rows.push({ text: tCore(code, warning), key })
+    })
+    return rows
+  })()
+
   const updating = new Set(plan?.toUpdate.map((task) => `${task.title}|${task.startAt ?? task.dueAt}`) ?? [])
   const skippedInFile = new Set(plan?.skipped.map((task) => `${task.title}|${task.startAt ?? task.dueAt}`) ?? [])
 
@@ -54,13 +67,16 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
       const out = importIcs(text, {
         makeId: (index, uid) => `ics_${Date.now()}_${index}_${(uid ?? 'noid').replace(/[^a-zA-Z0-9-_@.]/g, '_')}`,
       })
-      setWarnings(out.warnings)
-      setWarningCodes(out.warningCodes ?? [])
       if (out.tasks.length === 0) {
+        // 没有可导入事件：只显示错误条，避免 error + warning 双渲染同一条
         const firstCode = out.warningCodes?.[0]
-      setError(tCore(firstCode, out.warnings[0]) || t('这个文件里没有可以导入的事件'))
+        setWarnings([])
+        setWarningCodes([])
+        setError(tCore(firstCode, out.warnings[0]) || t('这个文件里没有可以导入的事件'))
         return
       }
+      setWarnings(out.warnings)
+      setWarningCodes(out.warningCodes ?? [])
       setParsed(out.tasks)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('读取文件失败'))
@@ -107,12 +123,12 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
 
       {error && <p className="ics-error">{error}</p>}
 
-      {warnings.length > 0 && (
+      {shownWarnings.length > 0 && (
         <ul className="ics-warnings">
-          {warnings.slice(0, 6).map((warning, index) => (
-            <li key={`${index}-${warning}`}>{tCore(warningCodes[index], warning)}</li>
+          {shownWarnings.slice(0, 6).map((warning) => (
+            <li key={warning.key}>{warning.text}</li>
           ))}
-          {warnings.length > 6 && <li>{t('另有 {n} 条提示', { n: warnings.length - 6 })}</li>}
+          {shownWarnings.length > 6 && <li>{t('另有 {n} 条提示', { n: shownWarnings.length - 6 })}</li>}
         </ul>
       )}
 

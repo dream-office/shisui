@@ -11,6 +11,8 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
+> **当前版本**：app 1.4.0 · core 1.2.0 · DB v4 · backup schema 4
+
 ---
 
 ## 为什么叫「拾穗」
