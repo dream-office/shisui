@@ -11,6 +11,7 @@
  * 「本周日」双候选的标题与时间相同但 choiceGroup 不同，因此不会被误合并。
  */
 import type { ParsedTask } from './types.js'
+import { message, type LocalizedMessage } from './messages.js'
 import { parseNotice } from './ruleParser.js'
 
 export interface BatchSection {
@@ -133,17 +134,20 @@ export interface BatchParseResult {
   tasks: ParsedTask[]
   duplicates: ParsedTask[]
   warnings: string[]
+  warningCodes?: LocalizedMessage[]
 }
 
 /** 一次粘贴多段 → 全部候选（已去重） */
 export function parseNoticeBatch(raw: string, ref: Date = new Date()): BatchParseResult {
   const sections = splitNoticeSections(raw)
   const warnings: string[] = []
+  const warningCodes: LocalizedMessage[] = []
   const all: ParsedTask[] = []
 
   sections.forEach((section) => {
     const result = parseNotice(section.raw, ref)
     warnings.push(...result.warnings.map((warning) => `第 ${section.index + 1} 段：${warning}`))
+    warningCodes.push(...(result.warningCodes ?? []))
     // 跨段 id 可能撞车（同文本 + 同段内序号），加段前缀保证唯一
     for (const task of result.tasks) {
       all.push({ ...task, id: `s${section.index}_${task.id}` })
@@ -152,8 +156,14 @@ export function parseNoticeBatch(raw: string, ref: Date = new Date()): BatchPars
 
   const { kept, duplicates } = dedupeParsedTasks(all)
 
-  if (sections.length === 0) warnings.push('没有识别到可解析的段落')
-  if (duplicates.length > 0) warnings.push(`有 ${duplicates.length} 条重复内容已合并`)
+  if (sections.length === 0) {
+    warnings.push('没有识别到可解析的段落')
+    warningCodes.push(message('warning.noSections'))
+  }
+  if (duplicates.length > 0) {
+    warnings.push(`有 ${duplicates.length} 条重复内容已合并`)
+    warningCodes.push(message('warning.duplicates', { count: duplicates.length }))
+  }
 
-  return { sections: sections.length, tasks: kept, duplicates, warnings }
+  return { sections: sections.length, tasks: kept, duplicates, warnings, warningCodes }
 }

@@ -9,6 +9,7 @@
  */
 import type { ImportBatch, ParsedTask, StoredTask, TaskSeries } from './types.js'
 import { migrateTaskV2toV3 } from './migrate.js'
+import { message, type LocalizedMessage } from './messages.js'
 
 export const BACKUP_FORMAT = 'shisui-backup'
 /** 备份格式版本：未来格式升级时递增；旧版本仍可导入 */
@@ -39,6 +40,7 @@ export interface ShisuiBackup {
 export interface BackupValidation {
   ok: boolean
   errors: string[]
+  errorCodes?: LocalizedMessage[]
   backup: ShisuiBackup | null
 }
 
@@ -65,15 +67,17 @@ function asNumberOrNull(value: unknown): number | null {
 }
 
 /** 白名单映射一条任务；缺字段按 v2/v3/v4 迁移默认补齐；未知字段丢弃 */
-function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTask | null {
+function normalizeTask(raw: unknown, index: number, errors: string[], errorCodes: LocalizedMessage[]): StoredTask | null {
   if (!isRecord(raw)) {
     errors.push(`第 ${index + 1} 条任务不是对象`)
+    errorCodes.push(message('backup.taskNotObject', { index: index + 1 }))
     return null
   }
   const id = asString(raw.id)
   const title = asString(raw.title)
   if (!id || !title) {
     errors.push(`第 ${index + 1} 条任务缺少 id 或 title`)
+    errorCodes.push(message('backup.taskMissingIdTitle', { index: index + 1 }))
     return null
   }
 
@@ -122,6 +126,14 @@ function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTas
         ? raw.confidence
         : 'medium',
     reasons: Array.isArray(raw.reasons) ? raw.reasons.filter((item): item is string => typeof item === 'string') : [],
+    reasonCodes: Array.isArray(raw.reasonCodes)
+      ? raw.reasonCodes
+          .filter((item): item is Record<string, unknown> => isRecord(item) && typeof item.code === 'string')
+          .map((item) => ({
+            code: item.code as string,
+            ...(isRecord(item.params) ? { params: item.params as Record<string, string | number> } : {}),
+          }))
+      : undefined,
     engine:
       raw.engine === 'rule' || raw.engine === 'llm' || raw.engine === 'hybrid' || raw.engine === 'manual' || raw.engine === 'import'
         ? raw.engine
@@ -135,9 +147,10 @@ function normalizeTask(raw: unknown, index: number, errors: string[]): StoredTas
   }
 }
 
-function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSeries | null {
+function normalizeSeries(raw: unknown, index: number, errors: string[], errorCodes: LocalizedMessage[]): TaskSeries | null {
   if (!isRecord(raw)) {
     errors.push(`第 ${index + 1} 条系列不是对象`)
+    errorCodes.push(message('backup.seriesNotObject', { index: index + 1 }))
     return null
   }
   const id = asString(raw.id)
@@ -146,6 +159,7 @@ function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSer
   const startAt = typeof raw.startAt === 'number' && Number.isFinite(raw.startAt) ? raw.startAt : null
   if (!id || !rrule || !title || startAt === null) {
     errors.push(`第 ${index + 1} 条系列缺少 id/rrule/title/startAt`)
+    errorCodes.push(message('backup.seriesMissing', { index: index + 1 }))
     return null
   }
   return {
@@ -174,9 +188,10 @@ function normalizeSeries(raw: unknown, index: number, errors: string[]): TaskSer
   }
 }
 
-function normalizeBatch(raw: unknown, index: number, errors: string[]): ImportBatch | null {
+function normalizeBatch(raw: unknown, index: number, errors: string[], errorCodes: LocalizedMessage[]): ImportBatch | null {
   if (!isRecord(raw)) {
     errors.push(`第 ${index + 1} 条历史不是对象`)
+    errorCodes.push(message('backup.batchNotObject', { index: index + 1 }))
     return null
   }
   const id = asString(raw.id)
@@ -184,6 +199,7 @@ function normalizeBatch(raw: unknown, index: number, errors: string[]): ImportBa
   const rawText = asString(raw.rawText)
   if (!id || createdAt === null || rawText === null) {
     errors.push(`第 ${index + 1} 条历史缺少 id/createdAt/rawText`)
+    errorCodes.push(message('backup.batchMissing', { index: index + 1 }))
     return null
   }
   return {
@@ -204,7 +220,7 @@ export function buildBackup(input: BackupInput): ShisuiBackup {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     exportedAt: new Date(input.now ?? Date.now()).toISOString(),
     tasks: input.tasks.map((task, index) => {
-      const normalized = normalizeTask(task, index, [])
+      const normalized = normalizeTask(task, index, [], [])
       return normalized as StoredTask
     }),
     series: input.series.map((item) => ({ ...item })),
@@ -219,6 +235,7 @@ export function buildBackup(input: BackupInput): ShisuiBackup {
  */
 export function validateBackup(raw: unknown): BackupValidation {
   const errors: string[] = []
+  const errorCodes: LocalizedMessage[] = []
   let data: unknown = raw
   if (typeof raw === 'string') {
     try {
@@ -232,36 +249,61 @@ export function validateBackup(raw: unknown): BackupValidation {
         return {
           ok: false,
           errors: ['备份文件不完整（可能被截断），请重新导出后再恢复'],
+          errorCodes: [message('backup.truncated')],
           backup: null,
         }
       }
-      return { ok: false, errors: ['不是合法的 JSON 文件'], backup: null }
+      return { ok: false, errors: ['不是合法的 JSON 文件'], errorCodes: [message('backup.badJson')], backup: null }
     }
   }
 
   if (!isRecord(data)) {
-    return { ok: false, errors: ['备份内容不是对象'], backup: null }
+    return { ok: false, errors: ['备份内容不是对象'], errorCodes: [message('backup.notObject')], backup: null }
   }
   if (data.format !== BACKUP_FORMAT) {
-    return { ok: false, errors: [`不是拾穗备份（format 应为 ${BACKUP_FORMAT}）`], backup: null }
+    return {
+      ok: false,
+      errors: [`不是拾穗备份（format 应为 ${BACKUP_FORMAT}）`],
+      errorCodes: [message('backup.notBackup', { format: BACKUP_FORMAT })],
+      backup: null,
+    }
   }
   // v2 时代的老备份没有 backupVersion：按旧格式接受，缺字段由迁移补默认
   const backupVersion = data.backupVersion ?? 0
   if (typeof backupVersion !== 'number' || !Number.isFinite(backupVersion)) {
-    return { ok: false, errors: ['backupVersion 不合法'], backup: null }
+    return { ok: false, errors: ['backupVersion 不合法'], errorCodes: [message('backup.badBackupVersion')], backup: null }
   }
   if (backupVersion > BACKUP_VERSION) {
-    return { ok: false, errors: [`备份格式过新（${backupVersion}），当前只支持 ${BACKUP_VERSION}`], backup: null }
+    return {
+      ok: false,
+      errors: [`备份格式过新（${backupVersion}），当前只支持 ${BACKUP_VERSION}`],
+      errorCodes: [message('backup.tooNew', { version: backupVersion, supported: BACKUP_VERSION })],
+      backup: null,
+    }
   }
   if (typeof data.schemaVersion !== 'number' || !Number.isFinite(data.schemaVersion)) {
-    return { ok: false, errors: ['缺少合法的 schemaVersion'], backup: null }
+    return { ok: false, errors: ['缺少合法的 schemaVersion'], errorCodes: [message('backup.missingSchemaVersion')], backup: null }
   }
   if (data.schemaVersion > BACKUP_SCHEMA_VERSION) {
-    return { ok: false, errors: [`备份数据版本过新（${data.schemaVersion}），当前只支持 ${BACKUP_SCHEMA_VERSION}`], backup: null }
+    return {
+      ok: false,
+      errors: [`备份数据版本过新（${data.schemaVersion}），当前只支持 ${BACKUP_SCHEMA_VERSION}`],
+      errorCodes: [message('backup.schemaTooNew', { version: data.schemaVersion, supported: BACKUP_SCHEMA_VERSION })],
+      backup: null,
+    }
   }
-  if (!Array.isArray(data.tasks)) errors.push('缺少 tasks 数组')
-  if (!Array.isArray(data.series)) errors.push('缺少 series 数组')
-  if (!Array.isArray(data.batches)) errors.push('缺少 batches 数组')
+  if (!Array.isArray(data.tasks)) {
+    errors.push('缺少 tasks 数组')
+    errorCodes.push(message('backup.missingTasks'))
+  }
+  if (!Array.isArray(data.series)) {
+    errors.push('缺少 series 数组')
+    errorCodes.push(message('backup.missingSeries'))
+  }
+  if (!Array.isArray(data.batches)) {
+    errors.push('缺少 batches 数组')
+    errorCodes.push(message('backup.missingBatches'))
+  }
 
   const tasks: StoredTask[] = []
   const series: TaskSeries[] = []
@@ -269,19 +311,19 @@ export function validateBackup(raw: unknown): BackupValidation {
 
   if (Array.isArray(data.tasks)) {
     data.tasks.forEach((task, index) => {
-      const normalized = normalizeTask(task, index, errors)
+      const normalized = normalizeTask(task, index, errors, errorCodes)
       if (normalized) tasks.push(normalized)
     })
   }
   if (Array.isArray(data.series)) {
     data.series.forEach((item, index) => {
-      const normalized = normalizeSeries(item, index, errors)
+      const normalized = normalizeSeries(item, index, errors, errorCodes)
       if (normalized) series.push(normalized)
     })
   }
   if (Array.isArray(data.batches)) {
     data.batches.forEach((item, index) => {
-      const normalized = normalizeBatch(item, index, errors)
+      const normalized = normalizeBatch(item, index, errors, errorCodes)
       if (normalized) batches.push(normalized)
     })
   }

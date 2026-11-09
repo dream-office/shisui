@@ -3,6 +3,7 @@
  * 合并策略必须保守 —— 宁可保留规则结果让人确认，也不能让模型把已确定的时间改错。
  */
 import type { Confidence, ParsedTask } from './types.js'
+import { message } from './messages.js'
 
 const CONF_RANK: Record<Confidence, number> = { low: 0, medium: 1, high: 2 }
 
@@ -88,6 +89,7 @@ export function mergeTasks(ruleTasks: ParsedTask[], llmTasks: ParsedTask[]): Mer
       startAt: ruleTask.startAt ?? match.startAt,
       confidence: higher(ruleTask.confidence, match.confidence),
       reasons: [...ruleTask.reasons, 'AI 也识别到这一条，双引擎一致'],
+      reasonCodes: [...(ruleTask.reasonCodes ?? []), message('reason.aiAgreed')],
       engine: 'hybrid',
     })
   }
@@ -117,6 +119,7 @@ export function mergeTasks(ruleTasks: ParsedTask[], llmTasks: ParsedTask[]): Mer
       location: isUrlLike(task.location) ? null : task.location,
       confidence: CONF_RANK[task.confidence] > CONF_RANK.medium ? 'medium' : task.confidence,
       reasons: [...task.reasons, '规则引擎未命中，来自 AI 补充，请重点核对'],
+      reasonCodes: [...(task.reasonCodes ?? []), message('reason.aiOnly')],
     })
   }
 

@@ -3,6 +3,18 @@
  * 纯函数，放在 core 里，测试不需要 DOM/存储。
  */
 import type { ParsedTask, TaskKind } from './types.js'
+import { message } from './messages.js'
+
+export type ManualErrorCode = 'manual.emptyTitle' | 'manual.noTime'
+
+export class ManualTaskError extends Error {
+  code: ManualErrorCode
+  constructor(code: ManualErrorCode, message: string) {
+    super(message)
+    this.name = 'ManualTaskError'
+    this.code = code
+  }
+}
 
 export interface ManualTaskInput {
   /** 标题，必填 */
@@ -22,12 +34,12 @@ export interface ManualTaskInput {
 export function createManualTask(input: ManualTaskInput, id: string): ParsedTask {
   const title = input.title.trim()
   if (!title) {
-    throw new Error('标题不能为空')
+    throw new ManualTaskError('manual.emptyTitle', '标题不能为空')
   }
   const dueAt = input.dueAt ?? null
   const startAt = input.startAt ?? null
   if (dueAt === null && startAt === null) {
-    throw new Error('至少填一个时间：截止时间或开始时间')
+    throw new ManualTaskError('manual.noTime', '至少填一个时间：截止时间或开始时间')
   }
 
   const notes = input.notes?.trim()
@@ -42,6 +54,7 @@ export function createManualTask(input: ManualTaskInput, id: string): ParsedTask
     rawText: notes ? `[手动添加] ${notes}` : `[手动添加] ${title}`,
     confidence: 'high',
     reasons: ['手动添加：由你直接填写，规则引擎没有参与判断'],
+    reasonCodes: [message('reason.manual')],
     engine: 'manual',
   }
 }

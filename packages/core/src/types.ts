@@ -1,3 +1,5 @@
+import type { LocalizedMessage } from './messages.js'
+
 /**
  * 领域类型：全部集中在这里，UI / 数据层 / 解析引擎都只依赖这一份定义。
  * 设计原则：core 层不 import 任何 React / Dexie / 浏览器 API，保证可单测、可移植。
@@ -45,6 +47,8 @@ export interface ParsedTask {
   confidence: Confidence
   /** 可解释性：为什么给出这个判定，直接展示给用户 */
   reasons: string[]
+  /** 与 reasons 对齐的可本地化消息；旧数据可能没有 */
+  reasonCodes?: LocalizedMessage[]
   /** 谁解析出来的；manual = 用户手动添加，import = 从日历文件导入 */
   engine: 'rule' | 'llm' | 'hybrid' | 'manual' | 'import'
   /** 日历文件里的 UID：再导入同一事件时用于去重 / 更新；其它来源为 null */
@@ -53,6 +57,8 @@ export interface ParsedTask {
   choiceGroup?: string
   /** 该候选在组内的标签，如「本周」/「下周」 */
   choiceLabel?: string
+  /** 二选一标签的稳定 code（旧数据没有时回退 choiceLabel） */
+  choiceCode?: 'choice.thisWeek' | 'choice.nextWeek'
   /** 结束时刻（不含），与 ICS DTEND 一致；null = 点事件 */
   endAt?: number | null
   /** 全天事件 */

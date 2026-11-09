@@ -4,7 +4,7 @@ import EmptyState from './EmptyState'
 import { startOfDay } from 'shisui-core'
 import { filterTasks, parseRRule, scanConflicts, weeklyLoad } from 'shisui-core'
 import { describeRule } from 'shisui-core'
-import { describeRuleI18n, formatWeekdayI18n, getLang, undoLabelI18n } from '@/i18n'
+import { describeRuleI18n, formatWeekdayI18n, getLang, tCore, undoLabelI18n } from '@/i18n'
 import { tasksToIcs } from 'shisui-core'
 import type { StoredTask } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -242,8 +242,8 @@ export default function PlanView() {
           <ul>
             {conflicts.map((note) => (
               <li key={note.id} className={`conflict level-${note.level}`}>
-                <strong>{note.title}</strong>
-                <p>{note.detail}</p>
+                <strong>{tCore(note.titleCode, note.title)}</strong>
+                <p>{tCore(note.detailCode, note.detail)}</p>
               </li>
             ))}
           </ul>

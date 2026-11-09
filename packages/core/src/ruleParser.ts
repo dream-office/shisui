@@ -8,6 +8,7 @@
  * 大模型作为「增强引擎」叠加在上面（core/llm.ts），两者结果合并后取高置信度者。
  */
 import type { Confidence, ParsedTask, TaskKind } from './types.js'
+import { CHANNEL_CODE, KIND_CODE, message, timeNoteCode, type LocalizedMessage } from './messages.js'
 import { extractTime, setClock, startOfDay, type TimeHit } from './time.js'
 import { CHOICE_NEXT_WEEK, CHOICE_THIS_WEEK } from './choice.js'
 import {
@@ -246,6 +247,7 @@ function localDateKey(ms: number): string {
 /** 解析一条候选句；overrideDateMs 用于把时间挪到另一个候选日期 */
 export function parseSegment(segment: string, ref: Date, index: number, overrideDateMs?: number, inheritedDue?: number): ParsedTask | null {
   const reasons: string[] = []
+  const reasonCodes: LocalizedMessage[] = []
   if (NEGATIVE_RE.test(segment)) return null
 
   const chapter = CHAPTER_RE.exec(segment)
@@ -261,7 +263,10 @@ export function parseSegment(segment: string, ref: Date, index: number, override
   let hit = extractTime(segment, ref)
   if (hit && overrideDateMs !== undefined) hit = overrideHitDate(hit, overrideDateMs)
   const { kind, label } = detectKind(body)
-  if (label) reasons.push(`命中「${label}」关键词`)
+  if (label) {
+    reasons.push(`命中「${label}」关键词`)
+    reasonCodes.push(message('reason.kindHit', { label: KIND_CODE[label] ?? label }))
+  }
 
   // 同一通知只有一个截止时间时，没写时间的行动句沿用这个截止（不改变「按行动拆」）
   if (!hit && inheritedDue !== undefined) {
@@ -275,6 +280,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     let location = labelMatch ? labelMatch[1].trim() : locationMatch ? locationMatch[0].replace(/\s+/g, '') : null
     if (location && /(?:https?:|www\.|会议号|会议密码)/i.test(location)) location = null
     reasons.push('沿用本通知的唯一截止时间')
+    reasonCodes.push(message('reason.inheritedDeadline'))
     return {
       id: stableId(segment, index),
       title,
@@ -288,6 +294,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
       rawText: segment,
       confidence: 'medium',
       reasons,
+      reasonCodes,
       engine: 'rule',
       rrule: null,
     }
@@ -300,6 +307,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     if (rule) {
       rrule = ruleToRRule(rule)
       reasons.push(`重复规则：${describeRule(rule)}`)
+      reasonCodes.push(message('reason.recurrence', { rule: rrule }))
     }
   }
 
@@ -319,7 +327,12 @@ export function parseSegment(segment: string, ref: Date, index: number, override
   if (hit) {
     title = stripTimePhrases(segment, hit)
     reasons.push(`时间短语「${hit.matched}」`)
-    if (hit.note) reasons.push(hit.note)
+    reasonCodes.push(message('reason.timePhrase', { phrase: hit.matched }))
+    if (hit.note) {
+      reasons.push(hit.note)
+      const code = timeNoteCode(hit.note)
+      if (code) reasonCodes.push(code)
+    }
   }
   if (rrule) {
     title = stripRecurrencePhrase(title)
@@ -331,19 +344,28 @@ export function parseSegment(segment: string, ref: Date, index: number, override
 
   const fieldText = segment.replace(URL_RE, ' ')
   const channel = detectChannel(fieldText)
-  if (channel) reasons.push(`提交渠道：${channel}`)
+  if (channel) {
+    reasons.push(`提交渠道：${channel}`)
+    reasonCodes.push(message('reason.channel', { channel: CHANNEL_CODE[channel] ?? channel }))
+  }
 
   const labelMatch = LOCATION_LABEL_RE.exec(fieldText)
   const locationMatch = LOCATION_RE.exec(fieldText)
   let location = labelMatch ? labelMatch[1].trim() : locationMatch ? locationMatch[0].replace(/\s+/g, '') : null
   // URL / 会议号不是地点
   if (location && /(?:https?:|www\.|会议号|会议密码)/i.test(location)) location = null
-  if (location) reasons.push(`地点：${location}`)
+  if (location) {
+    reasons.push(`地点：${location}`)
+    reasonCodes.push(message('reason.location', { location }))
+  }
   const url = URL_CAPTURE_RE.exec(segment)?.[0] ?? null
   const note = null
 
   const isDeadline = hit?.isDeadline ?? false
-  if (isDeadline) reasons.push('含截止语义（前 / 之前 / 截止）')
+  if (isDeadline) {
+    reasons.push('含截止语义（前 / 之前 / 截止）')
+    reasonCodes.push(message('reason.deadline'))
+  }
 
   // 截止类事项默认 23:59；会议 / 考试 / 评审这类「有开始时刻」的事项默认 09:00。
   // 但一句话里出现「前 / 截止」时，即使类型是评审也按截止处理（「11月18日前完成答辩PPT」是截止，不是开会）。
@@ -362,6 +384,9 @@ export function parseSegment(segment: string, ref: Date, index: number, override
         ? '结构基本清楚，建议顺手核对'
         : '信息不足或有歧义，请务必人工确认',
   )
+  reasonCodes.push(
+    message(confidence === 'high' ? 'reason.confidence.high' : confidence === 'medium' ? 'reason.confidence.medium' : 'reason.confidence.low'),
+  )
 
   return {
     id: stableId(segment, index),
@@ -376,6 +401,7 @@ export function parseSegment(segment: string, ref: Date, index: number, override
     rawText: segment,
     confidence,
     reasons,
+    reasonCodes,
     engine: 'rule',
     rrule,
   }
@@ -415,16 +441,20 @@ export function parseSegmentCandidates(segment: string, ref: Date, index: number
           id: `${thisWeek.id}@this-week`,
           choiceGroup: group,
           choiceLabel: CHOICE_THIS_WEEK,
+          choiceCode: 'choice.thisWeek',
           confidence: 'low',
           reasons: [...thisWeek.reasons, note],
+          reasonCodes: [...(thisWeek.reasonCodes ?? []), message('reason.weekBoundary')],
         },
         {
           ...nextWeek,
           id: `${nextWeek.id}@next-week`,
           choiceGroup: group,
           choiceLabel: CHOICE_NEXT_WEEK,
+          choiceCode: 'choice.nextWeek',
           confidence: 'low',
           reasons: [...nextWeek.reasons, note],
+          reasonCodes: [...(nextWeek.reasonCodes ?? []), message('reason.weekBoundary')],
         },
       ]
     }
@@ -597,6 +627,7 @@ export function parseStructuredNotice(raw: string, ref: Date = new Date()): Pars
       rawText: [lines[heading.line], ...blockLines].join('\n'),
       confidence: 'high',
       reasons: ['按编号识别为独立事项', '时间按考试时间区间取起止'],
+      reasonCodes: [message('reason.structuredAction'), message('reason.structuredRange')],
       engine: 'rule',
       rrule: null,
     })
@@ -607,13 +638,14 @@ export function parseStructuredNotice(raw: string, ref: Date = new Date()): Pars
 export interface ParseResult {
   tasks: ParsedTask[]
   warnings: string[]
+  warningCodes?: LocalizedMessage[]
 }
 
 /** 一段通知 → 一组待办 */
 export function parseNotice(raw: string, ref: Date = new Date()): ParseResult {
   const structured = parseStructuredNotice(raw, ref)
   if (structured.length >= 2) {
-    return { tasks: structured, warnings: [] }
+    return { tasks: structured, warnings: [], warningCodes: [] }
   }
 
   const segments = splitSegments(raw)
@@ -636,10 +668,19 @@ export function parseNotice(raw: string, ref: Date = new Date()): ParseResult {
   }
 
   const warnings: string[] = []
+  const warningCodes: LocalizedMessage[] = []
 
-  if (segments.length === 0) warnings.push('这段文本太短，没找到可解析的内容')
-  else if (tasks.length === 0) warnings.push('识别到文字，但没找到带时间的待办事项')
-  if (tasks.some((t) => t.confidence === 'low')) warnings.push('有低置信度条目，已高亮标出，请人工核对')
+  if (segments.length === 0) {
+    warnings.push('这段文本太短，没找到可解析的内容')
+    warningCodes.push(message('warning.tooShort'))
+  } else if (tasks.length === 0) {
+    warnings.push('识别到文字，但没找到带时间的待办事项')
+    warningCodes.push(message('warning.noTask'))
+  }
+  if (tasks.some((t) => t.confidence === 'low')) {
+    warnings.push('有低置信度条目，已高亮标出，请人工核对')
+    warningCodes.push(message('warning.lowConfidence'))
+  }
 
-  return { tasks, warnings }
+  return { tasks, warnings, warningCodes }
 }

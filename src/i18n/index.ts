@@ -919,3 +919,21 @@ export function countdownI18n(ms: number, ref: Date = new Date()): { text: strin
   if (hours >= 1) return { text: `剩 ${hours} 小时`, tone }
   return { text: `剩 ${minutes} 分钟`, tone }
 }
+
+
+import { CORE_MESSAGES } from './core'
+import type { LocalizedMessage } from 'shisui-core'
+
+/** 渲染 core 的 code+params；缺 key 时回退旧中文，保证旧数据不崩 */
+export function tCore(msg?: LocalizedMessage, fallback?: string): string {
+  if (!msg) return fallback ?? ''
+  const entry = CORE_MESSAGES[msg.code]
+  const lang = getLang()
+  let text = entry ? entry[lang] : (fallback ?? msg.code)
+  for (const [key, raw] of Object.entries(msg.params ?? {})) {
+    const value = String(raw)
+    const nested = CORE_MESSAGES[value]
+    text = text.split(`{${key}}`).join(nested ? nested[lang] : value)
+  }
+  return text
+}

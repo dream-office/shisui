@@ -6,6 +6,7 @@
  * 应用层（AGPL）通过普通 import 使用它；任何别的项目也可以。
  */
 export * from './types.js'
+export * from './messages.js'
 export * from './time.js'
 export * from './ruleParser.js'
 export * from './conflict.js'

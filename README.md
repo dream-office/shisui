@@ -11,6 +11,8 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
+> **当前版本**：app 1.4.0 · core 1.2.0 · DB v4 · backup schema 4
+
 ---
 
 ## 为什么叫「拾穗」
@@ -218,7 +220,7 @@ iOS Safari/PWA **没有系统分享目标**（Android 可以在分享面板里�
 12. **标签统一小写**：输入、搜索、显示都归一为小写。
 13. **系列编辑不能改重复规则**：改规则请先「结束重复」再新建；「改整个系列」只同步展示字段与时刻，不改日期/频率。
 14. **加密备份忘记密码无法恢复**：密码不存任何地方。
-15. **英文界面下部分动态文本仍为中文**：core 生成的解析理由、冲突详情、ICS 导入警告暂为中文，计划 v1.3 抽取结构化文案。
+15. **旧数据的动态文本回退**：core（1.2.0 起）输出 `reasonCodes/warningCodes` 等 code+params，英文界面会本地化；旧任务/旧备份没有 code 时仍显示原文（可能是中文），属预期兼容行为。
 16. **低内存设备提示**：依赖 `navigator.deviceMemory`，仅部分浏览器（Chrome/Edge）支持；不支持时不显示提示，不影响使用。
 8. **批量粘贴会丢弃过短的段**：切分后非空白字符少于 4 的段会被丢弃——「好的」「收到」这类寒暄不会变成待办。
 

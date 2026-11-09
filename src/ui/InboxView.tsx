@@ -1,4 +1,4 @@
-import { t } from '@/i18n'
+import { t, tCore } from '@/i18n'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { appendClipboardText } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -171,6 +171,7 @@ export default function InboxView() {
   const stage = useApp((s) => s.stage)
   const engineNote = useApp((s) => s.engineNote)
   const warnings = useApp((s) => s.warnings)
+  const warningCodes = useApp((s) => s.warningCodes)
   const parse = useApp((s) => s.parse)
   const acceptCandidates = useApp((s) => s.acceptCandidates)
   const dismissCandidate = useApp((s) => s.dismissCandidate)
@@ -391,8 +392,8 @@ export default function InboxView() {
 
       {warnings.length > 0 && (
         <ul className="warnings">
-          {warnings.map((warning) => (
-            <li key={warning}>{t(warning)}</li>
+          {warnings.map((warning, index) => (
+            <li key={`${index}-${warning}`}>{tCore(warningCodes?.[index], warning)}</li>
           ))}
         </ul>
       )}
@@ -431,7 +432,7 @@ export default function InboxView() {
                       className={`btn btn-sm ${choiceSelection[group] === task.id ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => setChoiceSelection((current) => ({ ...current, [group]: task.id }))}
                     >
-                      {task.choiceLabel ? t(task.choiceLabel) : t('候选')}
+                      {task.choiceLabel ? tCore(task.choiceCode ? { code: task.choiceCode } : undefined, task.choiceLabel) : t('候选')}
                     </button>
                   ))}
                 </span>

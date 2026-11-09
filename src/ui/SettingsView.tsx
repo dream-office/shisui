@@ -1,4 +1,4 @@
-import { t, setLang } from '@/i18n'
+import { t, tCore, setLang } from '@/i18n'
 import { useRef, useState } from 'react'
 import { version as appVersion } from '../../package.json'
 import {
@@ -63,7 +63,7 @@ export default function SettingsView() {
       try {
         assertPassword(password)
       } catch (err) {
-        setError(err instanceof BackupCryptoError ? err.message : t('密码不合法'))
+        setError(err instanceof BackupCryptoError ? tCore({ code: `crypto.${err.code}` }, err.message) : t('密码不合法'))
         return
       }
       if (password !== confirm) {
@@ -99,7 +99,7 @@ export default function SettingsView() {
     const result = validateBackup(text)
     if (!result.ok || !result.backup) {
       setPreview(null)
-      setError(result.errors[0] ?? t('备份文件不合法'))
+      setError(result.errorCodes?.[0] ? tCore(result.errorCodes[0], result.errors[0]) : (result.errors[0] ?? t('备份文件不合法')))
       return
     }
     setPreview({
@@ -119,7 +119,7 @@ export default function SettingsView() {
       const plaintext = await decryptBackup(pendingEncrypted, decryptPassword)
       const result = validateBackup(plaintext)
       if (!result.ok || !result.backup) {
-        setError(result.errors[0] ?? t('解密后的备份不合法'))
+        setError(result.errorCodes?.[0] ? tCore(result.errorCodes[0], result.errors[0]) : (result.errors[0] ?? t('解密后的备份不合法')))
         return
       }
       setPendingEncrypted(null)
@@ -132,7 +132,7 @@ export default function SettingsView() {
         exportedAt: result.backup.exportedAt,
       })
     } catch (err) {
-      setError(err instanceof BackupCryptoError ? err.message : t('解密失败'))
+      setError(err instanceof BackupCryptoError ? tCore({ code: `crypto.${err.code}` }, err.message) : t('解密失败'))
     } finally {
       setBusy(false)
     }
@@ -143,7 +143,7 @@ export default function SettingsView() {
     const result = await restoreBackup(preview.text)
     setPreview(null)
     if (!result.ok) {
-      setError(result.errors[0] ?? t('恢复失败'))
+      setError(result.errorCodes?.[0] ? tCore(result.errorCodes[0], result.errors[0]) : (result.errors[0] ?? t('恢复失败')))
       return
     }
     setDone(t('已恢复 {n} 条任务、{series} 个系列', { n: result.counts?.tasks ?? 0, series: result.counts?.series ?? 0 }))

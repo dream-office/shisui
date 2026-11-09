@@ -1,4 +1,4 @@
-import { t } from '@/i18n'
+import { t, tCore } from '@/i18n'
 import { useState } from 'react'
 import { defaultChoiceSelection, toggleChoiceSelection, type ParsedTask } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -70,7 +70,7 @@ export default function BatchPreview({
               <span className="batch-title">{task.title}</span>
             </label>
             <span className="batch-time muted">{formatWhen(task)}</span>
-            {task.choiceLabel && <span className="batch-chip">{task.choiceLabel}</span>}
+            {task.choiceLabel && <span className="batch-chip">{tCore(task.choiceCode ? { code: task.choiceCode } : undefined, task.choiceLabel)}</span>}
             {task.confidence === 'low' && <span className="batch-chip is-warn">{t('待核对')}</span>}
           </li>
         ))}
