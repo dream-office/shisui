@@ -23,7 +23,7 @@ function task(title: string, at: number, extra = {}) {
 
 describe('v1.4 core 消息 code 双轨', () => {
   it('reasons 与 reasonCodes 对齐，且含 kind code', () => {
-    const result = parseNotice(SAMPLE_WORK, new Date('2026-11-08T10:00:00+08:00'))
+    const result = parseNotice(SAMPLE_WORK, new Date(2026, 10, 8, 10, 0, 0))
     expect(result.tasks.length).toBeGreaterThan(0)
     for (const parsed of result.tasks) {
       expect(parsed.reasonCodes, parsed.title).toBeDefined()
@@ -33,7 +33,7 @@ describe('v1.4 core 消息 code 双轨', () => {
   })
 
   it('二选一标签带 choiceCode', () => {
-    const result = parseNotice('本周日 23:59 前交实验报告', new Date('2026-11-08T10:00:00+08:00'))
+    const result = parseNotice('本周日 23:59 前交实验报告', new Date(2026, 10, 8, 10, 0, 0))
     const labels = result.tasks.map((t) => t.choiceCode)
     expect(labels).toContain('choice.thisWeek')
     expect(labels).toContain('choice.nextWeek')
@@ -46,7 +46,7 @@ describe('v1.4 core 消息 code 双轨', () => {
   })
 
   it('冲突四类都有 titleCode/detailCode', () => {
-    const now = new Date('2026-11-08T10:00:00+08:00')
+    const now = new Date(2026, 10, 8, 10, 0, 0)
     const notes = scanConflicts(
       [
         task('A', now.getTime() - 60_000),
@@ -73,7 +73,7 @@ describe('v1.4 core 消息 code 双轨', () => {
   })
 
   it('batch 空文本 / 重复有 warningCodes', () => {
-    const empty = parseNoticeBatch('', new Date('2026-11-08T10:00:00+08:00'))
+    const empty = parseNoticeBatch('', new Date(2026, 10, 8, 10, 0, 0))
     expect(empty.warningCodes?.some((m) => m.code === 'warning.noSections')).toBe(true)
   })
 
