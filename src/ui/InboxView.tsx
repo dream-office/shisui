@@ -230,7 +230,7 @@ export default function InboxView() {
           spellCheck={false}
         />
         {pasteError && (
-          <p className="import-error" role="alert">
+          <p className="import-error error-state" role="alert">
             {pasteError}
           </p>
         )}
@@ -461,7 +461,7 @@ export default function InboxView() {
       )}
 
       {candidates.length === 0 && !parsing && (
-        <section className="card">
+        <section className="card empty">
           <EmptyState
             title={t('从一条群通知开始')}
             body={t('贴一段群消息，拾穗会替你拆成待办。')}

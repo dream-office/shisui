@@ -695,6 +695,7 @@ em {
 }
 
 .field input {
+  height: var(--control-36);
   min-height: var(--control-36);
   padding: 0 10px;
   border-radius: var(--control-radius);
@@ -1353,7 +1354,7 @@ em {
 .manual .field > span { font-size: 12.5px; color: var(--muted); }
 .manual .field input,
 .manual .field select {
-  width: 100%; padding: 9px 11px; border-radius: 10px;
+  width: 100%; height: var(--control-36); min-height: var(--control-36); padding: 0 11px; border-radius: 10px;
   border: 1px solid var(--line); background: var(--surface-2);
   font-size: 14px; color: var(--ink); font-family: inherit;
 }
@@ -1815,12 +1816,12 @@ em {
   flex-direction: column;
   align-items: flex-start;
   gap: 10px;
-  padding: 22px 20px;
+  padding: var(--card-pad);
 }
 .empty-state-text h3 { margin: 0 0 4px; font-size: 15px; }
 .empty-state-text p { margin: 0; font-size: 12.5px; line-height: 1.7; color: var(--muted); }
-.empty-state.is-compact { padding: 14px 0; gap: 8px; }
-.empty-state.is-compact .sprig-mark { width: 28px; height: 28px; }
+.empty-state.is-compact { padding: 16px 0; gap: 8px; }
+.empty-state.is-compact .sprig-mark { width: 36px; height: 36px; }
 .empty-state.is-compact .empty-state-text h3 { font-size: 13.5px; }
 .empty-state.is-compact .empty-state-text p { font-size: 12px; }
 .about-signature { margin-top: 10px; }
@@ -2076,7 +2077,7 @@ em {
 .page-head { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 2px; }
 .page-head h1 { margin: 0; font-size: 26px; line-height: 1.2; letter-spacing: -.02em; }
 .page-head .sub { margin: 0; font-size: 12.5px; color: var(--t-2); }
-.composer-actions { min-height: 56px; }
+.composer-actions { min-height: 56px; align-items: center; }
 
 @media (max-width: 860px) {
   .shell { grid-template-columns: 1fr; }
@@ -2108,7 +2109,7 @@ em {
   .main { padding: 16px 14px calc(84px + env(safe-area-inset-bottom)); }
   .footer { padding-bottom: 8px; margin-bottom: calc(72px + env(safe-area-inset-bottom)); }
   .page-head h1 { font-size: 22px; }
-  .composer-actions { min-height: 48px; }
+  .composer-actions { min-height: 48px; align-items: center; }
   .dock {
     display: block;
     position: fixed;
@@ -2215,3 +2216,66 @@ em {
 }
 
 .composer { position: relative; z-index: 20; }
+
+
+/* 暗色输入面兜底：textarea/input/select 不得落回浅底 */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--surface-2);
+  color: var(--t-1);
+}
+[data-theme="dark"] .composer-input:focus,
+[data-theme="dark"] .field input:focus,
+[data-theme="dark"] .field select:focus,
+[data-theme="dark"] .manual .field input:focus,
+[data-theme="dark"] .manual .field select:focus {
+  background-color: var(--surface-solid);
+  color: var(--t-1);
+}
+[data-theme="dark"] .composer-input::placeholder { color: var(--t-3); }
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background-color: var(--surface-2);
+  color: var(--t-3);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+
+/* ── P1 卡片体系：card / panel / empty / error ── */
+.card,
+.panel,
+.empty,
+.error-state { border-radius: 20px; }
+.panel {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  padding: 16px;
+}
+.empty { padding: 0; }
+.empty-state .sprig-mark { width: 40px; height: 40px; }
+.error-state {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: 16px;
+  padding: 12px 14px;
+  color: var(--danger);
+}
+
+/* ── P1 四档：28 / 32 / 36 / 44；图标按钮 28 ── */
+.btn-xs {
+  min-height: var(--control-28);
+  padding: 0 10px;
+  font-size: 12px;
+}
+.icon-btn {
+  min-width: var(--control-28);
+  min-height: var(--control-28);
+  padding: 0;
+}
+@media (max-width: 860px) {
+  .empty-state { padding: 16px; }
+  .empty-state .sprig-mark { width: 36px; height: 36px; }
+}
