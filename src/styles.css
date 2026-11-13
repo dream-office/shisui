@@ -2407,7 +2407,10 @@ select:disabled {
 .image-mode-options { gap: 8px; }
 @media (max-width: 860px) {
   .inline-check { min-height: var(--control-44); }
-  .field select { height: var(--control-44); min-height: var(--control-44); }
+  .field input,
+  .field select,
+  .manual .field input,
+  .manual .field select { height: var(--control-44); min-height: var(--control-44); }
 }
 
 

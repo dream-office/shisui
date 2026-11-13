@@ -282,6 +282,11 @@ test('G. P2 组件：卡片 24/16、输入 36/44、工具条 56/48、列表/弹�
   expect(await pad('.composer.card')).toBe('16px')
   expect(await height('.composer-actions')).toBeGreaterThanOrEqual(48)
   expect(await height('.composer .btn')).toBe(44)
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^设置/ }).click()
+  expect(await height('.field input')).toBe(44)
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^收件/ }).click()
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow).toBeLessThanOrEqual(1)
 

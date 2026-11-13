@@ -50,7 +50,7 @@
   .icon{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--t-3);font-size:14px}
   .field{display:flex;flex-direction:column;gap:8px;min-width:0}
   .field label{font-size:12px;color:var(--t-2)}
-  .input,.select{height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--t-1);padding:0 10px;font-size:14px;width:100%}
+  .input,.select{height:36px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--t-1);padding:0 10px;font-size:14px;width:100%}
   textarea.input{height:96px;padding:10px;resize:vertical}
   .modal{max-width:480px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 18px 50px -24px oklch(.2 .02 86 / .4)}
   .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -83,6 +83,10 @@
   .skeleton{height:12px;border-radius:8px;background:linear-gradient(90deg,var(--surface-2),var(--line),var(--surface-2));background-size:200% 100%;animation:sk 1.4s ease-in-out infinite;margin:8px 0}
   @keyframes sk{from{background-position:200% 0}to{background-position:-200% 0}}
 
+  @media (prefers-reduced-motion: reduce){
+    .skeleton{animation:none}
+    .switch::after,.btn{transition:none}
+  }
   @media (max-width:860px){body{font-size:15px} .wrap{padding:18px 14px 80px} .btn{height:44px} .input,.select{height:44px} .card,.panel,.empty,.error{padding:16px} .label{width:100%} .demo-row{align-items:flex-start;flex-direction:column} }
 </style>
 </head>
@@ -107,8 +111,8 @@
   <h2>2. 输入 / 表单</h2>
   <div class="card">
     <div class="grid">
-      <div class="field"><label>文本输入（36）</label><input class="input" style="height:36px" placeholder="示例标题" /></div>
-      <div class="field"><label>下拉（36）</label><select class="select" style="height:36px"><option>任务 / 交付物</option><option>会议</option><option>缴费 / 报销</option></select></div>
+      <div class="field"><label>文本输入（36）</label><input class="input" placeholder="示例标题" /></div>
+      <div class="field"><label>下拉（36）</label><select class="select"><option>任务 / 交付物</option><option>会议</option><option>缴费 / 报销</option></select></div>
       <div class="field"><label>多行（composer）</label><textarea class="input" placeholder="粘贴群消息…"></textarea></div>
       <div class="field"><label>行内 alert（12）</label><div class="inline">不是合法的 JSON 文件</div></div>
     </div>
