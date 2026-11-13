@@ -17,7 +17,7 @@ test.describe('v1.4 English 动态文本截图', () => {
   test('解析 reasons', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await toEnglish(page)
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.getByRole('button', { name: 'More ▾' }).click()
     await page.getByRole('menuitem', { name: 'Work example' }).click()
     await page.getByRole('button', { name: 'Parse', exact: true }).click()
@@ -34,14 +34,14 @@ test.describe('v1.4 English 动态文本截图', () => {
     const backup = { format: 'shisui-backup', backupVersion: 1, schemaVersion: 4, exportedAt: new Date().toISOString(), appVersion: '1.4.0', tasks: [task('a', 'Alpha'), task('b', 'Beta')], series: [], batches: [], settings: {} }
     await page.locator('input[type="file"][accept*="json"]').setInputFiles({ name: 'ok.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
     await page.getByRole('button', { name: 'Restore now' }).click()
-    await page.locator('nav').getByRole('button', { name: 'Plan' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Plan' }).click()
     await page.locator('.conflicts').screenshot({ path: join(OUT, 'english-conflict.png') })
   })
 
   test('ICS warning', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await toEnglish(page)
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.getByRole('button', { name: 'More ▾' }).click()
     await page.getByRole('menuitem', { name: 'Import .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({ name: 'bad.ics', mimeType: 'text/calendar', buffer: Buffer.from('not a calendar') })

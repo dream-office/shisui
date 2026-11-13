@@ -22,6 +22,14 @@
 
 ### 新增（Lumen 全量 UI + 麦穗金 + 暗色）
 
+#### P1 壳与收件页（进行中）
+- 桌面 236px 深色侧栏（brand-700 / 暗色 brand-800），44px 项、3px 顶部渐变线、aria-current / roving tabindex / 方向键
+- ≤860 移动顶条 + 底部 dock，保留 tab 历史、滚动与焦点恢复
+- 收件页去掉营销 hero：26px 标题 + 一行说明 + 工具条 + 输入卡上移
+- 玻璃质感：输入卡 / 弹窗 / dock / 移动顶条；侧栏、列表、空错卡实心
+- 玻璃兜底：`data-glass=off`、`prefers-reduced-transparency`、`@supports not (backdrop-filter)`；布局零位移
+
+
 - 接入 **Lumen v1.3.0** 设计系统，项目色 A 麦穗金（`h=86 / c=.110 / l-tint=.04`）
 - 语义分叉落地：`--accent=brand-600` 实心底、`--accent-deco=brand-500`、`--accent-ink=brand-700`、`--on-accent=#fff`、`--ring=accent-ink`；旧 `--accent-ink`（白字）全仓改名
 - 硬编码 hex/rgba 收口到语义 token：中性/品牌/状态、阴影、焦点环、遮罩、图表

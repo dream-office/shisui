@@ -12,7 +12,7 @@ const CORE_ZH = /命中|时间短语|重复规则|提交渠道|时间与类型|�
 test.describe('v1.4 core 动态文本英文', () => {
   test('E1. English 解析 reasons 不出现 core 中文', async ({ page }) => {
     await toEnglish(page)
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.getByRole('button', { name: 'More ▾' }).click()
     await page.getByRole('menuitem', { name: 'Work example' }).click()
     await page.getByRole('button', { name: 'Parse', exact: true }).click()
@@ -30,7 +30,7 @@ test.describe('v1.4 core 动态文本英文', () => {
 
   test('E2. English 备份错误、冲突提示、ICS warning 均为英文', async ({ page }) => {
     await toEnglish(page)
-    const settingsNav = page.locator('nav').getByRole('button', { name: 'Settings' })
+    const settingsNav = page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Settings' })
     const fileInput = page.locator('input[type="file"][accept*="json"]')
 
     // 备份错误
@@ -54,13 +54,13 @@ test.describe('v1.4 core 动态文本英文', () => {
     await fileInput.setInputFiles({ name: 'ok.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(backup)) })
     await page.getByRole('button', { name: 'Restore now' }).click()
     await settingsNav.click()
-    await page.locator('nav').getByRole('button', { name: 'Plan' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Plan' }).click()
     const conflicts = page.locator('.conflicts')
     await expect(conflicts).toContainText('Time overlap')
     expect(await conflicts.innerText()).not.toMatch(CORE_ZH)
 
     // ICS warning
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.getByRole('button', { name: 'More ▾' }).click()
     await page.getByRole('menuitem', { name: 'Import .ics' }).click()
     await page.locator('.ics-import input[type="file"]').setInputFiles({

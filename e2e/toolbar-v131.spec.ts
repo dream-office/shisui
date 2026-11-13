@@ -38,7 +38,7 @@ test.describe('v1.3.1 收件工具栏', () => {
     await expect(more).toBeFocused()
 
     await more.click()
-    await page.locator('.hero h2').click()
+    await page.locator('.page-head h1').click()
     await expect(page.getByRole('menu')).toHaveCount(0)
 
     await more.click()

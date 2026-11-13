@@ -1188,22 +1188,22 @@ test.describe('v1.0 中英双语', () => {
     await page.getByRole('button', { name: 'English' }).click()
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-    await expect(page.locator('nav')).toContainText('Inbox')
-    await expect(page.locator('nav')).toContainText('Settings')
+    await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('Inbox')
+    await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('Settings')
     await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
     expect(await page.title()).toContain('Shisui')
 
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-    await expect(page.locator('nav')).toContainText('Inbox')
-    await expect(page.locator('nav')).toContainText('Plan')
+    await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('Inbox')
+    await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('Plan')
     // 刷新后默认回到收件页；重新进入设置再断言英文标题
-    await page.locator('nav').getByRole('button', { name: 'Settings' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Settings' }).click()
     await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
 
     await page.getByRole('button', { name: '中文' }).click()
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
-    await expect(page.locator('nav')).toContainText('收件')
+    await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('收件')
   })
 })
 
@@ -1244,13 +1244,13 @@ test.describe('v1.0 English 静态 UI', () => {
 
     const found = new Set<string>()
     for (const label of ['Inbox', 'Calendar', 'Stats', 'Settings']) {
-      await page.locator('nav').getByRole('button', { name: label }).click()
+      await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: label }).click()
       await page.waitForTimeout(120)
       for (const item of await scan()) found.add(item)
     }
 
     // 动态：解析示例 → 候选页；收录 → Plan 有数据
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.getByRole('button', { name: 'More ▾' }).click()
     await page.getByRole('menuitem', { name: 'Work example' }).click()
     await page.getByRole('button', { name: 'Parse', exact: true }).click()
@@ -1258,12 +1258,12 @@ test.describe('v1.0 English 静态 UI', () => {
     for (const item of await scan()) found.add(item)
 
     await page.getByRole('button', { name: 'Accept all' }).click()
-    await page.locator('nav').getByRole('button', { name: 'Plan' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Plan' }).click()
     await page.waitForTimeout(200)
     for (const item of await scan()) found.add(item)
 
     // 收录后回收件页：覆盖 toast「Accepted N to-dos…」
-    await page.locator('nav').getByRole('button', { name: 'Inbox' }).click()
+    await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Inbox' }).click()
     await page.waitForTimeout(200)
     for (const item of await scan()) found.add(item)
 
@@ -1553,22 +1553,31 @@ test.describe('v1.2 结构化多事项 + DB v4', () => {
 })
 
 
-test.describe('v1.2.0 导航布局', () => {
-  test('N1. 800/820/860/861：5 个标签单行、无横向滚动；1920 不变', async ({ page }) => {
-    for (const width of [800, 820, 860, 861, 1920]) {
+test.describe('v2.0 导航壳布局', () => {
+  test('N1. ≤860 底部 dock 5 项；≥861 侧栏 236 / 5 项；无横向溢出', async ({ page }) => {
+    for (const width of [800, 820, 860]) {
       await page.setViewportSize({ width, height: 800 })
       await page.goto('/')
-      const tabs = page.locator('.tab')
-      await expect(tabs).toHaveCount(5)
-      const allSingleLine = await tabs.evaluateAll((els) =>
-        els.every((el) => el.scrollHeight <= el.clientHeight + 1 && getComputedStyle(el).whiteSpace === 'nowrap'),
-      )
-      expect(allSingleLine, `width=${width}`).toBe(true)
+      await expect(page.locator('.dock')).toBeVisible()
+      await expect(page.locator('.sidebar')).toBeHidden()
+      await expect(page.locator('.dock-item')).toHaveCount(5)
       const overflow = await page.evaluate(
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       )
       expect(overflow, `width=${width}`).toBeLessThanOrEqual(1)
-      await expect(page.getByRole('navigation', { name: '主视图' })).toBeVisible()
+    }
+    for (const width of [861, 1920]) {
+      await page.setViewportSize({ width, height: 900 })
+      await page.goto('/')
+      await expect(page.locator('.sidebar')).toBeVisible()
+      await expect(page.locator('.dock')).toBeHidden()
+      await expect(page.locator('.sb-item')).toHaveCount(5)
+      const widthPx = await page.locator('.sidebar').evaluate((el) => Math.round(el.getBoundingClientRect().width))
+      expect(widthPx, `width=${width}`).toBe(236)
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      )
+      expect(overflow, `width=${width}`).toBeLessThanOrEqual(1)
     }
   })
 })

@@ -331,6 +331,11 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  主导航: 'Primary navigation',
+
+  '粘贴群消息，拆成带截止时间的待办；原文只在本机处理。':
+    'Paste group messages and turn them into dated to-dos — parsed locally on this device.',
+
   外观: 'Appearance',
   跟随系统: 'System',
   亮色: 'Light',

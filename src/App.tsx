@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { setLang as applyLang, t } from '@/i18n'
 import { useApp } from '@/state/store'
 import { registerServiceWorker } from '@/services/pwa'
@@ -25,6 +25,23 @@ const TABS = [
   { id: 'settings', label: '设置' },
 ] as const
 
+
+/** 侧栏/dock 图标：内置 SVG，避免新增依赖 */
+function NavIcon({ id }: { id: string }) {
+  const paths: Record<string, string> = {
+    inbox: 'M4 5h16v10H4z M4 15l3-3h10l3 3 M8 19h8',
+    plan: 'M5 4h14v16H5z M8 3v4 M16 3v4 M5 9h14 M9 13l2 2 4-4',
+    calendar: 'M4 6h16v15H4z M8 3v6 M16 3v6 M4 11h16',
+    stats: 'M5 20V10 M12 20V4 M19 20v-7',
+    settings: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1L14.5 3h-4l-.4 2.1a7 7 0 0 0-1.7 1l-2.3-1-2 3.4L6 10a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.1h4l.4-2.1a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z',
+  }
+  return (
+    <svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d={paths[id] ?? paths.inbox} />
+    </svg>
+  )
+}
+
 let signatureLogged = false
 
 export default function App() {
@@ -40,9 +57,9 @@ export default function App() {
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('__boom') === '1',
   )
   const [helpOpen, setHelpOpen] = useState(false)
-  const helpButtonRef = useRef<HTMLButtonElement>(null)
   const [signatureOpen, setSignatureOpen] = useState(false)
-  const tabRefs = useRef<Partial<Record<string, HTMLButtonElement | null>>>({})
+  const navRefs = useRef<Record<string, HTMLButtonElement[]>>({})
+  const helpTriggerRef = useRef<HTMLButtonElement | null>(null)
   const scrollPositions = useRef<Partial<Record<string, number>>>({})
   const pendingScroll = useRef(false)
   const restoreFocus = useRef(false)
@@ -107,9 +124,32 @@ export default function App() {
     window.scrollTo({ top, behavior: 'auto' })
     if (restoreFocus.current) {
       restoreFocus.current = false
-      tabRefs.current[view]?.focus({ preventScroll: true })
+      focusNav(view)
     }
   }, [view])
+
+  const focusNav = (id: string) => {
+    const candidates = navRefs.current[id] ?? []
+    candidates.find((el) => el.getClientRects().length > 0)?.focus({ preventScroll: true })
+  }
+
+  const onNavKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End']
+    if (!keys.includes(event.key)) return
+    event.preventDefault()
+    const current = TABS.findIndex((tab) => tab.id === view)
+    let next = current
+    if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = TABS.length - 1
+    else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (current + 1) % TABS.length
+    else next = (current - 1 + TABS.length) % TABS.length
+    focusNav(TABS[next].id)
+  }
+
+  const openHelp = (trigger: HTMLButtonElement) => {
+    helpTriggerRef.current = trigger
+    setHelpOpen(true)
+  }
 
   const navigate = (next: typeof view) => {
     if (next === view) return
@@ -159,50 +199,84 @@ export default function App() {
   const pending = tasks.filter((task) => !task.done).length
   const aiOn = isLLMReady(llmConfig)
 
+  const registerNav = (id: string, el: HTMLButtonElement | null) => {
+    const list = navRefs.current[id] ?? []
+    const next = list.filter((item) => item !== el && item.isConnected)
+    if (el) next.push(el)
+    navRefs.current[id] = next
+  }
+
+  const navButtons = (location: 'sidebar' | 'dock') =>
+    TABS.map((tab) => (
+      <button
+        key={`${location}-${tab.id}`}
+        type="button"
+        ref={(el) => registerNav(tab.id, el)}
+        className={location === 'sidebar' ? 'sb-item' : 'dock-item'}
+        aria-current={view === tab.id ? 'page' : undefined}
+        aria-label={t(tab.label)}
+        tabIndex={view === tab.id ? 0 : -1}
+        onClick={() => navigate(tab.id)}
+      >
+        {location === 'sidebar' ? <NavIcon id={tab.id} /> : <NavIcon id={tab.id} />}
+        <span>{t(tab.label)}</span>
+        {tab.id === 'plan' && pending > 0 && <span className="tab-badge">{pending}</span>}
+      </button>
+    ))
+
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark">穗</span>
-          <div className="brand-text">
-            <h1>{t('拾穗')}</h1>
-            <p>{t('群里散落的截止时间，替你捡起来')}</p>
+    <>
+      <div className="gradient-line" aria-hidden="true" />
+      <div className="shell">
+        <aside className="sidebar" aria-label={t('主导航')}>
+          <div className="sb-brand">
+            <span className="sb-mark" aria-hidden="true">穗</span>
+            <div className="sb-brand-copy">
+              <h1 className="sb-title">{t('拾穗')}</h1>
+              <span className="sb-tagline">{t('群里散落的截止时间，替你捡起来')}</span>
+            </div>
           </div>
-          <button
-            ref={helpButtonRef}
-            type="button"
-            className="btn btn-ghost btn-sm help-open"
-            aria-haspopup="dialog"
-            onClick={() => setHelpOpen(true)}
-          >
-            {t('怎么用')}
-          </button>
-        </div>
-
-        <nav className="tabs" aria-label={t('主视图')}>
-          {TABS.map((tab) => (
+          <nav className="sb-nav" aria-label={t('主视图')} onKeyDown={onNavKeyDown}>
+            {navButtons('sidebar')}
+          </nav>
+          <div className="sb-foot">
             <button
-              key={tab.id}
               type="button"
-              ref={(el) => {
-                tabRefs.current[tab.id] = el
-              }}
-              className={`tab ${view === tab.id ? 'is-active' : ''}`}
-              onClick={() => navigate(tab.id)}
+              className="btn btn-sm sb-help"
+              aria-haspopup="dialog"
+              onClick={(event) => openHelp(event.currentTarget)}
             >
-              {t(tab.label)}
-              {tab.id === 'plan' && pending > 0 && <span className="tab-badge">{pending}</span>}
+              {t('怎么用')}
             </button>
-          ))}
-        </nav>
+            <div
+              className={`engine-pill ${aiOn ? 'is-ai' : ''}`}
+              title={aiOn ? t('规则引擎 + AI 双引擎') : t('仅规则引擎（在设置里可接入 AI）')}
+            >
+              <span className="dot" />
+              {aiOn ? t('双引擎') : t('规则引擎')}
+            </div>
+          </div>
+        </aside>
 
-        <div className={`engine-pill ${aiOn ? 'is-ai' : ''}`} title={aiOn ? t('规则引擎 + AI 双引擎') : t('仅规则引擎（在设置里可接入 AI）')}>
-          <span className="dot" />
-          {aiOn ? t('双引擎') : t('规则引擎')}
-        </div>
-      </header>
+        <div className="shell-main">
+          <header className="mobile-bar">
+            <div className="mobile-brand">
+              <span className="sb-mark" aria-hidden="true">穗</span>
+              <h1 className="sb-title">{t('拾穗')}</h1>
+            </div>
+            <span className="grow" />
+            <button
+              type="button"
+              className="mobile-help"
+              aria-haspopup="dialog"
+              onClick={(event) => openHelp(event.currentTarget)}
+            >
+              {t('怎么用')}
+            </button>
+          </header>
 
-      <main className="main">
+      <main className="main" id="main">
+
         <ErrorBoundary onReset={() => setArmed(false)}>
           {armed && <ErrorProbe />}
           {view === 'inbox' && <InboxView />}
@@ -268,12 +342,20 @@ export default function App() {
           </div>
         )}
       </footer>
+        </div>
+      </div>
+
+      <div className="dock">
+        <nav aria-label={t('主视图')} onKeyDown={onNavKeyDown}>
+          {navButtons('dock')}
+        </nav>
+      </div>
 
       <HelpPanel
         open={helpOpen}
         onClose={() => {
           setHelpOpen(false)
-          helpButtonRef.current?.focus()
+          helpTriggerRef.current?.focus()
         }}
       />
 
@@ -285,6 +367,6 @@ export default function App() {
           </button>
         </div>
       )}
-    </div>
+    </>
   )
 }

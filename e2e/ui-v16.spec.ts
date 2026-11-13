@@ -88,3 +88,59 @@ test.describe('v1.6 UI 统一与返回路径', () => {
     await expect(more).toBeFocused()
   })
 })
+
+
+test('C. 玻璃面只在输入卡/弹窗/dock/移动顶条；off 兜底布局零位移', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const glass = await page.locator('.composer').evaluate((el) => getComputedStyle(el, '::before').backdropFilter)
+  expect(glass).toContain('blur')
+  const sidebar = await page.locator('.sidebar').evaluate((el) => getComputedStyle(el).backdropFilter)
+  expect(sidebar).toBe('none')
+  const before = await page.locator('.composer').boundingBox()
+
+  await page.evaluate(() => document.documentElement.setAttribute('data-glass', 'off'))
+  const off = await page.locator('.composer').evaluate((el) => ({
+    filter: getComputedStyle(el, '::before').backdropFilter,
+    display: getComputedStyle(el, '::before').display,
+    bg: getComputedStyle(el).backgroundColor,
+  }))
+  expect(off.filter).toBe('none')
+  expect(off.display).toBe('none')
+  expect(off.bg).not.toBe('rgba(0, 0, 0, 0)')
+  const after = await page.locator('.composer').boundingBox()
+  expect(Math.round(after!.height)).toBe(Math.round(before!.height))
+  await page.evaluate(() => document.documentElement.removeAttribute('data-glass'))
+
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.reload()
+  const dock = await page.locator('.dock').evaluate((el) => getComputedStyle(el).backdropFilter)
+  const bar = await page.locator('.mobile-bar').evaluate((el) => getComputedStyle(el).backdropFilter)
+  expect(dock).toContain('blur')
+  expect(bar).toContain('blur')
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})
+
+
+test('D. 侧栏/dock：aria-current、roving tabindex、方向键移动焦点', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const items = page.locator('.sb-item')
+  await expect(items).toHaveCount(5)
+  await expect(items.nth(0)).toHaveAttribute('aria-current', 'page')
+  const tabIndexes = await items.evaluateAll((els) => els.map((el) => (el as HTMLButtonElement).tabIndex))
+  expect(tabIndexes).toEqual([0, -1, -1, -1, -1])
+  await items.nth(0).focus()
+  await page.keyboard.press('ArrowDown')
+  await expect(items.nth(1)).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(items.nth(4)).toBeFocused()
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  const dock = page.locator('.dock-item')
+  await expect(dock).toHaveCount(5)
+  await expect(dock.nth(0)).toHaveAttribute('aria-current', 'page')
+  await expect(dock.nth(0)).toHaveAttribute('tabindex', '0')
+})

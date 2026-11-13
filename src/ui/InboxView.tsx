@@ -200,15 +200,10 @@ export default function InboxView() {
           </button>
         </div>
       )}
-      <section className="hero">
-        <h2>
-          {t('把群里的消息')}<em>{t('粘进来')}</em>{t('，剩下的它替你记着')}
-        </h2>
-        <p>
-          {t('「本周五23:59前交实验报告」「下周三下午2点3楼会议室」「11月20日前提交报销单」——')}
-          {t('项目群、部门群、班级群、家长群，说的是同一件事：')}<strong>{t('有个截止时间，别错过')}</strong>。
-        </p>
-      </section>
+      <div className="page-head">
+        <h1>{t('收件')}</h1>
+        <p className="sub">{t('粘贴群消息，拆成带截止时间的待办；原文只在本机处理。')}</p>
+      </div>
 
       {sharedFrom && (
         <div className="share-banner" role="status">
