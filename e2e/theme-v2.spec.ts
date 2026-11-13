@@ -79,3 +79,75 @@ test.describe('v2.0 暗色主题', () => {
     expect(ratios.onAccent).toBeGreaterThanOrEqual(4.5)
   })
 })
+
+
+test('T4. 暗色 toast 对比度 >= 4.5（含 update-toast 基类）', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('/')
+  await page.getByRole('button', { name: '更多 ▾' }).click()
+  await page.getByRole('menuitem', { name: '工作群示例' }).click()
+  await page.getByRole('button', { name: '开始解析' }).click()
+  await page.getByRole('heading', { name: /识别到 \d+ 条待办/ }).waitFor({ timeout: 15_000 })
+  await page.getByRole('button', { name: '全部收录' }).click()
+  const toast = page.locator('.toast').first()
+  await expect(toast).toBeVisible()
+  const ratios = await toast.evaluate((el) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext('2d')!
+    const toRgb = (color: string) => {
+      ctx.clearRect(0, 0, 1, 1)
+      ctx.fillStyle = color
+      ctx.fillRect(0, 0, 1, 1)
+      return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+    }
+    const lum = (rgb: number[]) => {
+      const f = (v: number) => {
+        const s = v / 255
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2])
+    }
+    const style = getComputedStyle(el)
+    const bg = toRgb(style.backgroundColor)
+    const fg = toRgb(style.color)
+    const l1 = lum(bg)
+    const l2 = lum(fg)
+    return {
+      ratio: (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05),
+      bg: style.backgroundColor,
+      fg: style.color,
+    }
+  })
+  expect(ratios.ratio, `${ratios.bg} on ${ratios.fg}`).toBeGreaterThanOrEqual(4.5)
+  // update-toast 与 toast 同基类：同一组 token 在暗色下也必须成立
+  const updateRatio = await page.evaluate(() => {
+    const probe = document.createElement('div')
+    probe.className = 'toast update-toast'
+    document.body.appendChild(probe)
+    const s = getComputedStyle(probe)
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext('2d')!
+    const rgb = (color: string) => {
+      ctx.clearRect(0, 0, 1, 1)
+      ctx.fillStyle = color
+      ctx.fillRect(0, 0, 1, 1)
+      return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+    }
+    const lum = (c: number[]) => {
+      const f = (v: number) => {
+        const x = v / 255
+        return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2])
+    }
+    const a = lum(rgb(s.backgroundColor))
+    const b = lum(rgb(s.color))
+    probe.remove()
+    return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+  })
+  expect(updateRatio).toBeGreaterThanOrEqual(4.5)
+})
