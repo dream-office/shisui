@@ -1,11 +1,11 @@
 # 数据格式冻结（v1.0）
 
-> 当前适用：**app 1.5.0 / core 1.3.0（DB v4 / backupSchema 4）**；v1.0 的 DB v3/backupSchema 3 结构仍向下兼容。
+> 当前适用：**app 1.6.0 / core 1.4.0（DB v5 / backupSchema 5）**；v1.0 的 DB v3/backupSchema 3 与 v1.2 的 v4 结构仍向下兼容。
 
-> v1.0 起以下结构**冻结**；变更需升版本并写迁移说明。v1.2 起 DB v4：tasks/series 增加 `url`/`note`。
+> v1.0 起以下结构**冻结**；变更需升版本并写迁移说明。v1.2 起 DB v4：tasks/series 增加 `url`/`note`。v1.6 起 **DB v5**：tasks 增加 `doneAt`（实际完成时刻）。
 > 所有数据默认只存在用户浏览器 IndexedDB 里。
 
-## 1. IndexedDB（DB v4）
+## 1. IndexedDB（DB v5）
 
 | store | key | 索引 |
 | --- | --- | --- |
@@ -35,7 +35,7 @@
   "format": "shisui-backup",
   "backupVersion": 1,
   "appVersion": "1.0.0",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "exportedAt": "2026-11-08T10:00:00.000Z",
   "tasks": [],
   "series": [],

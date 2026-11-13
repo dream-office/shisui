@@ -11,7 +11,7 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
-> **当前版本**：app 1.5.0 · core 1.3.0 · DB v4 · backup schema 4
+> **当前版本**：app 1.6.0 · core 1.4.0 · DB v5 · backup schema 5
 
 ---
 
@@ -51,6 +51,13 @@
 3. **去日程 / 月历**：按天排好并做冲突体检，可拖拽改期；完成/重复/统计在对应页面
 
 > 界面支持 **中文 / English**（设置页切换，记住选择）。数据只存在本地浏览器，不上传。
+
+## 统计
+
+- 本周完成率、解析手改率、**延期完成率**（基于实际完成时间 `doneAt`）、未完成/已跳过
+- **8 周完成趋势**、按任务类型分布、每日专注趋势（近 7 天）
+- 导出 **CSV / PNG**；页面内「统计口径说明」可展开
+- 全部本地计算，不上传；统计方法与口径见 [docs/STATS.md](docs/STATS.md)
 
 ## 图片识别 / 文档导入
 

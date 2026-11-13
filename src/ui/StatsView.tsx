@@ -1,5 +1,5 @@
 import { completionTrend, computeStats, kindDistribution, type KindCount, type StoredTask, type WeekCompletion } from 'shisui-core'
-import { t, formatDateOnlyI18n, getLang } from '@/i18n'
+import { t, getLang } from '@/i18n'
 import { useMemo } from 'react'
 import EmptyState from './EmptyState'
 import { useApp } from '@/state/store'
@@ -44,6 +44,13 @@ const CONFLICT_LABELS = [
   ['pileup', '同日堆积'],
 ] as const
 
+function shortDate(ms: number): string {
+  return new Date(ms).toLocaleDateString(getLang() === 'en' ? 'en-US' : 'zh-CN', {
+    month: 'numeric',
+    day: 'numeric',
+  })
+}
+
 const KIND_LABELS: Record<StoredTask['kind'], string> = {
   task: '任务 / 交付物',
   meeting: '会议 / 活动',
@@ -65,7 +72,7 @@ function TrendBars({ points }: { points: WeekCompletion[] }) {
           <div className="trend-track">
             <div className="trend-bar" style={{ height: point.rate === null ? '0%' : `${Math.max(2, point.rate)}%` }} />
           </div>
-          <span className="trend-label">{formatDateOnlyI18n(point.weekStart)}</span>
+          <span className="trend-label">{shortDate(point.weekStart)}</span>
         </div>
       ))}
     </div>
@@ -99,7 +106,7 @@ function FocusBars({ days }: { days: FocusDay[] }) {
           <div className="focus-track">
             <div className="focus-bar" style={{ height: `${(day.totalMs / max) * 100}%` }} />
           </div>
-          <span className="focus-label">{formatDateOnlyI18n(day.dayStart)}</span>
+          <span className="focus-label">{shortDate(day.dayStart)}</span>
         </div>
       ))}
     </div>
