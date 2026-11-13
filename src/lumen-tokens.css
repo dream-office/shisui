@@ -1,0 +1,228 @@
+/* ============================================================
+   Lumen v1.3.0 · token（稳定版 v1.3.0）
+   dream-office 统一 UI 主题 · 设计系统 owner
+   ------------------------------------------------------------
+   三层结构：
+     1) 共享层  --ds-*         所有项目同值，永远不改
+     2) 项目层  --h / --c      每个项目只改这两个数（暖色相另加 --l-tint）
+     3) 语义层  --bg / --t-* / --accent*
+   规则：
+     - 组件只读语义层，不写死 hex / px 圆角
+     - 状态色（danger / success / warn）是固定色相，不跟 --h 走
+     - 对比度：正文 ≥ 4.5:1，大字/图标 ≥ 3:1（数值见 03-token-提案.md）
+   ============================================================ */
+
+@property --h    { syntax: "<number>"; inherits: true; initial-value: 279; }
+@property --c    { syntax: "<number>"; inherits: true; initial-value: 0.190; }
+@property --glow { syntax: "<number>"; inherits: true; initial-value: 1; }
+
+/* ---------- 1. 共享层 ---------- */
+:root {
+  --ds-r-xs: 6px;  --ds-r-sm: 10px; --ds-r-md: 14px;
+  --ds-r-lg: 20px; --ds-r-xl: 28px; --ds-r-full: 999px;
+  --ds-r-btn: 12px;            /* 所有常规按钮 */
+
+  --ds-s-1: 4px;  --ds-s-2: 8px;  --ds-s-3: 12px; --ds-s-4: 16px;
+  --ds-s-5: 24px; --ds-s-6: 32px; --ds-s-7: 48px; --ds-s-8: 64px;
+
+  --ds-fs-xs: 12px; --ds-fs-sm: 13.5px; --ds-fs-base: 15px;
+  --ds-fs-md: 17px; --ds-fs-lg: 22px;
+
+  --ds-ease:     cubic-bezier(.22, .61, .36, 1);
+  --ds-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ds-dur: .28s;
+
+  --ds-focus-w: 2px;
+  --ds-focus-offset: 3px;
+  --ds-disabled-op: .45;
+  --ds-tap-min: 44px;          /* 触屏最小可点区域，小屏按钮不得低于此高 */
+  --ds-glass-blur: 22px;       /* 玻璃预算：唯一模糊半径，别在组件里另写 */
+}
+
+/* ---------- 2. 项目层（shisui A 麦穗金） ---------- */
+:root {
+  --h: 86;         /* A 麦穗金 */
+  --c: 0.110;
+  --glow: 1;
+  --l-tint: 0.04;  /* 暖色相补偿，只抬 brand-300~500 */
+}
+
+/* 暖色相补偿（W1）：只抬 brand-300 ~ brand-500 的亮度，按钮渐变（600/700）不动。
+   用法：<html data-hue="warm">，同时把 --h 设到 55–120。 */
+[data-hue="warm"] { --l-tint: 0.04; }
+
+/* ---------- 品牌色阶：只由 --h / --c 派生 ---------- */
+:root {
+  --brand-50:  oklch(0.972 calc(var(--c) * 0.12) var(--h));
+  --brand-100: oklch(0.945 calc(var(--c) * 0.26) var(--h));
+  --brand-200: oklch(0.895 calc(var(--c) * 0.45) var(--h));
+  --brand-300: oklch(calc(0.820 + var(--l-tint)) calc(var(--c) * 0.68) var(--h));
+  --brand-400: oklch(calc(0.730 + var(--l-tint)) calc(var(--c) * 0.88) var(--h));
+  --brand-500: oklch(calc(0.645 + var(--l-tint)) var(--c) var(--h));
+  --brand-600: oklch(0.560 calc(var(--c) * 0.97) var(--h));
+  --brand-700: oklch(0.475 calc(var(--c) * 0.86) var(--h));
+  --brand-800: oklch(0.400 calc(var(--c) * 0.70) var(--h));
+  --brand-900: oklch(0.320 calc(var(--c) * 0.52) var(--h));
+}
+
+/* ---------- 中性色阶：掺品牌色相，避免脏灰 ---------- */
+:root {
+  --n-0:   oklch(1     0    0);
+  --n-25:  oklch(0.988 0.002 var(--h));
+  --n-50:  oklch(0.972 0.003 var(--h));
+  --n-100: oklch(0.947 0.004 var(--h));
+  --n-200: oklch(0.905 0.005 var(--h));
+  --n-300: oklch(0.845 0.006 var(--h));
+  --n-400: oklch(0.720 0.008 var(--h));
+  --n-500: oklch(0.600 0.010 var(--h));
+  --n-600: oklch(0.500 0.012 var(--h));
+  --n-700: oklch(0.400 0.013 var(--h));
+  --n-800: oklch(0.300 0.014 var(--h));
+  --n-900: oklch(0.220 0.014 var(--h));
+  --n-950: oklch(0.160 0.012 var(--h));
+}
+
+/* ---------- 3. 语义层 · 亮色 ---------- */
+:root {
+  color-scheme: light;
+
+  --bg:          var(--n-25);
+  --surface:     oklch(1 0 0 / .66);      /* 玻璃卡底 */
+  --surface-solid: oklch(1 0 0 / .92);    /* 实色档 / 不支持 blur 时回退（C7） */
+  --surface-2:   oklch(1 0 0 / .90);
+  --field-bg:    oklch(1 0 0 / .80);
+  --hover-bg:    var(--n-50);
+  --glass:       oklch(1 0 0 / .72);
+
+  --line:        oklch(0 0 0 / .07);
+  --line-strong: oklch(0 0 0 / .12);
+
+  --t-1: var(--n-900);                       /* 16.73:1 on --bg */
+  --t-2: var(--n-600);                       /* 5.80:1 */
+  --t-3: oklch(0.550 0.010 var(--h));        /* 4.69:1；原 .600 只有 3.81 */
+  --t-inv: var(--n-0);
+
+  --accent:      var(--brand-500);
+  --accent-ink:  var(--brand-700);
+  --accent-soft: var(--brand-50);
+
+  --accent-glow:      oklch(0.645 var(--c) var(--h) / calc(.40 * var(--glow)));
+  --accent-glow-soft: oklch(0.645 var(--c) var(--h) / calc(.14 * var(--glow)));
+
+  --btn-from: var(--brand-600);   /* v1.3：原 brand-500 白字只有 3.36:1 */
+  --btn-to:   var(--brand-700);
+  --btn-ink:  oklch(0.99 0 0);
+
+  --ring:        var(--accent);
+  --ring-w:      var(--ds-focus-w);
+  --ring-offset: var(--ds-focus-offset);
+
+  /* 状态色：固定色相，不随 --h 变 */
+  --danger:        oklch(0.500 0.190 25);   /* 6.40:1 on --bg */
+  --danger-soft:   oklch(0.965 0.030 25);
+  --danger-line:   oklch(0.500 0.190 25 / .30);
+  --success:       oklch(0.500 0.130 150);  /* ≈5.4:1 */
+  --success-soft:  oklch(0.965 0.030 150);
+  --warn:          oklch(0.520 0.100 75);   /* 5.41:1（黄系彩度上限低，别拉高） */
+  --warn-soft:     oklch(0.965 0.040 75);
+
+  /* 禁用 / 骨架 / 轨 */
+  --track:        var(--n-100);
+  --skeleton:     oklch(0 0 0 / .06);
+  --skeleton-hi:  oklch(0 0 0 / .10);
+  --disabled-bg:  oklch(0 0 0 / .05);
+  --disabled-ink: oklch(0 0 0 / .35);
+
+  --card-sheen: linear-gradient(180deg, oklch(1 0 0 / .60), oklch(1 0 0 / 0) 45%);
+  --orb-op: calc(.34 * var(--glow));
+
+  --press-in: inset 0 2px 5px oklch(0 0 0 / .07), inset 0 -1px 0 oklch(1 0 0 / .55);
+  --press-sm: inset 0 1px 2px oklch(0 0 0 / .09);
+  --opt-hi:   inset 0 1px 0 oklch(1 0 0 / .55);
+
+  --sh-1: 0 1px 2px oklch(0 0 0 / .04), 0 2px 8px -2px oklch(0 0 0 / .05);
+  --sh-2: 0 2px 4px oklch(0 0 0 / .04), 0 10px 28px -8px oklch(0 0 0 / .10);
+  --sh-3: 0 4px 8px oklch(0 0 0 / .04), 0 24px 56px -16px oklch(0 0 0 / .16);
+}
+
+/* ---------- shisui 项目层语义覆盖（亮色；暗色由下方重置） ---------- */
+:root {
+  --accent: var(--brand-600);
+  --accent-deco: var(--brand-500);
+  --accent-ink: var(--brand-700);
+  --on-accent: #ffffff;
+  --ring: var(--accent-ink);
+}
+
+/* ---------- 3b. 语义层 · 暗色 ---------- */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg:          var(--n-950);
+  --surface:     oklch(0.28 0.012 var(--h) / .55);
+  --surface-solid: oklch(0.24 0.012 var(--h) / .92);
+  --surface-2:   oklch(0.28 0.012 var(--h) / .85);
+  --field-bg:    oklch(0 0 0 / .24);
+  --hover-bg:    oklch(1 0 0 / .05);
+  --glass:       oklch(0.26 0.012 var(--h) / .62);
+
+  --line:        oklch(1 0 0 / .09);
+  --line-strong: oklch(1 0 0 / .16);
+
+  --t-1: oklch(0.970 0.004 var(--h));   /* 17.80:1 */
+  --t-2: oklch(0.760 0.010 var(--h));   /* 9.04:1 */
+  --t-3: oklch(0.640 0.012 var(--h));   /* v1.3：原 .600 在 surface 上只有 4.30 */
+  --t-inv: var(--n-950);
+
+  --accent:      var(--brand-400);
+  --accent-ink:  var(--brand-300);
+  --accent-soft: oklch(0.645 var(--c) var(--h) / .16);
+
+  --accent-glow:      oklch(0.645 var(--c) var(--h) / calc(.55 * var(--glow)));
+  --accent-glow-soft: oklch(0.645 var(--c) var(--h) / calc(.20 * var(--glow)));
+
+  --btn-from: var(--brand-600);
+  --btn-to:   var(--brand-700);
+
+  --danger:       oklch(0.700 0.170 25);
+  --danger-soft:  oklch(0.700 0.170 25 / .18);
+  --danger-line:  oklch(0.700 0.170 25 / .38);
+  --success:      oklch(0.700 0.130 150);
+  --success-soft: oklch(0.700 0.130 150 / .18);
+  --warn:         oklch(0.700 0.130 75);
+  --warn-soft:    oklch(0.700 0.130 75 / .18);
+
+  --track:        oklch(1 0 0 / .08);
+  --skeleton:     oklch(1 0 0 / .07);
+  --skeleton-hi:  oklch(1 0 0 / .12);
+  --disabled-bg:  oklch(1 0 0 / .06);
+  --disabled-ink: oklch(1 0 0 / .38);
+
+  --card-sheen: linear-gradient(180deg, oklch(1 0 0 / .09), oklch(1 0 0 / 0) 45%);
+  --orb-op: calc(.55 * var(--glow));
+
+  --press-in: inset 0 2px 6px oklch(0 0 0 / .55), inset 0 -1px 0 oklch(1 0 0 / .05);
+  --press-sm: inset 0 1px 3px oklch(0 0 0 / .55);
+  --opt-hi:   inset 0 1px 0 oklch(1 0 0 / .06);
+
+  --sh-1: 0 1px 2px oklch(0 0 0 / .30);
+  --sh-2: 0 2px 6px oklch(0 0 0 / .30), 0 12px 32px -10px oklch(0 0 0 / .50);
+  --sh-3: 0 4px 10px oklch(0 0 0 / .30), 0 28px 60px -18px oklch(0 0 0 / .60);
+}
+
+/* ---------- 玻璃预算（C7） ---------- */
+/* 实色档：设置项 / 性能档 */
+[data-glass="solid"] .card,
+[data-glass="solid"] .topbar,
+[data-glass="solid"] .sidebar {
+  background: var(--surface-solid);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+/* 环境不支持：自动降级，避免「透明白底 + 没模糊」的半吊子状态 */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .card, .topbar, .sidebar { background: var(--surface-solid); }
+}
+
+/* ---------- 降级开关（工程决策，默认关闭） ---------- */
+/* 目标环境不支持 oklch() 时（旧 WebView），由构建期 PostCSS 生成 rgb 近似值；
+   不支持 @property 时只丢色相过渡，颜色本身不受影响。详见 02 文档「挂起项 R4」。 */

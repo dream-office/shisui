@@ -13,31 +13,19 @@
   --control-radius: var(--radius-sm);
   --chip-h: 24px;
   --chip-px: 10px;
-  --bg: #f5f6fb;
-  --surface: #ffffff;
-  --surface-2: #fafbff;
-  --ink: #15172b;
-  --ink-soft: #3c4055;
-  --muted: #737a90;
-  --line: #e7e9f3;
-  --line-strong: #d5d9ea;
+  /* v2.0：语义 token 来自 lumen-tokens.css，这里只保留旧名别名与项目尺寸 */
+  --ink: var(--t-1);
+  --ink-soft: var(--t-2);
+  --muted: var(--t-3);
 
-  --accent: #4a45d6;
-  --accent-ink: #ffffff;
-  --accent-soft: #eeefff;
+  --ok: var(--success);
+  --ok-soft: var(--success-soft);
 
-  --ok: #0d9b74;
-  --ok-soft: #e7f7f1;
-  --warn: #c2740a;
-  --warn-soft: #fdf3e2;
-  --danger: #d02b2b;
-  --danger-soft: #fdecec;
-
-  --radius-lg: 20px;
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow-sm: 0 1px 2px rgba(21, 23, 43, 0.05);
-  --shadow: 0 2px 6px rgba(21, 23, 43, 0.05), 0 12px 28px -12px rgba(21, 23, 43, 0.14);
+  --radius-lg: var(--ds-r-lg);
+  --radius: var(--ds-r-md);
+  --radius-sm: var(--ds-r-sm);
+  --shadow-sm: var(--sh-1);
+  --shadow: var(--sh-2);
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', system-ui, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
@@ -57,7 +45,7 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background:
-    radial-gradient(1100px 480px at 12% -6%, #e9ebff 0%, rgba(233, 235, 255, 0) 62%),
+    radial-gradient(1100px 480px at 12% -6%, var(--brand-100) 0%, transparent 62%),
     radial-gradient(900px 420px at 92% 0%, #e6f6f0 0%, rgba(230, 246, 240, 0) 58%),
     var(--bg);
   min-height: 100vh;
@@ -304,7 +292,7 @@ em {
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent-ink);
+  color: var(--on-accent);
   box-shadow: 0 8px 18px -10px rgba(74, 69, 214, 0.9);
 }
 
