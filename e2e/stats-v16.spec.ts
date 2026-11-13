@@ -74,7 +74,7 @@ test.describe('v1.6 统计页', () => {
   test('S3. English 统计页无中文统计标签', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
     await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Stats' }).click()
     await expect(page.getByRole('heading', { name: '8-week completion trend' })).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Daily focus trend' })).toBeVisible()

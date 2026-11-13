@@ -36,7 +36,9 @@
 - 搜索框 36 / 移动 44；工具条 composer/plan/stats 56 / 48
 - 弹窗/更多菜单/历史行/表单间距统一；`.panel` 与四类卡片同一套
 - 新增 G e2e：卡片、输入、工具条、列表、弹窗、320 不溢出
-- 尺寸表 `docs/P2-COMPONENTS.md`；截图 `.tmp/v2-p2/`
+- 尺寸表 `docs/P2-COMPONENTS.md`；组件对照页 `docs/components-v2.html`；截图 `.tmp/v2-p2/`
+- 设置页：亮色侧栏 brand-600 + 选中 brand-200/brand-900 chip；主题/语言改分段滑块（36/44、radiogroup、roving、方向键/Home/End、0.26s / reduced-motion）
+- 设置页选项行（radio/checkbox/select）统一 36/44、间距 ≥8
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 

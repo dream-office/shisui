@@ -1968,10 +1968,11 @@ em {
 
 /* ── v2.0 P1：深色导航壳 + 收件骨架 ───────────── */
 :root {
-  --sidebar-bg: var(--brand-700);
+  --sidebar-bg: var(--brand-600);
   --sidebar-fg: oklch(0.985 0.010 86);
-  --sidebar-muted: oklch(0.985 0.010 86 / .72);
-  --sidebar-active: oklch(1 0 0 / .14);
+  --sidebar-muted: oklch(0.985 0.010 86 / .78);
+  --sidebar-active: var(--brand-200);
+  --sidebar-active-fg: var(--brand-900);
 }
 [data-theme="dark"] {
   --sidebar-bg: var(--brand-800);
@@ -2044,8 +2045,8 @@ em {
 .sb-item:hover { background: oklch(1 0 0 / .08); color: var(--sidebar-fg); }
 .sb-item[aria-current="page"] {
   background: var(--sidebar-active);
-  color: var(--sidebar-fg);
-  box-shadow: inset 0 0 0 1px oklch(1 0 0 / .18);
+  color: var(--sidebar-active-fg);
+  box-shadow: inset 0 0 0 1px var(--brand-300);
 }
 .sb-item:focus-visible { outline: 2px solid var(--sidebar-fg); outline-offset: 2px; }
 .sb-foot { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
@@ -2344,4 +2345,67 @@ select:disabled {
   .stats-tools { min-height: 48px; }
   .help-panel,
   .import-modal { padding: 16px; }
+}
+
+
+/* ── P2 分段滑块（设置页多选一） ── */
+.segmented {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  max-width: 360px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--surface-2);
+}
+.segmented-option {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-36);
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--t-2);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.26s ease, color 0.26s ease, box-shadow 0.26s ease, border-color 0.26s ease;
+}
+.segmented-option:hover { color: var(--t-1); }
+.segmented-option[aria-checked="true"] {
+  background: var(--surface-solid);
+  border-color: var(--line-strong);
+  color: var(--t-1);
+  box-shadow: var(--sh-1);
+}
+.segmented-option:focus-visible {
+  outline: 2px solid var(--accent-ink);
+  outline-offset: 2px;
+}
+@media (max-width: 860px) {
+  .segmented-option { min-height: var(--control-44); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .segmented-option { transition: none; }
+}
+
+
+/* P2 设置页：选项行与开关同高 */
+.inline-check {
+  min-height: var(--control-36);
+  gap: 8px;
+  padding: 0 2px;
+}
+.field select {
+  height: var(--control-36);
+  min-height: var(--control-36);
+  padding: 0 10px;
+}
+.image-mode-options { gap: 8px; }
+@media (max-width: 860px) {
+  .inline-check { min-height: var(--control-44); }
+  .field select { height: var(--control-44); min-height: var(--control-44); }
 }

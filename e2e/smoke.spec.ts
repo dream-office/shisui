@@ -1185,7 +1185,7 @@ test.describe('v1.0 中英双语', () => {
 
     const nav = page.getByRole('navigation', { name: '主视图' })
     await nav.getByRole('button', { name: /^设置/ }).click()
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('Inbox')
@@ -1201,7 +1201,7 @@ test.describe('v1.0 中英双语', () => {
     await page.getByRole('navigation', { name: /主视图|Main views/ }).first().getByRole('button', { name: 'Settings' }).click()
     await expect(page.getByRole('heading', { name: 'Backup & restore' })).toBeVisible()
 
-    await page.getByRole('button', { name: '中文' }).click()
+    await page.getByRole('radio', { name: '中文' }).click()
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
     await expect(page.getByRole('navigation', { name: /主视图|Main views/ }).first()).toContainText('收件')
   })
@@ -1212,7 +1212,7 @@ test.describe('v1.0 English 静态 UI', () => {
   test('L2. manifest 切换 + English 页面无中文（含解析/候选/Plan 有数据）', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
 
     expect(await page.locator('link[rel="manifest"]').getAttribute('href')).toContain('manifest.en.webmanifest')
     const manifest = await (await page.request.get('/manifest.en.webmanifest')).json()
@@ -1313,7 +1313,7 @@ test.describe('v1.1 签名彩蛋', () => {
   test('S2. 英文界面显示英文一句话', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
     const button = page.locator('.signature-btn')
     await button.click()
     await button.click()
@@ -1403,7 +1403,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     const licenseResponse = await page.request.get(new URL(licenseHref!, page.url()).href)
     expect(licenseResponse.status()).toBe(200)
 
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
     await expect(page.getByText('Author: dream-office')).toBeVisible()
     await expect(about).toContainText('Picking up the scattered moments, one grain at a time.')
     await expect(page.getByRole('link', { name: 'Source (GitHub)' })).toBeVisible()

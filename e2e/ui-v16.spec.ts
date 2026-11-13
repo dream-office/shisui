@@ -292,3 +292,99 @@ test('G. P2 组件：卡片 24/16、输入 36/44、工具条 56/48、列表/弹�
   const overflow320 = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow320).toBeLessThanOrEqual(1)
 })
+
+
+test('I. 设置页分段滑块 + 侧栏 brand-600/选中 chip 对比度', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const contrast = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 1
+    canvas.height = 1
+    const ctx = canvas.getContext('2d')!
+    const rgb = (color: string) => {
+      ctx.clearRect(0, 0, 1, 1)
+      ctx.fillStyle = color
+      ctx.fillRect(0, 0, 1, 1)
+      return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)]
+    }
+    const lum = (c: number[]) => {
+      const f = (v: number) => {
+        const x = v / 255
+        return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2])
+    }
+    const ratio = (a: number[], b: number[]) => {
+      const l1 = lum(a)
+      const l2 = lum(b)
+      return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05)
+    }
+    const sidebar = document.querySelector('.sidebar') as HTMLElement
+    const active = document.querySelector('.sb-item[aria-current="page"]') as HTMLElement
+    const ss = getComputedStyle(sidebar)
+    const as = getComputedStyle(active)
+    return {
+      sidebar: ratio(rgb(ss.backgroundColor), rgb(ss.color)),
+      active: ratio(rgb(as.backgroundColor), rgb(as.color)),
+    }
+  })
+  expect(contrast.sidebar).toBeGreaterThanOrEqual(4.5)
+  expect(contrast.active).toBeGreaterThanOrEqual(4.5)
+
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^设置/ }).click()
+  const themeGroup = page.getByRole('radiogroup', { name: '外观' })
+  await expect(themeGroup).toBeVisible()
+  await expect(themeGroup.getByRole('radio')).toHaveCount(3)
+  await expect(themeGroup.getByRole('radio', { name: '跟随系统' })).toHaveAttribute('aria-checked', 'true')
+  const style = await themeGroup.evaluate((el) => {
+    const s = getComputedStyle(el)
+    const active = el.querySelector('[aria-checked="true"]') as HTMLElement
+    const a = getComputedStyle(active)
+    return { padding: s.padding, radius: s.borderRadius, h: Math.round(active.getBoundingClientRect().height), activeRadius: a.borderRadius, shadow: a.boxShadow }
+  })
+  expect(style.padding).toBe('3px')
+  expect(style.radius).toBe('15px')
+  expect(style.h).toBe(36)
+  expect(style.activeRadius).toBe('12px')
+  expect(style.shadow).not.toBe('none')
+
+  await themeGroup.getByRole('radio', { name: '跟随系统' }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(themeGroup.getByRole('radio', { name: '亮色' })).toHaveAttribute('aria-checked', 'true')
+  await expect(themeGroup.getByRole('radio', { name: '亮色' })).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(themeGroup.getByRole('radio', { name: '暗色' })).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Home')
+  await expect(themeGroup.getByRole('radio', { name: '跟随系统' })).toHaveAttribute('aria-checked', 'true')
+
+  const langGroup = page.getByRole('radiogroup', { name: '界面语言' })
+  await expect(langGroup.getByRole('radio')).toHaveCount(2)
+
+  // 桌面：选项行与分段段同高 36
+  const imageRows = page.locator('.image-mode-options .inline-check')
+  const rowHeights = await imageRows.evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)))
+  expect(new Set(rowHeights).size, `image rows ${rowHeights}`).toBe(1)
+  expect(rowHeights[0]).toBe(36)
+  expect(await page.locator('.image-mode-options').evaluate((el) => getComputedStyle(el).rowGap)).toBe('8px')
+  expect(await page.locator('.backup-encrypt').evaluate((el) => Math.round(el.getBoundingClientRect().height))).toBe(36)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^设置/ }).click()
+  const mobile = page.getByRole('radiogroup', { name: '外观' })
+  const mobileH = await mobile.getByRole('radio').first().evaluate((el) => Math.round(el.getBoundingClientRect().height))
+  expect(mobileH).toBe(44)
+  const mobileRows = await page.locator('.image-mode-options .inline-check').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)))
+  expect(new Set(mobileRows).size, `mobile rows ${mobileRows}`).toBe(1)
+  expect(mobileRows[0]).toBe(44)
+
+  await page.setViewportSize({ width: 320, height: 720 })
+  await page.reload()
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^设置/ }).click()
+  const overflow320 = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow320).toBeLessThanOrEqual(1)
+})

@@ -11,7 +11,7 @@ test.describe('v1.4 English 动态文本截图', () => {
   const toEnglish = async (page: import('@playwright/test').Page) => {
     await page.goto('/')
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
-    await page.getByRole('button', { name: 'English' }).click()
+    await page.getByRole('radio', { name: 'English' }).click()
   }
 
   test('解析 reasons', async ({ page }) => {

@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test'
 async function toEnglish(page: Page) {
   await page.goto('/')
   await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
-  await page.getByRole('button', { name: 'English' }).click()
+  await page.getByRole('radio', { name: 'English' }).click()
 }
 
 const CORE_ZH = /命中|时间短语|重复规则|提交渠道|时间与类型|结构基本清楚|信息不足|双引擎一致|规则引擎未命中|时间重叠|已经过期|几乎同时截止|这一天堆了|无法识别|没有开始时间|不支持|不是拾穗备份|备份文件不完整/

@@ -11,6 +11,7 @@ import {
 } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { downloadTextFile } from '@/services/download'
+import Segmented from './Segmented'
 import { DEFAULT_LLM_CONFIG, isLLMReady, type LLMConfig } from '@/services/llm'
 
 interface RestorePreview {
@@ -156,44 +157,29 @@ export default function SettingsView() {
       <section className="card" aria-labelledby="appearance-title">
         <h3 id="appearance-title">{t('外观')}</h3>
         <p className="muted">{t('默认跟随系统；也可以固定亮色或暗色。')}</p>
-        <div className="language-switch" role="radiogroup" aria-label={t('外观')}>
-          {[
-            ['system', t('跟随系统')],
-            ['light', t('亮色')],
-            ['dark', t('暗色')],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={theme === value}
-              className={`btn btn-sm ${theme === value ? 'btn-primary' : ''}`}
-              onClick={() => setTheme(value as typeof theme)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label={t('外观')}
+          value={theme}
+          options={[
+            { value: 'system', label: t('跟随系统') },
+            { value: 'light', label: t('亮色') },
+            { value: 'dark', label: t('暗色') },
+          ]}
+          onChange={(value) => setTheme(value as typeof theme)}
+        />
       </section>
 
       <section className="card" aria-labelledby="language-title">
         <h3 id="language-title">{t('界面语言')}</h3>
-        <div className="language-switch">
-          <button
-            type="button"
-            className={`btn btn-sm ${lang === 'zh' ? 'btn-primary' : ''}`}
-            onClick={() => changeLang('zh')}
-          >
-            {t('中文')}
-          </button>
-          <button
-            type="button"
-            className={`btn btn-sm ${lang === 'en' ? 'btn-primary' : ''}`}
-            onClick={() => changeLang('en')}
-          >
-            {t('English')}
-          </button>
-        </div>
+        <Segmented
+          label={t('界面语言')}
+          value={lang}
+          options={[
+            { value: 'zh', label: t('中文') },
+            { value: 'en', label: 'English' },
+          ]}
+          onChange={(value) => changeLang(value as 'zh' | 'en')}
+        />
       </section>
 
       <section className="card" aria-labelledby="image-title">
