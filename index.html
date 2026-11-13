@@ -12,6 +12,20 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="拾穗" />
     <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <script>
+      // 首屏前同步主题，避免暗色系统下先闪亮底
+      (function () {
+        try {
+          var pref = localStorage.getItem('shisui.theme');
+          var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = pref === 'light' || pref === 'dark' ? pref : dark ? 'dark' : 'light';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#1E1A12' : '#FAF5EC');
+        } catch (e) {}
+      })();
+    </script>
     <title>拾穗 · 群消息变待办 / Shisui — group messages to to-dos</title>
   </head>
   <body>

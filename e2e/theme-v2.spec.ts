@@ -151,3 +151,40 @@ test('T4. 暗色 toast 对比度 >= 4.5（含 update-toast 基类）', async ({ 
   })
   expect(updateRatio).toBeGreaterThanOrEqual(4.5)
 })
+
+
+test('P5. 暗色壳：首屏 PWA 色、无亮底、玻璃、固定亮色持久化', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
+  await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1E1A12')
+
+  const lightBlocks = await page.evaluate(() => {
+    const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1
+    const ctx = canvas.getContext('2d')!
+    const rgb = (c: string) => { ctx.clearRect(0,0,1,1); ctx.fillStyle = c; ctx.fillRect(0,0,1,1); return [...ctx.getImageData(0,0,1,1).data] }
+    const lum = (c: number[]) => { const f=(v:number)=>{const x=v/255;return x<=0.03928?x/12.92:((x+0.055)/1.055)**2.4}; return 0.2126*f(c[0])+0.7152*f(c[1])+0.0722*f(c[2]) }
+    return [...document.querySelectorAll('*')].filter((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width * r.height < 400) return false
+      const c = rgb(getComputedStyle(el).backgroundColor)
+      return c[3] > 200 && lum(c) > 0.8
+    }).map((el) => ({ tag: el.tagName, cls: String(el.className).slice(0, 60) })).slice(0, 10)
+  })
+  expect(lightBlocks).toEqual([])
+  expect(await page.locator('.composer').evaluate((el) => getComputedStyle(el, '::before').backdropFilter)).toContain('blur')
+
+  await page.evaluate(() => localStorage.setItem('shisui.theme', 'light'))
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#FAF5EC')
+  await page.evaluate(() => localStorage.setItem('shisui.theme', 'dark'))
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  expect(await page.locator('.dock').evaluate((el) => getComputedStyle(el).backdropFilter)).toContain('blur')
+  expect(await page.locator('.mobile-bar').evaluate((el) => getComputedStyle(el).backdropFilter)).toContain('blur')
+  expect(await page.locator('.sidebar').evaluate((el) => getComputedStyle(el).backdropFilter)).toBe('none')
+})
