@@ -1777,7 +1777,7 @@ em {
 }
 .signature-btn:hover,
 .signature-btn:focus-visible { opacity: 0.85; }
-.signature-mark { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); flex: none; }
+.signature-mark { width: 10px; height: 10px; border-radius: 2px; background: #5b57f0; flex: none; }
 .signature-line {
   display: flex;
   align-items: center;
