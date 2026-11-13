@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { setLang as applyLang, t } from '@/i18n'
 import { useApp } from '@/state/store'
+import { pathForView, viewFromPath } from '@/shells/routes'
 import { registerServiceWorker } from '@/services/pwa'
 import InboxView from '@/ui/InboxView'
 import ErrorBoundary from '@/ui/ErrorBoundary'
@@ -69,6 +70,7 @@ export default function App() {
 
   // 外观：跟随系统 / 强制亮暗；PWA theme-color 跟随
   useEffect(() => {
+    if (__EMBEDDED__) return
     const media = window.matchMedia('(prefers-color-scheme: dark)')
     const apply = () => {
       const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme
@@ -84,6 +86,7 @@ export default function App() {
   // 语言切换：同步 i18n 模块、<html lang> 与标题
   useEffect(() => {
     applyLang(lang)
+    if (__EMBEDDED__) return
     document.title =
       lang === 'en' ? 'Shisui — turn group messages into to-dos' : '拾穗 · 群消息变待办'
     // PWA manifest 中英双份：按语言切换 <link rel="manifest">
@@ -107,7 +110,8 @@ export default function App() {
       window.history.replaceState({ shisuiView: view }, '')
     }
     const onPopState = (event: PopStateEvent) => {
-      const next = (event.state as { shisuiView?: string } | null)?.shisuiView
+      const stateView = (event.state as { shisuiView?: string } | null)?.shisuiView
+      const next = stateView ?? (__EMBEDDED__ ? viewFromPath(window.location.pathname) : null)
       if (!next || next === view) return
       scrollPositions.current[view] = window.scrollY
       pendingScroll.current = true
@@ -154,7 +158,8 @@ export default function App() {
   const navigate = (next: typeof view) => {
     if (next === view) return
     scrollPositions.current[view] = window.scrollY
-    window.history.pushState({ shisuiView: next }, '')
+    const url = __EMBEDDED__ ? pathForView(next) : null
+    window.history.pushState({ shisuiView: next }, '', url)
     setView(next)
   }
 
@@ -193,6 +198,7 @@ export default function App() {
 
   // 只在生产构建里注册 Service Worker；有新版本时提示用户，而不是自动替换页面
   useEffect(() => {
+    if (__EMBEDDED__) return
     registerServiceWorker((apply) => setApplyUpdate(() => apply))
   }, [])
 
@@ -226,8 +232,9 @@ export default function App() {
 
   return (
     <>
-      <div className="gradient-line" aria-hidden="true" />
-      <div className="shell">
+      {!__EMBEDDED__ && <div className="gradient-line" aria-hidden="true" />}
+      <div className={`shell${__EMBEDDED__ ? ' is-embedded' : ''}`}>
+        {!__EMBEDDED__ && (
         <aside className="sidebar" aria-label={t('主导航')}>
           <div className="sb-brand">
             <span className="sb-mark" aria-hidden="true">穗</span>
@@ -257,8 +264,10 @@ export default function App() {
             </div>
           </div>
         </aside>
+        )}
 
         <div className="shell-main">
+          {!__EMBEDDED__ && (
           <header className="mobile-bar">
             <div className="mobile-brand">
               <span className="sb-mark" aria-hidden="true">穗</span>
@@ -274,8 +283,16 @@ export default function App() {
               {t('怎么用')}
             </button>
           </header>
+          )}
 
       <main className="main" id="main">
+        {__EMBEDDED__ && (
+          <div className="embedded-head">
+            <button type="button" className="btn btn-sm" aria-haspopup="dialog" onClick={(event) => openHelp(event.currentTarget)}>
+              {t('怎么用')}
+            </button>
+          </div>
+        )}
 
         <ErrorBoundary onReset={() => setArmed(false)}>
           {armed && <ErrorProbe />}
@@ -287,6 +304,7 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
+      {!__EMBEDDED__ && (
       <footer className="footer">
         <span>{t('数据只存在本地浏览器里（IndexedDB），不上传服务器')}</span>
         <span className="footer-sep">·</span>
@@ -342,14 +360,17 @@ export default function App() {
           </div>
         )}
       </footer>
+      )}
         </div>
       </div>
 
+      {!__EMBEDDED__ && (
       <div className="dock">
         <nav aria-label={t('主视图')} onKeyDown={onNavKeyDown}>
           {navButtons('dock')}
         </nav>
       </div>
+      )}
 
       <HelpPanel
         open={helpOpen}

@@ -5,6 +5,7 @@
  */
 import { version as appVersion } from '../../package.json'
 import { create } from 'zustand'
+import { viewFromPath } from '@/shells/routes'
 import {
   buildBackup,
   clockOf,
@@ -172,7 +173,10 @@ async function buildPlan(task: StoredTask): Promise<{ nextTask: ParsedTask | nul
 }
 
 export const useApp = create<AppState>((set, get) => ({
-  view: 'inbox',
+  view: (() => {
+    if (typeof window === 'undefined' || typeof __EMBEDDED__ === 'undefined' || !__EMBEDDED__) return 'inbox'
+    return viewFromPath(window.location.pathname) ?? 'inbox'
+  })(),
   tasks: [],
   hydrated: false,
   candidates: [],
@@ -186,6 +190,9 @@ export const useApp = create<AppState>((set, get) => ({
   series: [],
   lang: (() => {
     if (typeof window === 'undefined') return 'zh' as Lang
+    if (typeof __EMBEDDED__ !== 'undefined' && __EMBEDDED__) {
+      return document.documentElement.lang.toLowerCase().startsWith('en') ? ('en' as Lang) : ('zh' as Lang)
+    }
     try {
       return window.localStorage.getItem('shisui-lang') === 'en' ? ('en' as Lang) : ('zh' as Lang)
     } catch {

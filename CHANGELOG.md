@@ -65,6 +65,12 @@
 - 暗色 token 对比度 4.70–17.78；玻璃面/侧栏实心扫描无亮块
 - P5 e2e：PWA 色、固定亮色持久化、暗色玻璃、无亮底
 
+#### P6 双外壳
+- `build:standalone` → `dist/`（PWA）；`build:embedded` → `dist/embedded/`（无 PWA/SW）
+- embedded 无侧栏/dock/页脚；设置裁掉主题/语言；宿主 data-theme / lang 生效
+- 路由挂载 `/projects/shisui/{inbox|plan|calendar|stats|settings}`，深链/刷新
+- embedded e2e E1/E2；P6 文档 docs/P6-SHELL.md
+
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 

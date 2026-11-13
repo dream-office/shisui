@@ -36,7 +36,7 @@ export default defineConfig({
     // 直接用 node 跑 vite 入口，避免依赖 pnpm/npx 是否在 PATH 上。
     // --host 127.0.0.1 是必需的：默认只监听 localhost，在 CI 上可能解析到 ::1，
     // 而 baseURL 走 IPv4 127.0.0.1 → 连不上 → webServer 超时（不是产品问题）。
-    command: `node node_modules/vite/bin/vite.js build && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${PORT} --strictPort`,
+    command: `node node_modules/vite/bin/vite.js build --mode standalone && node node_modules/vite/bin/vite.js build --mode embedded && node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port ${PORT} --strictPort`,
     url: `http://127.0.0.1:${PORT}`,
     // CI 里绝不复用已有服务：避免"上一次残留的 dev server"让测试假绿
     reuseExistingServer: false,

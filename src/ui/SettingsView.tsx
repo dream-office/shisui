@@ -154,33 +154,38 @@ export default function SettingsView() {
 
   return (
     <div className="settings">
-      <section className="card" aria-labelledby="appearance-title">
-        <h3 id="appearance-title">{t('外观')}</h3>
-        <p className="muted">{t('默认跟随系统；也可以固定亮色或暗色。')}</p>
-        <Segmented
-          label={t('外观')}
-          value={theme}
-          options={[
-            { value: 'system', label: t('跟随系统') },
-            { value: 'light', label: t('亮色') },
-            { value: 'dark', label: t('暗色') },
-          ]}
-          onChange={(value) => setTheme(value as typeof theme)}
-        />
-      </section>
+      {!__EMBEDDED__ && (
+        <>
+        <section className="card" aria-labelledby="appearance-title">
+          <h3 id="appearance-title">{t('外观')}</h3>
+          <p className="muted">{t('默认跟随系统；也可以固定亮色或暗色。')}</p>
+          <Segmented
+            label={t('外观')}
+            value={theme}
+            options={[
+              { value: 'system', label: t('跟随系统') },
+              { value: 'light', label: t('亮色') },
+              { value: 'dark', label: t('暗色') },
+            ]}
+            onChange={(value) => setTheme(value as typeof theme)}
+          />
+        </section>
 
-      <section className="card" aria-labelledby="language-title">
-        <h3 id="language-title">{t('界面语言')}</h3>
-        <Segmented
-          label={t('界面语言')}
-          value={lang}
-          options={[
-            { value: 'zh', label: t('中文') },
-            { value: 'en', label: 'English' },
-          ]}
-          onChange={(value) => changeLang(value as 'zh' | 'en')}
-        />
-      </section>
+        <section className="card" aria-labelledby="language-title">
+          <h3 id="language-title">{t('界面语言')}</h3>
+          <Segmented
+            label={t('界面语言')}
+            value={lang}
+            options={[
+              { value: 'zh', label: t('中文') },
+              { value: 'en', label: 'English' },
+            ]}
+            onChange={(value) => changeLang(value as 'zh' | 'en')}
+          />
+        </section>
+        </>
+      )}
+
 
       <section className="card" aria-labelledby="image-title">
         <h3 id="image-title">{t('图片识别')}</h3>
