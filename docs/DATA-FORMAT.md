@@ -1,6 +1,6 @@
 # 数据格式冻结（v1.0）
 
-> 当前适用：**app 1.6.0 / core 1.4.0（DB v5 / backupSchema 5）**；v1.0 的 DB v3/backupSchema 3 与 v1.2 的 v4 结构仍向下兼容。
+> 当前适用：**app 2.0.0 / core 1.4.0（DB v5 / backupSchema 5）**；v1.0 的 DB v3/backupSchema 3 与 v1.2 的 v4 结构仍向下兼容。
 
 > v1.0 起以下结构**冻结**；变更需升版本并写迁移说明。v1.2 起 DB v4：tasks/series 增加 `url`/`note`。v1.6 起 **DB v5**：tasks 增加 `doneAt`（实际完成时刻）。
 > 所有数据默认只存在用户浏览器 IndexedDB 里。

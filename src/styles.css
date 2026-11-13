@@ -1615,8 +1615,8 @@ em {
   .conflict-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bucket-row { grid-template-columns: 58px minmax(0, 1fr) 24px; gap: 8px; }
   .tabs { flex-wrap: wrap; }
-  .tabs .tab { min-height: 40px; padding: 8px 10px; }
-  .btn { min-height: 38px; }
+  .tabs .tab { min-height: var(--control-44); padding: 8px 10px; }
+  .btn { min-height: var(--control-44); }
   .batch-item { align-items: flex-start; }
   .batch-time { width: 100%; padding-left: 24px; }
 }

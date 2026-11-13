@@ -11,7 +11,7 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
-> **当前版本**：app 1.6.0 · core 1.4.0 · DB v5 · backup schema 5
+> **当前版本**：app 2.0.0 · core 1.4.0 · DB v5 · backup schema 5
 
 ---
 
@@ -51,6 +51,13 @@
 3. **去日程 / 月历**：按天排好并做冲突体检，可拖拽改期；完成/重复/统计在对应页面
 
 > 界面支持 **中文 / English**（设置页切换，记住选择）。数据只存在本地浏览器，不上传。
+
+## 外观（亮 / 暗）
+
+- Lumen v1.3 设计系统 + A 麦穗金（`--h:86 / --c:.110 / --tint:.04`）
+- 设置页可选 **跟随系统 / 亮色 / 暗色**，选择记在本地；默认跟随系统
+- PWA `theme-color` 随主题切换；签名落款 `#5B57F0` 不随主题变化
+- 统计导出与页面同色板；完整口径见 [docs/STATS.md](docs/STATS.md)
 
 ## 统计
 
