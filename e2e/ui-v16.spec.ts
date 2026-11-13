@@ -78,6 +78,11 @@ test.describe('v1.6 UI 统一与返回路径', () => {
     const fc = await chooser
     await fc.setFiles(join(process.cwd(), 'e2e', 'fixtures', 'photo.png'))
     await expect(page.getByRole('dialog', { name: '选择图片识别方式' })).toBeVisible()
+    // 进入二级说明，Esc 只关最上层，回到图片选择
+    await page.getByRole('button', { name: '本地 OCR（离线）' }).click()
+    await expect(page.getByRole('dialog', { name: '本地识别说明' })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog', { name: '选择图片识别方式' })).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(more).toBeFocused()
