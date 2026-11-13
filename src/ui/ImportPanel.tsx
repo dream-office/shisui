@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { t } from '@/i18n'
 import { useApp } from '@/state/store'
 import { isLLMReady } from '@/services/llm'
@@ -9,6 +9,8 @@ import { ImportError, type ImportErrorCode, validateImage } from '@/services/fil
 
 interface Props {
   onText: (text: string) => void
+  /** 弹窗关闭后把焦点还给触发按钮（无障碍） */
+  onModalClose?: () => void
 }
 
 export interface ImportPanelHandle {
@@ -32,7 +34,7 @@ const ERROR_KEYS: Record<ImportErrorCode, string> = {
   cancelled: '已取消',
 }
 
-const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ onText }, ref) {
+const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ onText, onModalClose }, ref) {
   const imageMode = useApp((s) => s.imageMode)
   const llmConfig = useApp((s) => s.llmConfig)
   const setImageCandidates = useApp((s) => s.setImageCandidates)
@@ -46,6 +48,21 @@ const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ 
   const [askOpen, setAskOpen] = useState(false)
   const [ocrNoticeOpen, setOcrNoticeOpen] = useState(false)
   const [aiConfirmOpen, setAiConfirmOpen] = useState(false)
+  const closeModal = () => {
+    setAskOpen(false)
+    setOcrNoticeOpen(false)
+    setAiConfirmOpen(false)
+    onModalClose?.()
+  }
+
+  useEffect(() => {
+    if (!askOpen && !ocrNoticeOpen && !aiConfirmOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeModal()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
   const [aiChecked, setAiChecked] = useState(false)
 
   useImperativeHandle(ref, () => ({
@@ -195,7 +212,7 @@ const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ 
       {error && <p className="import-error" role="alert">{error}</p>}
 
       {askOpen && pendingImage && (
-        <div className="help-overlay" role="presentation" onClick={() => setAskOpen(false)}>
+        <div className="help-overlay" role="presentation" onClick={closeModal}>
           <section className="import-modal card" role="dialog" aria-modal="true" aria-label={t('选择图片识别方式')} onClick={(e) => e.stopPropagation()}>
             <h3>{t('选择图片识别方式')}</h3>
             <p className="muted">{t('本地 OCR 不上传；AI 识图会把图片发送到你配置的服务。')}</p>
@@ -223,7 +240,7 @@ const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ 
               >
                 {t('AI 识图（发送到 API）')}
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAskOpen(false)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={closeModal}>
                 {t('取消')}
               </button>
             </div>
@@ -287,7 +304,7 @@ const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ 
               >
                 {t('发送并识别')}
               </button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setAiConfirmOpen(false)}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={closeModal}>
                 {t('取消')}
               </button>
             </div>

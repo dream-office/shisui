@@ -1,5 +1,5 @@
 import { t, tCore, formatDateOnlyI18n } from '@/i18n'
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { importIcs, mergeIcsImport } from 'shisui-core'
 import type { LocalizedMessage, ParsedTask } from 'shisui-core'
 import { useApp } from '@/state/store'
@@ -25,6 +25,13 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
   const [fileName, setFileName] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ParsedTask[] | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
   const [warningCodes, setWarningCodes] = useState<LocalizedMessage[]>([])
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<{ added: number; updated: number; skipped: number } | null>(null)

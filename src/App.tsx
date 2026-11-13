@@ -41,6 +41,10 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false)
   const helpButtonRef = useRef<HTMLButtonElement>(null)
   const [signatureOpen, setSignatureOpen] = useState(false)
+  const tabRefs = useRef<Partial<Record<string, HTMLButtonElement | null>>>({})
+  const scrollPositions = useRef<Partial<Record<string, number>>>({})
+  const pendingScroll = useRef(false)
+  const restoreFocus = useRef(false)
   const signatureClicks = useRef<number[]>([])
   const signatureRef = useRef<HTMLButtonElement>(null)
   const signatureCloseRef = useRef<HTMLButtonElement>(null)
@@ -64,6 +68,40 @@ export default function App() {
   useEffect(() => {
     void hydrate()
   }, [hydrate])
+
+  // Tab 历史：浏览器返回回到来源视图，并恢复滚动位置/焦点
+  useEffect(() => {
+    if (!window.history.state || window.history.state.shisuiView === undefined) {
+      window.history.replaceState({ shisuiView: view }, '')
+    }
+    const onPopState = (event: PopStateEvent) => {
+      const next = (event.state as { shisuiView?: string } | null)?.shisuiView
+      if (!next || next === view) return
+      scrollPositions.current[view] = window.scrollY
+      pendingScroll.current = true
+      restoreFocus.current = true
+      setView(next as typeof view)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [view, setView])
+
+  useEffect(() => {
+    const top = pendingScroll.current ? (scrollPositions.current[view] ?? 0) : 0
+    pendingScroll.current = false
+    window.scrollTo({ top, behavior: 'auto' })
+    if (restoreFocus.current) {
+      restoreFocus.current = false
+      tabRefs.current[view]?.focus({ preventScroll: true })
+    }
+  }, [view])
+
+  const navigate = (next: typeof view) => {
+    if (next === view) return
+    scrollPositions.current[view] = window.scrollY
+    window.history.pushState({ shisuiView: next }, '')
+    setView(next)
+  }
 
   // 控制台签名：整页只打一次（React StrictMode 双挂载也只一次）
   useEffect(() => {
@@ -131,8 +169,11 @@ export default function App() {
             <button
               key={tab.id}
               type="button"
+              ref={(el) => {
+                tabRefs.current[tab.id] = el
+              }}
               className={`tab ${view === tab.id ? 'is-active' : ''}`}
-              onClick={() => setView(tab.id)}
+              onClick={() => navigate(tab.id)}
             >
               {t(tab.label)}
               {tab.id === 'plan' && pending > 0 && <span className="tab-badge">{pending}</span>}

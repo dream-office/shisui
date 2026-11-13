@@ -11,6 +11,7 @@ test.describe('v1.6 统计页截图', () => {
   for (const [width, height] of [
     [1280, 900],
     [360, 800],
+    [320, 720],
   ] as const) {
     test(`统计页 @${width}`, async ({ page }) => {
       await page.setViewportSize({ width, height })

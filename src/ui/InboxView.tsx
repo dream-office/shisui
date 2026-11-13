@@ -354,6 +354,7 @@ export default function InboxView() {
 
         <ImportPanel
           ref={importRef}
+          onModalClose={() => moreButtonRef.current?.focus()}
           onText={(text) => {
             setRaw(text)
             requestAnimationFrame(() => textareaRef.current?.focus())
@@ -370,7 +371,7 @@ export default function InboxView() {
 
       {manualOpen && <ManualAddForm onClose={() => setManualOpen(false)} />}
 
-      {icsOpen && <IcsImportPanel onClose={() => setIcsOpen(false)} />}
+      {icsOpen && <IcsImportPanel onClose={() => { setIcsOpen(false); moreButtonRef.current?.focus() }} />}
 
       {historyOpen && (
         <HistoryPanel

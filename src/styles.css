@@ -5,6 +5,14 @@
    ========================================================================== */
 
 :root {
+  /* v1.6 统一尺寸 token：卡片、按钮、输入、chip 共用 */
+  --card-pad: 16px 18px;
+  --card-radius: var(--radius-lg);
+  --control-h: 34px;
+  --control-px: 14px;
+  --control-radius: var(--radius-sm);
+  --chip-h: 24px;
+  --chip-px: 10px;
   --bg: #f5f6fb;
   --surface: #ffffff;
   --surface-2: #fafbff;
@@ -165,7 +173,8 @@ em {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 7px 16px;
+  min-height: 32px;
+  padding: 0 16px;
   white-space: nowrap;
   border-radius: 999px;
   font-size: 14px;
@@ -267,8 +276,9 @@ em {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 9px 16px;
-  border-radius: var(--radius-sm);
+  min-height: var(--control-h);
+  padding: 0 var(--control-px);
+  border-radius: var(--control-radius);
   border: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--ink-soft);
@@ -328,7 +338,8 @@ em {
 }
 
 .btn-sm {
-  padding: 7px 13px;
+  min-height: 30px;
+  padding: 0 12px;
   font-size: 13px;
 }
 
@@ -336,7 +347,8 @@ em {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 10px;
+  height: var(--chip-h);
+  padding: 0 var(--chip-px);
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--line);
@@ -676,8 +688,9 @@ em {
 }
 
 .field input {
-  padding: 6px 9px;
-  border-radius: 9px;
+  min-height: var(--control-h);
+  padding: 0 10px;
+  border-radius: var(--control-radius);
   border: 1px solid var(--line);
   background: var(--surface-2);
   font-size: 13px;
@@ -1267,9 +1280,16 @@ em {
     padding: 14px 14px 40px;
   }
 
+  /* 窄屏顶部导航不吸顶：避免切视图/滚动时压住统计页第一张卡 */
   .topbar {
+    position: static;
     flex-wrap: wrap;
     gap: 10px;
+  }
+
+  .stats-view {
+    padding-top: 4px;
+    scroll-margin-top: 16px;
   }
 
   .brand {
@@ -1533,18 +1553,19 @@ em {
 .choice-options { display: inline-flex; gap: 6px; }
 
 /* ── 统计页 ───────────────────────────────────── */
-.stats-view { display: flex; flex-direction: column; gap: 14px; }
-.stats-head { display: flex; align-items: baseline; gap: 10px; }
+.stats-view { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 120px; }
+.stats-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.stats-head h2 { white-space: nowrap; }
 .stats-head h2 { margin: 0; font-size: 18px; }
 .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
 .metric-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.metric { display: flex; flex-direction: column; height: 100%; padding: 16px 18px; min-height: 108px; }
+.metric { display: flex; flex-direction: column; height: 100%; padding: var(--card-pad); border-radius: var(--card-radius); min-height: 108px; }
 .metric-label { font-size: 13px; color: var(--muted); }
 .metric-value { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1; }
 .metric-track { margin: 10px 0; height: 7px; border-radius: 999px; background: var(--line); overflow: hidden; flex: none; }
 .metric-fill { height: 100%; background: var(--accent); border-radius: 999px; transition: width 0.3s ease; }
 .metric-hint { margin: 0; padding-top: 10px; margin-top: auto; font-size: 12.5px; line-height: 1.6; }
-.stats-panel { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; }
+.stats-panel { display: flex; flex-direction: column; gap: 12px; padding: var(--card-pad); border-radius: var(--card-radius); }
 .stats-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .stats-panel-head h3 { margin: 0; font-size: 14px; }
 .stats-panel-head .muted { font-size: 12px; }
