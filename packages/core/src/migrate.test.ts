@@ -1,4 +1,4 @@
-import { migrateTaskV4toV5, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { migrateTaskV4toV5 } from './migrate.js'
 import {
   allDayAnchor,

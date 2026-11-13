@@ -412,8 +412,8 @@ test.describe('统计', () => {
     const nav = page.getByRole('navigation', { name: '主视图' })
     await nav.getByRole('button', { name: /^统计/ }).click()
 
-    await expect(page.getByText('本周完成率')).toBeVisible()
-    await expect(page.getByText('解析手改率')).toBeVisible()
+    await expect(page.locator('.metric-label').filter({ hasText: '本周完成率' })).toBeVisible()
+    await expect(page.locator('.metric-label').filter({ hasText: '解析手改率' })).toBeVisible()
     await expect(page.getByText('全部在本地计算')).toBeVisible()
     await expect(page.getByText('未完成逾期分布')).toBeVisible()
     await expect(page.getByText('冲突体检')).toBeVisible()
@@ -749,7 +749,7 @@ test.describe('DB v2 → v3 迁移', () => {
     })
 
     // Dexie 内部把声明版本 ×10 存进 IndexedDB（4 → 40）
-    expect(record.version).toBe(40)
+    expect(record.version).toBe(50)
     expect(record.all.title).toBe('老全天任务')
     expect(record.all.allDay).toBe(true)
     expect(record.all.endAt).toBeNull()
@@ -759,6 +759,8 @@ test.describe('DB v2 → v3 迁移', () => {
     expect(record.timed.allDay).toBe(false)
     expect(record.all.url).toBeNull()
     expect(record.all.note).toBeNull()
+    expect(record.all.doneAt).toBeNull()
+    expect(record.timed.doneAt).toBeNull()
   })
 })
 

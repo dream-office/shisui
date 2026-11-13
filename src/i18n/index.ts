@@ -331,6 +331,45 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  '8 周完成趋势': '8-week completion trend',
+  '按每周到期任务统计，跳过不计': 'By due/start time each week; skipped excluded',
+  '按任务类型分布': 'Task type distribution',
+  '全部任务（含已完成/跳过）': 'All tasks (including done/skipped)',
+  '每日专注趋势': 'Daily focus trend',
+  '最近 7 天，切走/锁屏 30 秒内回来继续计时': 'Last 7 days; returns within 30s of tab switch/lock continue timing',
+  '延期完成率': 'Late completion rate',
+  '有完成时间的 {n} 件已完成中，{late} 件晚于截止时间':
+    '{late} of {n} completed tasks with a recorded finish time were late',
+  '未完成 / 全部': 'Open / total',
+  '已跳过 {n} 件，不算完成率、逾期与冲突': '{n} skipped; excluded from completion, overdue and conflicts',
+  '导出 CSV': 'Export CSV',
+  '导出 PNG': 'Export PNG',
+  '统计口径说明': 'How stats are calculated',
+  '还没有任务': 'No tasks yet',
+  '本周到期 {n} 件，已完成 {done} 件（按到期时间统计，跳过不计）':
+    'Due this week: {n}; done: {done} (by due time, skipped excluded)',
+  '本周完成率：分母是按开始/截止时间落在本周的任务，分子是其中已完成；跳过的任务不计入。':
+    'Weekly completion: denominator = tasks starting/due this week; numerator = done among them; skipped excluded.',
+  '延期完成率：只看有实际完成时间（doneAt）的已完成任务，完成时间晚于截止/开始时间算延期。':
+    'Late completion: only completed tasks with an actual finish time (doneAt); finished later than due/start counts as late.',
+  '8 周趋势：以周一为一周起点，按任务开始/截止时间归属，跳过不计。':
+    '8-week trend: weeks start Monday; grouped by start/due time; skipped excluded.',
+  '专注时长：只记本机完成的专注段，最近 7 个自然日；单段不足 1 分钟或超过 4 小时不记。':
+    'Focus time: locally completed sessions in the last 7 calendar days; segments under 1 minute or over 4 hours are ignored.',
+  '所有数据只在本机计算，不上传。': 'Everything is calculated locally and never uploaded.',
+  '完成后会自动排到下一条；「跳过」对重复任务是「跳过这一次」。切走/锁屏 30 秒内回来会继续计时，超过 30 秒才结算这一段。':
+    'Completing moves to the next task; “Skip” skips this recurrence. Returning within 30s of a tab switch/lock continues timing; only longer absences settle the segment.',
+  '任务 / 交付物': 'Task / deliverable',
+  '会议 / 活动': 'Meeting / event',
+  '评审 / 验收': 'Review / acceptance',
+  '报名 / 登记': 'Sign-up / registration',
+  '缴费 / 报销': 'Payment / reimbursement',
+  '审批 / 确认': 'Approval / confirmation',
+  '问卷 / 填表': 'Survey / form',
+  '考试 / 测验': 'Exam / quiz',
+  其他: 'Other',
+})
+Object.assign(EN, {
   '更多 ▾': 'More ▾',
   更多操作: 'More actions',
   示例: 'Examples',

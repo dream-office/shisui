@@ -175,3 +175,39 @@ export function summarizeFocusSessions(
   }
   return { totalMs, todayMs, sessions: recent.length }
 }
+
+
+export interface FocusDay {
+  /** 当天 00:00（本地时间） */
+  dayStart: number
+  totalMs: number
+  sessions: number
+}
+
+/** 最近 N 个自然日（默认 7，旧→新）的每日专注；跨零点只算当天那一段。 */
+export function dailyFocus(
+  sessions: readonly FocusSession[],
+  ref: number = Date.now(),
+  days = 7,
+): FocusDay[] {
+  const todayStart = startOfLocalDay(ref)
+  const points: FocusDay[] = []
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const d = new Date(todayStart)
+    d.setDate(d.getDate() - offset)
+    const dayStart = d.getTime()
+    const next = new Date(dayStart)
+    next.setDate(next.getDate() + 1)
+    const dayEnd = next.getTime()
+    let totalMs = 0
+    let count = 0
+    for (const session of sessions) {
+      const start = Math.max(session.startedAt, dayStart)
+      const end = Math.min(session.endedAt, dayEnd)
+      if (end > start) totalMs += end - start
+      if (session.endedAt >= dayStart && session.endedAt < dayEnd) count += 1
+    }
+    points.push({ dayStart, totalMs, sessions: count })
+  }
+  return points
+}

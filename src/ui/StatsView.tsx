@@ -1,10 +1,11 @@
-import { t } from '@/i18n'
+import { completionTrend, computeStats, kindDistribution, type KindCount, type StoredTask, type WeekCompletion } from 'shisui-core'
+import { t, formatDateOnlyI18n, getLang } from '@/i18n'
 import { useMemo } from 'react'
 import EmptyState from './EmptyState'
-import { computeStats } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { useNow } from './useNow'
-import { readFocusSessions, summarizeFocusSessions } from '@/services/focusLog'
+import { dailyFocus, readFocusSessions, summarizeFocusSessions, type FocusDay } from '@/services/focusLog'
+import { buildStatsCsv, downloadStatsPng, downloadTextFile, type StatsExportData } from '@/services/statsExport'
 
 function MetricBar({ label, hint, value }: { label: string; hint: string; value: number | null }) {
   return (
@@ -43,22 +44,114 @@ const CONFLICT_LABELS = [
   ['pileup', '同日堆积'],
 ] as const
 
+const KIND_LABELS: Record<StoredTask['kind'], string> = {
+  task: '任务 / 交付物',
+  meeting: '会议 / 活动',
+  review: '评审 / 验收',
+  signup: '报名 / 登记',
+  payment: '缴费 / 报销',
+  approval: '审批 / 确认',
+  survey: '问卷 / 填表',
+  exam: '考试 / 测验',
+  other: '其他',
+}
+
+function TrendBars({ points }: { points: WeekCompletion[] }) {
+  return (
+    <div className="trend-chart" role="img" aria-label={t('8 周完成趋势')}>
+      {points.map((point) => (
+        <div className="trend-col" key={point.weekStart}>
+          <span className="trend-value">{point.rate === null ? '—' : `${point.rate}%`}</span>
+          <div className="trend-track">
+            <div className="trend-bar" style={{ height: point.rate === null ? '0%' : `${Math.max(2, point.rate)}%` }} />
+          </div>
+          <span className="trend-label">{formatDateOnlyI18n(point.weekStart)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function KindBars({ kinds }: { kinds: KindCount[] }) {
+  const max = Math.max(1, ...kinds.map((item) => item.count))
+  return (
+    <div className="kind-list">
+      {kinds.map((item) => (
+        <div className="kind-row" key={item.kind}>
+          <span className="kind-label">{t(KIND_LABELS[item.kind])}</span>
+          <div className="kind-track">
+            <div className="kind-fill" style={{ width: `${(item.count / max) * 100}%` }} />
+          </div>
+          <strong>{item.count}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function FocusBars({ days }: { days: FocusDay[] }) {
+  const max = Math.max(1, ...days.map((day) => day.totalMs))
+  return (
+    <div className="focus-trend" role="img" aria-label={t('每日专注趋势')}>
+      {days.map((day) => (
+        <div className="focus-col" key={day.dayStart}>
+          <span className="focus-value">{day.totalMs === 0 ? '—' : `${Math.round(day.totalMs / 60_000)}m`}</span>
+          <div className="focus-track">
+            <div className="focus-bar" style={{ height: `${(day.totalMs / max) * 100}%` }} />
+          </div>
+          <span className="focus-label">{formatDateOnlyI18n(day.dayStart)}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /**
  * 统计页：全部在本地用现有数据算，不引图表库。
- * 完成率/手改率口径在 core 的 computeStats；专注时长来自本地 focusLog。
+ * 完成率/手改率/延期完成率口径在 core 的 computeStats；专注来自本地 focusLog。
  */
 export default function StatsView() {
   const tasks = useApp((s) => s.tasks)
   const now = useNow(60_000)
   const stats = useMemo(() => computeStats(tasks, now), [tasks, now])
-  const focus = useMemo(() => summarizeFocusSessions(readFocusSessions(), now), [now])
+  const trend = useMemo(() => completionTrend(tasks, now, 8), [tasks, now])
+  const kinds = useMemo(() => kindDistribution(tasks), [tasks])
+  const sessions = useMemo(() => readFocusSessions(), [])
+  const focus = useMemo(() => summarizeFocusSessions(sessions, now), [sessions, now])
+  const focusDays = useMemo(() => dailyFocus(sessions, now, 7), [sessions, now])
   const setView = useApp((s) => s.setView)
+
+  const exportData = (): StatsExportData => ({
+    stats,
+    trend,
+    kinds,
+    focus: focusDays,
+    kindLabel: (kind) => t(KIND_LABELS[kind]),
+    lang: getLang(),
+  })
+  const dateStamp = new Date(now).toISOString().slice(0, 10)
 
   return (
     <section className="stats-view">
       <div className="stats-head">
         <h2>{t('统计')}</h2>
-        <span className="muted">{t('全部在本地计算')}</span>
+        <div className="stats-tools">
+          <span className="muted">{t('全部在本地计算')}</span>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => downloadTextFile(`shisui-stats-${dateStamp}.csv`, buildStatsCsv(exportData()))}
+          >
+            {t('导出 CSV')}
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => downloadStatsPng(exportData(), `shisui-stats-${dateStamp}.png`)}
+          >
+            {t('导出 PNG')}
+          </button>
+        </div>
       </div>
 
       {stats.total === 0 && (
@@ -75,7 +168,7 @@ export default function StatsView() {
         <MetricBar
           label={t('本周完成率')}
           value={stats.completion}
-          hint={t('本周到期 {n} 件，已完成 {done} 件（按到期时间统计，不看完成时间）', { n: stats.weekTotal, done: stats.doneThisWeek })}
+          hint={t('本周到期 {n} 件，已完成 {done} 件（按到期时间统计，跳过不计）', { n: stats.weekTotal, done: stats.doneThisWeek })}
         />
         <MetricBar
           label={t('解析手改率')}
@@ -85,19 +178,17 @@ export default function StatsView() {
       </div>
 
       <div className="metric-grid">
+        <MetricBar
+          label={t('延期完成率')}
+          value={stats.lateRate}
+          hint={t('有完成时间的 {n} 件已完成中，{late} 件晚于截止时间', { n: stats.doneWithTime, late: stats.lateDone })}
+        />
         <div className="metric card">
           <div className="metric-head">
-            <span className="metric-label">{t('全部任务')}</span>
-            <strong className="metric-value">{stats.total}</strong>
+            <span className="metric-label">{t('未完成 / 全部')}</span>
+            <strong className="metric-value">{stats.open} / {stats.total}</strong>
           </div>
-          <p className="metric-hint muted">{t('包括所有来源与已完成')}</p>
-        </div>
-        <div className="metric card">
-          <div className="metric-head">
-            <span className="metric-label">{t('未完成')}</span>
-            <strong className="metric-value">{stats.open}</strong>
-          </div>
-          <p className="metric-hint muted">{t('还在日程里的条目')}</p>
+          <p className="metric-hint muted">{t('已跳过 {n} 件，不算完成率、逾期与冲突', { n: stats.skipped })}</p>
         </div>
       </div>
 
@@ -109,10 +200,36 @@ export default function StatsView() {
         <p className="metric-hint muted">
           {focus.sessions === 0
             ? t('进入日程页的「专注模式」开始计时')
-            : t('共 {n} 次 · 今天 {m} 分钟', {
-                n: focus.sessions,
-                m: Math.round(focus.todayMs / 60_000),
-              })}
+            : t('共 {n} 次 · 今天 {m} 分钟', { n: focus.sessions, m: Math.round(focus.todayMs / 60_000) })}
+        </p>
+      </div>
+
+      <div className="stats-panel card">
+        <div className="stats-panel-head">
+          <h3>{t('8 周完成趋势')}</h3>
+          <span className="muted">{t('按每周到期任务统计，跳过不计')}</span>
+        </div>
+        <TrendBars points={trend} />
+      </div>
+
+      <div className="stats-panel card">
+        <div className="stats-panel-head">
+          <h3>{t('按任务类型分布')}</h3>
+          <span className="muted">{t('全部任务（含已完成/跳过）')}</span>
+        </div>
+        {kinds.length === 0 ? <p className="stats-empty muted">{t('还没有任务')}</p> : <KindBars kinds={kinds} />}
+      </div>
+
+      <div className="stats-panel card">
+        <div className="stats-panel-head">
+          <h3>{t('每日专注趋势')}</h3>
+          <span className="muted">{t('最近 7 天，切走/锁屏 30 秒内回来继续计时')}</span>
+        </div>
+        <FocusBars days={focusDays} />
+        <p className="metric-hint muted">
+          {focus.sessions === 0
+            ? t('进入日程页的「专注模式」开始计时')
+            : t('共 {n} 次 · 今天 {m} 分钟', { n: focus.sessions, m: Math.round(focus.todayMs / 60_000) })}
         </p>
       </div>
 
@@ -131,10 +248,7 @@ export default function StatsView() {
                 <div className="bucket-row" key={key}>
                   <span>{t(label)}</span>
                   <div className="bucket-track">
-                    <div
-                      className="bucket-fill"
-                      style={{ width: `${(count / stats.overdue) * 100}%` }}
-                    />
+                    <div className="bucket-fill" style={{ width: `${(count / stats.overdue) * 100}%` }} />
                   </div>
                   <strong>{count}</strong>
                 </div>
@@ -158,6 +272,17 @@ export default function StatsView() {
           ))}
         </div>
       </div>
+
+      <details className="stats-panel card methodology">
+        <summary>{t('统计口径说明')}</summary>
+        <ul>
+          <li>{t('本周完成率：分母是按开始/截止时间落在本周的任务，分子是其中已完成；跳过的任务不计入。')}</li>
+          <li>{t('延期完成率：只看有实际完成时间（doneAt）的已完成任务，完成时间晚于截止/开始时间算延期。')}</li>
+          <li>{t('8 周趋势：以周一为一周起点，按任务开始/截止时间归属，跳过不计。')}</li>
+          <li>{t('专注时长：只记本机完成的专注段，最近 7 个自然日；单段不足 1 分钟或超过 4 小时不记。')}</li>
+          <li>{t('所有数据只在本机计算，不上传。')}</li>
+        </ul>
+      </details>
     </section>
   )
 }

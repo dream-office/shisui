@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { sortFocusQueue } from 'shisui-core'
 import { useApp } from '@/state/store'
 import { beginFocusSession, endFocusSession } from '@/services/focusLog'
@@ -24,22 +24,38 @@ export default function FocusView() {
 
   // 专注计时跟随「页面可见」：退出专注、切走标签页、关闭/刷新时落一条记录，
   // 回到页面再继续计时；真正的异常残留（如进程被杀）由 focusLog 的 4 小时上限兜底。
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     beginFocusSession()
     const end = () => {
+      if (hideTimer.current !== null) {
+        clearTimeout(hideTimer.current)
+        hideTimer.current = null
+      }
       endFocusSession()
     }
     const resume = () => {
+      if (hideTimer.current !== null) {
+        clearTimeout(hideTimer.current)
+        hideTimer.current = null
+      }
       beginFocusSession()
     }
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') end()
-      else resume()
+      if (document.visibilityState === 'hidden') {
+        // 切走不足 30 秒就回来时不结算，继续同一段计时，避免碎片丢失
+        if (hideTimer.current === null) {
+          hideTimer.current = setTimeout(end, 30_000)
+        }
+      } else {
+        resume()
+      }
     }
     window.addEventListener('pagehide', end)
     window.addEventListener('pageshow', resume)
     document.addEventListener('visibilitychange', onVisibilityChange)
     return () => {
+      if (hideTimer.current !== null) clearTimeout(hideTimer.current)
       window.removeEventListener('pagehide', end)
       window.removeEventListener('pageshow', resume)
       document.removeEventListener('visibilitychange', onVisibilityChange)
@@ -101,7 +117,7 @@ export default function FocusView() {
               {t('退出专注')}
             </button>
           </div>
-          <p className="muted focus-hint">{t('完成后会自动排到下一条；「跳过」对重复任务是「跳过这一次」。')}</p>
+          <p className="muted focus-hint">{t('完成后会自动排到下一条；「跳过」对重复任务是「跳过这一次」。切走/锁屏 30 秒内回来会继续计时，超过 30 秒才结算这一段。')}</p>
         </div>
       )}
     </section>

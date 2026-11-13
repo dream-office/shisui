@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { dailyFocus } from './focusLog'
 import {
   beginFocusSession,
   endFocusSession,
@@ -176,5 +177,25 @@ describe('readFocusSessions 过滤异常记录', () => {
       ]),
     )
     expect(readFocusSessions()).toEqual([{ startedAt: 0, endedAt: 90_000 }])
+  })
+})
+
+
+describe('v1.6 dailyFocus', () => {
+  it('按自然日切分，跨零点只算当天，返回 7 天', () => {
+    const day = new Date(2026, 10, 11, 12, 0, 0).getTime()
+    const dayStart = new Date(2026, 10, 11, 0, 0, 0).getTime()
+    const points = dailyFocus(
+      [
+        { startedAt: dayStart + 60_000, endedAt: dayStart + 3_660_000 },
+        { startedAt: dayStart - 60_000, endedAt: dayStart + 60_000 },
+      ],
+      day,
+      7,
+    )
+    expect(points).toHaveLength(7)
+    expect(points[6].dayStart).toBe(dayStart)
+    expect(Math.round(points[6].totalMs / 60_000)).toBe(61)
+    expect(points[6].sessions).toBe(2)
   })
 })
