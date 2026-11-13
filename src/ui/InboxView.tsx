@@ -168,6 +168,18 @@ export default function InboxView() {
     setSharedFrom('分享内容')
   }, [])
   const parsing = useApp((s) => s.parsing)
+  const [showParsingSkeleton, setShowParsingSkeleton] = useState(false)
+
+  // 300ms 门槛：短解析不闪 skeleton
+  useEffect(() => {
+    if (!parsing) {
+      setShowParsingSkeleton(false)
+      return
+    }
+    const timer = window.setTimeout(() => setShowParsingSkeleton(true), 300)
+    return () => window.clearTimeout(timer)
+  }, [parsing])
+
   const stage = useApp((s) => s.stage)
   const engineNote = useApp((s) => s.engineNote)
   const warnings = useApp((s) => s.warnings)
@@ -360,6 +372,13 @@ export default function InboxView() {
           <div className="stage">
             <span className="spinner" aria-hidden />
             <span>{stage || t('正在解析…')}</span>
+          </div>
+        )}
+        {parsing && showParsingSkeleton && (
+          <div className="parse-skeleton" role="status" aria-label={t('正在解析…')}>
+            <span className="skeleton" />
+            <span className="skeleton" />
+            <span className="skeleton" />
           </div>
         )}
       </section>

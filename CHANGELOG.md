@@ -41,6 +41,14 @@
 - 设置页选项行（radio/checkbox/select）统一 36/44、间距 ≥8
 - 状态矩阵：checkbox/radio/select/switch 五态；badge/chip/progress/skeleton 尺寸与暗色
 - 组件对照页扩展到状态矩阵/徽章/进度/骨架；五屏 1280/390/320 亮暗截图 50 张
+
+#### P3 状态（批次 1）
+- focus-visible 统一 2px outline（按钮/输入/option/开关/列表行）
+- 禁用态改实心面 + 可读文字，不靠 opacity；行高不变
+- input/select `aria-invalid`/`.is-error` 真态；inline-check error
+- 解析 >300ms 才显示 skeleton；reduced-motion 停 shimmer/过渡
+- J e2e：focus 2px、禁用高度/实心、error 边、skeleton 12/降级
+
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 

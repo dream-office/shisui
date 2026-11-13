@@ -393,3 +393,57 @@ test('I. 设置页分段滑块 + 侧栏 brand-600/选中 chip 对比度', async 
   const overflow320 = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
   expect(overflow320).toBeLessThanOrEqual(1)
 })
+
+
+test('J. P3 状态：focus 2px、禁用实心、error 边、skeleton 12/降级', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const btn = page.locator('.composer .btn:not(:disabled)').first()
+  await btn.focus()
+  expect(await btn.evaluate((el) => getComputedStyle(el).outlineWidth)).toBe('2px')
+
+  const disabled = await btn.evaluate((el) => {
+    const b = el as HTMLButtonElement
+    b.disabled = true
+    const s = getComputedStyle(b)
+    const out = { h: Math.round(b.getBoundingClientRect().height), opacity: s.opacity, bg: s.backgroundColor, color: s.color }
+    b.disabled = false
+    return out
+  })
+  expect(disabled.h).toBe(36)
+  expect(disabled.opacity).toBe('1')
+  expect(disabled.bg).not.toBe('rgba(0, 0, 0, 0)')
+  expect(disabled.bg).not.toBe(disabled.color)
+
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^设置/ }).click()
+  const input = page.locator('.field input').first()
+  const before = await input.evaluate((el) => getComputedStyle(el).borderColor)
+  await input.evaluate((el) => el.setAttribute('aria-invalid', 'true'))
+  const invalid = await input.evaluate((el) => getComputedStyle(el).borderColor)
+  expect(invalid).not.toBe(before)
+
+  const skel = await page.evaluate(() => {
+    const el = document.createElement('div')
+    el.className = 'skeleton'
+    document.body.appendChild(el)
+    const s = getComputedStyle(el)
+    const out = { h: Math.round(el.getBoundingClientRect().height), anim: s.animationName }
+    el.remove()
+    return out
+  })
+  expect(skel.h).toBe(12)
+  expect(skel.anim).not.toBe('none')
+
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  const skelReduced = await page.evaluate(() => {
+    const el = document.createElement('div')
+    el.className = 'skeleton'
+    document.body.appendChild(el)
+    const s = getComputedStyle(el)
+    const out = s.animationName
+    el.remove()
+    return out
+  })
+  expect(skelReduced).toBe('none')
+})
