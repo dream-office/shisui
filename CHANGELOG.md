@@ -48,6 +48,10 @@
 - input/select `aria-invalid`/`.is-error` 真态；inline-check error
 - 解析 >300ms 才显示 skeleton；reduced-motion 停 shimmer/过渡
 - J e2e：focus 2px、禁用高度/实心、error 边、skeleton 12/降级
+- 五屏空态：图形 36–40 + 一句 + 主操作；月历 compact 单独验证
+- 列表行 skipped：is-skipped + aria-disabled，焦点环保持
+- 弹窗按钮组 gap 8；P3 亮暗 1280/390/320 五屏空态截图 .tmp/v2-p3
+- K e2e：四屏空态 + 月历 compact + 320 不溢出
 
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态

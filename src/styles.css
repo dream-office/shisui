@@ -2588,3 +2588,14 @@ select:disabled {
 .parse-skeleton .skeleton { height: 12px; max-width: 640px; }
 .parse-skeleton .skeleton:nth-child(2) { width: 72%; }
 .parse-skeleton .skeleton:nth-child(3) { width: 48%; }
+
+
+/* P3 列表行 disabled / 弹窗按钮组 */
+.task-row.is-skipped {
+  background: var(--surface-2);
+  color: var(--t-3);
+}
+.task-row.is-skipped .task-title { text-decoration: line-through; text-decoration-thickness: 1px; }
+.task-row.is-skipped .icon-btn { opacity: 1; }
+.help-actions,
+.import-modal-actions { gap: 8px; }

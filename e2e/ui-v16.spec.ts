@@ -447,3 +447,34 @@ test('J. P3 状态：focus 2px、禁用实心、error 边、skeleton 12/降级',
   })
   expect(skelReduced).toBe('none')
 })
+
+
+test('K. P3 五屏空态：图形 36–40 + 一句 + 一个主操作', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const nav = page.getByRole('navigation', { name: '主视图' }).first()
+  for (const [name, file] of [['收件','inbox'],['日程','plan'],['月历','calendar'],['统计','stats']] as const) {
+    await nav.getByRole('button', { name: new RegExp(`^${name}`) }).click()
+    const empty = page.locator('.empty-state').first()
+    await expect(empty, file).toBeVisible()
+    const mark = empty.locator('.sprig-mark')
+    await expect(mark).toBeVisible()
+    const w = await mark.evaluate((el) => Math.round(el.getBoundingClientRect().width))
+    expect(w, `${file} mark`).toBeGreaterThanOrEqual(36)
+    expect(w, `${file} mark`).toBeLessThanOrEqual(40)
+    await expect(empty.locator('.empty-state-text p')).not.toBeEmpty()
+    await expect(empty.locator('button.btn')).toHaveCount(1)
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const mobileNav = page.getByRole('navigation', { name: '主视图' }).first()
+  await mobileNav.getByRole('button', { name: /^月历/ }).click()
+  const compact = page.locator('.empty-state.is-compact').first()
+  await expect(compact).toBeVisible()
+  const compactW = await compact.locator('.sprig-mark').evaluate((el) => Math.round(el.getBoundingClientRect().width))
+  expect(compactW).toBeGreaterThanOrEqual(36)
+  expect(compactW).toBeLessThanOrEqual(40)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+})

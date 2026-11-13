@@ -119,7 +119,8 @@ export default function TaskRow({
 
   return (
     <li
-      className={`task-row ${task.done ? 'is-done' : ''} ${cd && cd.tone === 'overdue' && !task.done ? 'is-overdue' : ''} ${selected ? 'is-selected' : ''}`}
+      className={`task-row ${task.done ? 'is-done' : ''} ${task.skipped ? 'is-skipped' : ''} ${cd && cd.tone === 'overdue' && !task.done ? 'is-overdue' : ''} ${selected ? 'is-selected' : ''}`}
+        aria-disabled={task.skipped || undefined}
     >
       {selectionMode && (
         <input
