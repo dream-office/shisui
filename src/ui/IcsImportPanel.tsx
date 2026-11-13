@@ -128,7 +128,7 @@ export default function IcsImportPanel({ onClose }: { onClose: () => void }) {
 
       {busy && <p className="muted">{t('正在解析…')}</p>}
 
-      {error && <p className="ics-error">{error}</p>}
+      {error && <p className="ics-error inline-alert">{error}</p>}
 
       {shownWarnings.length > 0 && (
         <ul className="ics-warnings">

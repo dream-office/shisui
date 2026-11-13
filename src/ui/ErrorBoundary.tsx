@@ -43,7 +43,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children
 
     return (
-      <section className="error-boundary card" role="alert">
+      <section className="error-boundary card error-state" role="alert">
         <h3>{t('界面出了点问题，但你的数据还在')}</h3>
         <p className="muted">
           {t('待办都存在浏览器本地（IndexedDB），不会因为这次异常丢失。可以先重试；如果反复出现，回首页后手动导出备份。')}

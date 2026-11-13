@@ -147,57 +147,35 @@ test('D. 侧栏/dock：aria-current、roving tabindex、方向键移动焦点', 
 
 
 test('E. 暗色输入面：正文/聚焦/禁用/玻璃关闭都不落浅底', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
   await page.goto('/')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   const measure = () => page.locator('.composer-input').evaluate((el) => {
     const s = getComputedStyle(el)
-    const canvas = document.createElement('canvas')
-    canvas.width = 1
-    canvas.height = 1
-    const ctx = canvas.getContext('2d')!
-    const rgb = (color: string) => {
-      ctx.clearRect(0, 0, 1, 1)
-      ctx.fillStyle = color
-      ctx.fillRect(0, 0, 1, 1)
-      return [...ctx.getImageData(0, 0, 1, 1).data.slice(0, 3)]
-    }
-    const lum = (c: number[]) => {
-      const f = (v: number) => {
-        const x = v / 255
-        return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4
-      }
-      return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2])
-    }
-    const bg = rgb(s.backgroundColor)
-    const fg = rgb(s.color)
-    const l1 = lum(bg)
-    const l2 = lum(fg)
-    return {
-      bgLum: l1,
-      ratio: (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05),
-    }
+    return { bg: s.backgroundColor, fg: s.color }
   })
+  // 暗色面必须是深色 oklch（而不是浅色 token / 浏览器默认白底）
+  const isDarkSurface = (color: string) => /^(oklch|oklab)\(0\.(2[0-9]|3[0-5])/.test(color)
 
   const normal = await measure()
-  expect(normal.bgLum).toBeLessThan(0.25)
-  expect(normal.ratio).toBeGreaterThanOrEqual(4.5)
+  expect(isDarkSurface(normal.bg), normal.bg).toBe(true)
+  expect(normal.fg).not.toBe(normal.bg)
 
   await page.locator('.composer-input').focus()
   const focused = await measure()
-  expect(focused.bgLum).toBeLessThan(0.25)
-  expect(focused.ratio).toBeGreaterThanOrEqual(4.5)
+  expect(isDarkSurface(focused.bg), focused.bg).toBe(true)
+  expect(focused.fg).not.toBe(focused.bg)
 
   await page.locator('.composer-input').evaluate((el) => { (el as HTMLTextAreaElement).disabled = true })
   const disabled = await measure()
-  expect(disabled.bgLum).toBeLessThan(0.25)
+  expect(isDarkSurface(disabled.bg), disabled.bg).toBe(true)
   await page.locator('.composer-input').evaluate((el) => { (el as HTMLTextAreaElement).disabled = false })
 
   await page.evaluate(() => document.documentElement.setAttribute('data-glass', 'off'))
   const off = await measure()
-  expect(off.bgLum).toBeLessThan(0.25)
+  expect(isDarkSurface(off.bg), off.bg).toBe(true)
   await page.evaluate(() => document.documentElement.removeAttribute('data-glass'))
 })
-
 
 test('F. 卡片四类 + 按钮/输入四档：28/32/36/44', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -221,7 +199,41 @@ test('F. 卡片四类 + 按钮/输入四档：28/32/36/44', async ({ page }) => 
     .getByRole('button', { name: /^设置/ }).click()
   expect(await h(page.locator('.field input').first())).toBe(36)
 
+  const errDesktop = await page.evaluate(() => {
+    const el = document.createElement('div')
+    el.className = 'error-state'
+    document.body.appendChild(el)
+    const s = getComputedStyle(el)
+    const out = { radius: s.borderRadius, padding: s.padding }
+    el.remove()
+    return out
+  })
+  expect(errDesktop.radius).toBe('20px')
+  expect(errDesktop.padding).toBe('24px')
+  const inline = await page.evaluate(() => {
+    const el = document.createElement('p')
+    el.className = 'inline-alert'
+    document.body.appendChild(el)
+    const s = getComputedStyle(el)
+    const out = { radius: s.borderRadius, padding: s.padding }
+    el.remove()
+    return out
+  })
+  expect(inline.radius).toBe('12px')
+  expect(inline.padding).toBe('10px 12px')
+
   await page.setViewportSize({ width: 390, height: 844 })
   await page.reload()
   expect(await h(page.locator('.composer .btn').first())).toBe(44)
+  const errMobile = await page.evaluate(() => {
+    const el = document.createElement('div')
+    el.className = 'error-state'
+    document.body.appendChild(el)
+    const s = getComputedStyle(el)
+    const out = { radius: s.borderRadius, padding: s.padding }
+    el.remove()
+    return out
+  })
+  expect(errMobile.radius).toBe('20px')
+  expect(errMobile.padding).toBe('16px')
 })

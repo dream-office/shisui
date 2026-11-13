@@ -225,7 +225,7 @@ const ImportPanel = forwardRef<ImportPanelHandle, Props>(function ImportPanel({ 
         }}
       />
       {status && <p className="import-ok" role="status">{status}</p>}
-      {error && <p className="import-error" role="alert">{error}</p>}
+      {error && <p className="import-error inline-alert" role="alert">{error}</p>}
 
       {askOpen && pendingImage && (
         <div className="help-overlay" role="presentation" onClick={closeAsk}>

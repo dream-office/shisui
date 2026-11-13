@@ -230,7 +230,7 @@ export default function InboxView() {
           spellCheck={false}
         />
         {pasteError && (
-          <p className="import-error error-state" role="alert">
+          <p className="import-error inline-alert" role="alert">
             {pasteError}
           </p>
         )}

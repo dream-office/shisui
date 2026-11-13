@@ -2259,9 +2259,18 @@ select:disabled {
 .error-state {
   background: var(--danger-soft);
   border: 1px solid var(--danger);
-  border-radius: 16px;
-  padding: 12px 14px;
+  padding: var(--card-pad);
   color: var(--danger);
+}
+.inline-alert {
+  margin: 6px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 /* ── P1 四档：28 / 32 / 36 / 44；图标按钮 28 ── */
@@ -2278,4 +2287,12 @@ select:disabled {
 @media (max-width: 860px) {
   .empty-state { padding: 16px; }
   .empty-state .sprig-mark { width: 36px; height: 36px; }
+}
+
+.composer-input:disabled,
+.field input:disabled,
+.field select:disabled {
+  background-color: var(--surface-2);
+  color: var(--t-3);
+  opacity: 1;
 }

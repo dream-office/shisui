@@ -29,6 +29,7 @@
 - 玻璃质感：输入卡 / 弹窗 / dock / 移动顶条；侧栏、列表、空错卡实心
 - 玻璃兜底：`data-glass=off`、`prefers-reduced-transparency`、`@supports not (backdrop-filter)`；布局零位移
 - 卡片四类 `card/panel/empty/error`；空态图形 36–40、24/16 内边距
+- error 分型：区块错误 `.error-state` 20 / 24·16；字段旁路 `.inline-alert` 12 / 10–14，不再混用
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 
