@@ -237,3 +237,58 @@ test('F. 卡片四类 + 按钮/输入四档：28/32/36/44', async ({ page }) => 
   expect(errMobile.radius).toBe('20px')
   expect(errMobile.padding).toBe('16px')
 })
+
+
+test('G. P2 组件：卡片 24/16、输入 36/44、工具条 56/48、列表/弹窗', async ({ page }) => {
+  const pad = (sel: string) => page.locator(sel).first().evaluate((el) => getComputedStyle(el).padding)
+  const height = (sel: string) => page.locator(sel).first().evaluate((el) => Math.round(el.getBoundingClientRect().height))
+
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  expect(await pad('.composer.card')).toBe('24px')
+  await page.getByRole('button', { name: '怎么用' }).click()
+  expect(await pad('.help-panel')).toBe('24px')
+  expect(await page.locator('.help-panel').evaluate((el) => getComputedStyle(el).borderRadius)).toBe('20px')
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: '更多 ▾' }).click()
+  expect(await height('.more-item')).toBe(40)
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: '更多 ▾' }).click()
+  await page.getByRole('menuitem', { name: '工作群示例' }).click()
+  await page.getByRole('button', { name: '开始解析' }).click()
+  await page.getByRole('heading', { name: /识别到 \d+ 条待办/ }).waitFor()
+  expect(await pad('.candidate')).toBe('24px')
+  await page.getByRole('button', { name: '全部收录' }).click()
+
+  const nav = page.getByRole('navigation', { name: '主视图' })
+  await nav.getByRole('button', { name: /^日程/ }).click()
+  expect(await pad('.stat.card')).toBe('24px')
+  expect(await height('.plan-toolbar')).toBeGreaterThanOrEqual(56)
+  expect(await height('.search-input')).toBe(36)
+  expect(await height('.task-row')).toBeGreaterThanOrEqual(44)
+  expect(await page.locator('.task-row').first().evaluate((el) => getComputedStyle(el).padding)).toBe('12px 24px')
+
+  await nav.getByRole('button', { name: /^统计/ }).click()
+  expect(await height('.stats-tools')).toBeGreaterThanOrEqual(56)
+  await nav.getByRole('button', { name: /^设置/ }).click()
+  expect(await pad('.settings .card')).toBe('24px')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.reload()
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^收件/ }).click()
+  expect(await pad('.composer.card')).toBe('16px')
+  expect(await height('.composer-actions')).toBeGreaterThanOrEqual(48)
+  expect(await height('.composer .btn')).toBe(44)
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow).toBeLessThanOrEqual(1)
+
+  await page.setViewportSize({ width: 320, height: 720 })
+  await page.reload()
+  await page.getByRole('navigation', { name: /主视图|Main views/ }).first()
+    .getByRole('button', { name: /^收件/ }).click()
+  const overflow320 = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(overflow320).toBeLessThanOrEqual(1)
+})

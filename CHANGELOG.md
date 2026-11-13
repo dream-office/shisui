@@ -30,6 +30,13 @@
 - 玻璃兜底：`data-glass=off`、`prefers-reduced-transparency`、`@supports not (backdrop-filter)`；布局零位移
 - 卡片四类 `card/panel/empty/error`；空态图形 36–40、24/16 内边距
 - error 分型：区块错误 `.error-state` 20 / 24·16；字段旁路 `.inline-alert` 12 / 10–14，不再混用
+
+#### P2 组件库（批次 1）
+- 卡片 padding 全量收口：composer/manual/history/settings/stat/month-day/capabilities/candidate → 24/16
+- 搜索框 36 / 移动 44；工具条 composer/plan/stats 56 / 48
+- 弹窗/更多菜单/历史行/表单间距统一；`.panel` 与四类卡片同一套
+- 新增 G e2e：卡片、输入、工具条、列表、弹窗、320 不溢出
+- 尺寸表 `docs/P2-COMPONENTS.md`；截图 `.tmp/v2-p2/`
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 
