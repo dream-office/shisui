@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeStats, startOfWeek } from './stats.js'
+import { completionTrend, computeStats, kindDistribution, startOfWeek } from './stats.js'
 import type { StoredTask } from './types.js'
 
 const REF = new Date(2026, 10, 11, 10, 0, 0).getTime() // 周三 2026-11-11
@@ -198,5 +198,70 @@ describe('冲突体检计数', () => {
     expect(stats.conflicts.clash).toBe(1) // 只有 open-a → open-b
     expect(stats.conflicts.pileup).toBe(0) // 当天只剩 2 件未完成
     expect(stats.conflicts.total).toBe(2)
+  })
+})
+
+
+describe('v1.6 skipped 口径统一', () => {
+  it('跳过的条目不进完成率分母、不算 open、单独计数', () => {
+    const tasks = [
+      task({ id: 'done', dueAt: at(11, 9), done: true }),
+      task({ id: 'skip', dueAt: at(11, 10), skipped: true }),
+      task({ id: 'open', dueAt: at(11, 11) }),
+    ]
+    const stats = computeStats(tasks, REF)
+    expect(stats.weekTotal).toBe(2)
+    expect(stats.doneThisWeek).toBe(1)
+    expect(stats.completion).toBe(50)
+    expect(stats.open).toBe(1)
+    expect(stats.skipped).toBe(1)
+    expect(stats.total).toBe(3)
+  })
+})
+
+describe('v1.6 8 周完成趋势', () => {
+  it('返回 8 个周点（旧→新），本周含跳过的排除', () => {
+    const tasks = [
+      task({ id: 'this-done', dueAt: at(11, 10), done: true }),
+      task({ id: 'this-open', dueAt: at(11, 11) }),
+      task({ id: 'this-skip', dueAt: at(11, 9), skipped: true }),
+      task({ id: 'old-done', dueAt: at(10, 5), done: true }),
+    ]
+    const trend = completionTrend(tasks, REF)
+    expect(trend).toHaveLength(8)
+    expect(trend[7].weekStart).toBe(startOfWeek(REF))
+    expect(trend[7].total).toBe(2)
+    expect(trend[7].done).toBe(1)
+    expect(trend[7].rate).toBe(50)
+    expect(trend.some((point) => point.done === 1 && point.weekStart < trend[7].weekStart)).toBe(true)
+    expect(trend[0].rate === null || typeof trend[0].rate === 'number').toBe(true)
+  })
+})
+
+describe('v1.6 类型分布与延期完成率', () => {
+  it('类型分布按数量降序', () => {
+    const tasks = [
+      task({ id: 'a', kind: 'task' }),
+      task({ id: 'b', kind: 'task' }),
+      task({ id: 'c', kind: 'meeting' }),
+    ]
+    expect(kindDistribution(tasks)).toEqual([
+      { kind: 'task', count: 2 },
+      { kind: 'meeting', count: 1 },
+    ])
+  })
+
+  it('doneAt 晚于截止=延期；无 doneAt 的历史完成不进分母', () => {
+    const tasks = [
+      task({ id: 'late', dueAt: at(11, 10), done: true, doneAt: at(11, 11) }),
+      task({ id: 'ontime', dueAt: at(11, 10), done: true, doneAt: at(11, 9) }),
+      task({ id: 'legacy', dueAt: at(11, 9), done: true }),
+      task({ id: 'open', dueAt: at(11, 9) }),
+    ]
+    const stats = computeStats(tasks, REF)
+    expect(stats.doneTotal).toBe(3)
+    expect(stats.doneWithTime).toBe(2)
+    expect(stats.lateDone).toBe(1)
+    expect(stats.lateRate).toBe(50)
   })
 })

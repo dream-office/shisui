@@ -110,3 +110,15 @@ export function migrateTaskV3toV4<T extends Record<string, unknown>>(task: T): M
 export function migrateSeriesV3toV4<T extends Record<string, unknown>>(series: T): MigratedTaskV4<T> {
   return migrateTaskV3toV4(series)
 }
+
+
+/** v4 → v5：补 doneAt（实际完成时刻）；纯函数、幂等 */
+export type MigratedTaskV5<T> = T & { doneAt: number | null }
+
+export function migrateTaskV4toV5<T extends Record<string, unknown>>(task: T): MigratedTaskV5<T> {
+  const doneAt =
+    typeof task.doneAt === 'number' && Number.isFinite(task.doneAt)
+      ? task.doneAt
+      : null
+  return { ...task, doneAt } as MigratedTaskV5<T>
+}

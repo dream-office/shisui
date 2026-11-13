@@ -17,6 +17,7 @@ export async function insertTasks(parsed: ParsedTask[]): Promise<StoredTask[]> {
     tags: task.tags ? normalizeTags(task.tags) : task.tags,
     createdAt: now,
     done: false,
+    doneAt: null,
     editedFields: [],
   }))
   await db.tasks.bulkPut(rows)
@@ -35,8 +36,8 @@ export async function updateTask(id: string, patch: Partial<StoredTask> & { edit
   await db.tasks.put({ ...current, ...rest, editedFields })
 }
 
-export async function setDone(id: string, done: boolean): Promise<void> {
-  await db.tasks.update(id, { done })
+export async function setDone(id: string, done: boolean, at: number = Date.now()): Promise<void> {
+  await db.tasks.update(id, { done, doneAt: done ? at : null })
 }
 
 export async function removeTask(id: string): Promise<void> {
@@ -89,6 +90,7 @@ export async function settleRecurringInstance(input: {
     await db.tasks.put({
       ...current,
       done: input.mode === 'done' ? true : current.done,
+      doneAt: input.mode === 'done' ? now : current.doneAt ?? null,
       skipped: input.mode === 'skip' ? true : current.skipped,
       editedFields: current.editedFields,
     })
@@ -99,7 +101,7 @@ export async function settleRecurringInstance(input: {
       const existing = await db.tasks.where('seriesId').equals(seriesId).toArray()
       const duplicated = existing.some((task) => (task.recurrenceIndex ?? 0) === nextIndex)
       if (!duplicated) {
-        await db.tasks.put({ ...input.nextTask, createdAt: now, done: false, editedFields: [] } as StoredTask)
+        await db.tasks.put({ ...input.nextTask, createdAt: now, done: false, doneAt: null, editedFields: [] } as StoredTask)
       }
     }
 
@@ -204,6 +206,7 @@ export async function applyIcsPlan(plan: {
     ...task,
     createdAt: now,
     done: false,
+    doneAt: null,
     editedFields: [],
   }))
 

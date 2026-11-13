@@ -15,7 +15,7 @@ export const BACKUP_FORMAT = 'shisui-backup'
 /** 备份格式版本：未来格式升级时递增；旧版本仍可导入 */
 export const BACKUP_VERSION = 1
 /** 备份数据对应的 DB 版本（当前 v4） */
-export const BACKUP_SCHEMA_VERSION = 4
+export const BACKUP_SCHEMA_VERSION = 5
 
 export interface BackupSettings {
   /** 只备份非敏感偏好（不导出 AI apiKey） */
@@ -140,6 +140,7 @@ function normalizeTask(raw: unknown, index: number, errors: string[], errorCodes
         : 'rule',
     createdAt,
     done: raw.done === true,
+    doneAt: typeof raw.doneAt === 'number' && Number.isFinite(raw.doneAt) ? raw.doneAt : null,
     editedFields: Array.isArray(raw.editedFields)
       ? raw.editedFields.filter((item): item is string => typeof item === 'string')
       : [],

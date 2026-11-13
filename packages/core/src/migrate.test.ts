@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { migrateTaskV4toV5, describe, expect, it } from 'vitest'
+import { migrateTaskV4toV5 } from './migrate.js'
 import {
   allDayAnchor,
   isLocalMidnight,
@@ -108,5 +109,16 @@ describe('v3 → v4（url / note）', () => {
 
   it('系列迁移同规则', () => {
     expect(migrateSeriesV3toV4({ id: 's', title: 's' })).toMatchObject({ url: null, note: null })
+  })
+})
+
+
+describe('v1.6 v4 → v5 doneAt 迁移', () => {
+  it('保留已有 doneAt；缺失补 null；幂等', () => {
+    const kept = migrateTaskV4toV5({ id: 'a', doneAt: 123 })
+    expect(kept.doneAt).toBe(123)
+    const missing = migrateTaskV4toV5({ id: 'b' })
+    expect(missing.doneAt).toBeNull()
+    expect(migrateTaskV4toV5(missing as Record<string, unknown>).doneAt).toBeNull()
   })
 })

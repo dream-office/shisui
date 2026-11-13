@@ -71,6 +71,8 @@ export interface ParsedTask {
   recurrenceIndex?: number
   /** 「跳过这一次」的标记（不等于完成，不进完成率分母） */
   skipped?: boolean
+  /** 实际完成时刻（epoch ms）；未知/未完成 = null；v1.6 新增 */
+  doneAt?: number | null
   /** 标签（普通字段，不加 DB 索引；搜索全表扫） */
   tags?: string[]
 }
