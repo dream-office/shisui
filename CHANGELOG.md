@@ -39,6 +39,8 @@
 - 尺寸表 `docs/P2-COMPONENTS.md`；组件对照页 `docs/components-v2.html`；截图 `.tmp/v2-p2/`
 - 设置页：亮色侧栏 brand-600 + 选中 brand-200/brand-900 chip；主题/语言改分段滑块（36/44、radiogroup、roving、方向键/Home/End、0.26s / reduced-motion）
 - 设置页选项行（radio/checkbox/select）统一 36/44、间距 ≥8
+- 状态矩阵：checkbox/radio/select/switch 五态；badge/chip/progress/skeleton 尺寸与暗色
+- 组件对照页扩展到状态矩阵/徽章/进度/骨架；五屏 1280/390/320 亮暗截图 50 张
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 

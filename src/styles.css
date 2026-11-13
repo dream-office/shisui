@@ -2409,3 +2409,112 @@ select:disabled {
   .inline-check { min-height: var(--control-44); }
   .field select { height: var(--control-44); min-height: var(--control-44); }
 }
+
+
+/* ── P2 状态/徽章/进度/骨架 ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 11.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.badge-success { background: var(--ok-soft); border-color: var(--success); color: var(--success-ink); }
+.badge-warn { background: var(--warn-soft); border-color: var(--warn-line); color: var(--warn-ink); }
+.badge-danger { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+.badge-accent { background: var(--accent-soft); border-color: var(--brand-200); color: var(--accent-ink); }
+
+.progress {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.skeleton {
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2));
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: var(--control-36);
+  padding: 0 2px;
+}
+.switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  cursor: pointer;
+  padding: 0;
+}
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-solid);
+  box-shadow: var(--sh-1);
+  transition: transform 0.26s ease;
+}
+.switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(18px); }
+.switch:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+.inline-check {
+  border-radius: 10px;
+  transition: background 0.18s ease, outline-color 0.18s ease;
+}
+.inline-check:hover { background: var(--surface-2); }
+.inline-check:focus-within { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
+.inline-check.is-disabled,
+.inline-check:has(input:disabled) { opacity: 0.55; }
+.inline-check.is-error { outline: 1px solid var(--danger); }
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
+  background: var(--surface-solid);
+}
+.field select.is-error { border-color: var(--danger); }
+
+@media (max-width: 860px) {
+  .switch-row { min-height: var(--control-44); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress > span,
+  .switch::after { transition: none; }
+  .skeleton { animation: none; }
+}

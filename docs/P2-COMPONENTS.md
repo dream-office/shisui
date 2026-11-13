@@ -68,7 +68,30 @@
 - 数据表/设置内嵌高级表单（按现有五屏继续收）
 - 拖拽/编辑弹窗的交互层（不动业务逻辑，只改尺寸）
 
-## 7. 证据
+## 7. 状态 / 徽章 / 进度 / 骨架
 
-- `..\.tmp\v2-p2\`：P2 五屏 1280/390 截图（后续批次补 320/暗色）
+| 组件 | 规格 |
+|---|---|
+| checkbox / radio 行 | 36 / 44；间距 8；default/hover/focus/disabled/error |
+| select 触发器 | 36 / 44；focus 环 + disabled + error 边 |
+| switch 行 | 36 / 44；轨道 44×26，thumb 20，0.26s / reduced-motion 0s |
+| badge | 22 高，11.5px，四色（neutral/success/warn/danger） |
+| chip | 24 高，12px，999 圆角；已有 `.chip` / `.chip-select` |
+| progress | 6px 轨道，圆角端点，0.3s |
+| skeleton | 12px，shimmer；reduced-motion 关闭 |
+
+## 8. P2 完成清单
+
+- [x] 四档按钮/输入/卡片/列表/表单/弹窗
+- [x] 组件对照页 `docs/components-v2.html`（状态矩阵、亮暗示例）
+- [x] 设置页 brand-600 + 分段滑块 + 选项同高
+- [x] 五屏 1280/390/320 亮暗截图
+- [x] 320 不溢出、同组高度差 0（I e2e）
+- [ ] 列表行 1px 内容行高差异（内容自适应，非 padding）
+- [ ] candidate 卡动态内容高差（不强行等高）
+
+## 9. 证据
+
+- `.tmp/v2-p2/`：P2 五屏 1280/390/320 亮暗截图（50 张）
+- `.tmp/v2-p2/components-*.png`：组件对照页亮暗 1280/390
 - `..\.tmp\v2-p1\`：P1 基线
