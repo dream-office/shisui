@@ -306,7 +306,7 @@ export default function SettingsView() {
         )}
 
         {error && (
-          <p className="import-error" role="alert">
+          <p className="import-error inline-alert" role="alert">
             {error}
           </p>
         )}

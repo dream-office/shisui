@@ -35,7 +35,15 @@ test.describe('v1.4 core 动态文本英文', () => {
 
     // 备份错误
     await fileInput.setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('not json') })
-    await expect(page.locator('.import-error[role="alert"]')).toContainText('Not a valid JSON file')
+    const restoreError = page.locator('.import-error[role="alert"]')
+    await expect(restoreError).toContainText('Not a valid JSON file')
+    await expect(restoreError).toHaveClass(/inline-alert/)
+    const errStyle = await restoreError.evaluate((el) => {
+      const s = getComputedStyle(el)
+      return { radius: s.borderRadius, padding: s.padding }
+    })
+    expect(errStyle.radius).toBe('12px')
+    expect(errStyle.padding).toBe('10px 12px')
 
     // 合法备份 → 冲突提示
     const base = Date.now() + 2 * 60 * 60_000
