@@ -6,9 +6,13 @@
 
 :root {
   /* v1.6 统一尺寸 token：卡片、按钮、输入、chip 共用 */
-  --card-pad: 16px 18px;
+  --card-pad: 24px;
   --card-radius: var(--radius-lg);
-  --control-h: 34px;
+  --control-h: 36px;
+  --control-28: 28px;
+  --control-32: 32px;
+  --control-36: 36px;
+  --control-44: 44px;
   --control-px: 14px;
   --control-radius: var(--radius-sm);
   --chip-h: 24px;
@@ -28,6 +32,7 @@
   --chart-1: var(--brand-500);
   --chart-2: var(--success);
   --chart-3: var(--warn);
+  --overlay: oklch(0 0 0 / .42);
 
   --radius-lg: var(--ds-r-lg);
   --radius: var(--ds-r-md);
@@ -118,7 +123,7 @@ em {
   align-items: center;
   gap: 18px;
   padding: 12px 4px;
-  background: linear-gradient(to bottom, rgba(245, 246, 251, 0.96), rgba(245, 246, 251, 0.82));
+  background: var(--glass);
   backdrop-filter: blur(10px);
 }
 
@@ -140,7 +145,7 @@ em {
   color: var(--on-accent);
   font-weight: 700;
   font-size: 20px;
-  box-shadow: 0 8px 18px -8px rgba(74, 69, 214, 0.8);
+  box-shadow: var(--sh-2);
 }
 
 .brand-text h1 {
@@ -169,7 +174,7 @@ em {
   border: 0;
   background: transparent;
   color: var(--muted);
-  min-height: 32px;
+  min-height: var(--control-32);
   padding: 0 16px;
   white-space: nowrap;
   border-radius: 999px;
@@ -230,7 +235,7 @@ em {
 
 .engine-pill.is-ai .dot {
   background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(74, 69, 214, 0.16);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 
 .main {
@@ -301,7 +306,7 @@ em {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--on-accent);
-  box-shadow: 0 8px 18px -10px rgba(74, 69, 214, 0.9);
+  box-shadow: var(--sh-2);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -334,7 +339,7 @@ em {
 }
 
 .btn-sm {
-  min-height: 30px;
+  min-height: var(--control-32);
   padding: 0 12px;
   font-size: 13px;
 }
@@ -425,7 +430,7 @@ em {
   outline: none;
   background: var(--surface-solid);
   border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(74, 69, 214, 0.12);
+  box-shadow: 0 0 0 4px var(--accent-glow-soft);
 }
 
 .composer-actions {
@@ -453,7 +458,7 @@ em {
   height: 14px;
   flex: none;
   border-radius: 50%;
-  border: 2px solid rgba(74, 69, 214, 0.25);
+  border: 2px solid var(--accent-deco);
   border-top-color: var(--accent);
   animation: spin 0.7s linear infinite;
 }
@@ -479,7 +484,7 @@ em {
   flex: none;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(13, 155, 116, 0.14);
+  background: var(--success-soft);
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -521,7 +526,7 @@ em {
 }
 
 .candidate {
-  padding: 15px 16px 14px;
+  padding: var(--card-pad);
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -660,7 +665,7 @@ em {
   outline: none;
   background: var(--surface-solid);
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(74, 69, 214, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 
 .candidate-row {
@@ -684,7 +689,7 @@ em {
 }
 
 .field input {
-  min-height: var(--control-h);
+  min-height: var(--control-36);
   padding: 0 10px;
   border-radius: var(--control-radius);
   border: 1px solid var(--line);
@@ -697,7 +702,7 @@ em {
   outline: none;
   border-color: var(--accent);
   background: var(--surface-solid);
-  box-shadow: 0 0 0 3px rgba(74, 69, 214, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 
 .field.block {
@@ -801,7 +806,7 @@ em {
   color: var(--on-accent);
   font-size: 13px;
   font-weight: 550;
-  box-shadow: 0 12px 30px -12px rgba(21, 23, 43, 0.7);
+  box-shadow: var(--sh-3);
   animation: rise 0.3s ease both;
 }
 
@@ -1027,7 +1032,7 @@ em {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 13px 16px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--line);
   transition: background 0.16s ease;
 }
@@ -1272,8 +1277,16 @@ em {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --card-pad: 16px;
+  }
+
   .app {
     padding: 14px 14px 40px;
+  }
+
+  .task-row {
+    padding: 10px 16px;
   }
 
   /* 窄屏顶部导航不吸顶：避免切视图/滚动时压住统计页第一张卡 */
@@ -1341,7 +1354,7 @@ em {
 .manual .field input:focus,
 .manual .field select:focus {
   outline: none; border-color: var(--accent); background: var(--surface-solid);
-  box-shadow: 0 0 0 3px rgba(74, 69, 214, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 .manual-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
 .manual > .field { margin-top: 12px; }
@@ -1386,13 +1399,13 @@ em {
 }
 
 .update-toast .btn {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: oklch(1 0 0 / .16);
+  border-color: oklch(1 0 0 / .30);
   color: var(--on-accent);
 }
 
 .update-toast .btn:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: oklch(1 0 0 / .28);
 }
 .footer-link {
   color: var(--muted);
@@ -1706,7 +1719,7 @@ em {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(20, 18, 30, 0.42);
+  background: var(--overlay);
 }
 .help-panel {
   width: min(560px, 100%);
@@ -1870,7 +1883,7 @@ em {
   background: var(--surface-solid);
   border: 1px solid var(--line);
   border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(21, 23, 43, 0.16);
+  box-shadow: var(--sh-3);
 }
 .more-group-title {
   margin: 6px 8px 4px;
@@ -1909,13 +1922,13 @@ em {
 .trend-col, .focus-col { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
 .trend-value, .focus-value { font-size: 11px; color: var(--ink-soft); white-space: nowrap; }
 .trend-track, .focus-track { flex: 1; width: 100%; display: flex; align-items: flex-end; background: var(--line); border-radius: 6px 6px 2px 2px; overflow: hidden; }
-.trend-bar { width: 100%; background: var(--accent); border-radius: 6px 6px 2px 2px; min-height: 2px; }
+.trend-bar { width: 100%; background: var(--chart-1); border-radius: 6px 6px 2px 2px; min-height: 2px; }
 .trend-label, .focus-label { font-size: 10px; color: var(--muted); white-space: nowrap; }
 .kind-list { display: flex; flex-direction: column; gap: 8px; }
 .kind-row { display: grid; grid-template-columns: minmax(90px, 150px) 1fr 36px; align-items: center; gap: 8px; }
 .kind-label { font-size: 12px; color: var(--ink-soft); }
 .kind-track { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; }
-.kind-fill { height: 100%; background: var(--success); border-radius: 999px; }
+.kind-fill { height: 100%; background: var(--chart-2); border-radius: 999px; }
 .focus-trend { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: 150px; padding-top: 10px; }
 .focus-bar { width: 100%; background: var(--chart-3); border-radius: 6px 6px 2px 2px; min-height: 0; }
 .methodology summary { cursor: pointer; font-weight: 600; }
