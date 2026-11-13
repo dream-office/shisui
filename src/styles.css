@@ -33,6 +33,7 @@
   --chart-2: var(--success);
   --chart-3: var(--warn);
   --overlay: oklch(0 0 0 / .42);
+  --hero-glow: var(--brand-100);
 
   --radius-lg: var(--ds-r-lg);
   --radius: var(--ds-r-md);
@@ -58,8 +59,8 @@ body {
   font-family: var(--font);
   color: var(--ink);
   background:
-    radial-gradient(1100px 480px at 12% -6%, var(--brand-100) 0%, transparent 62%),
-    radial-gradient(900px 420px at 92% 0%, var(--brand-50) 0%, transparent 58%),
+    radial-gradient(1100px 480px at 12% -6%, var(--hero-glow) 0%, transparent 62%),
+    radial-gradient(900px 420px at 92% 0%, var(--hero-glow) 0%, transparent 58%),
     var(--bg);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -188,7 +189,7 @@ em {
 }
 
 .tab.is-active {
-  background: var(--ink);
+  background: var(--btn-from);
   color: var(--on-accent);
 }
 
@@ -200,7 +201,7 @@ em {
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--btn-from);
   color: var(--on-accent);
   font-size: 11px;
   font-weight: 700;
@@ -303,16 +304,16 @@ em {
 }
 
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--btn-from);
+  border-color: var(--btn-from);
   color: var(--on-accent);
   box-shadow: var(--sh-2);
 }
 
 .btn-primary:hover:not(:disabled) {
   color: var(--on-accent);
-  background: var(--brand-800);
-  border-color: var(--brand-800);
+  background: var(--btn-to);
+  border-color: var(--btn-to);
 }
 
 .btn-ghost {
@@ -1938,4 +1939,20 @@ em {
   .trend-chart { gap: 3px; height: 160px; }
   .trend-label, .focus-label { font-size: 9px; }
   .kind-row { grid-template-columns: minmax(78px, 110px) 1fr 28px; }
+}
+
+
+/* ---------- v2.0 暗色：项目扩展 token ---------- */
+[data-theme="dark"] {
+  --accent-deco: var(--brand-400);
+  --overlay: oklch(0 0 0 / .64);
+  --hero-glow: var(--brand-900);
+  --success-ink: oklch(0.800 0.110 150);
+  --warn-ink: oklch(0.820 0.100 75);
+  --warn-line: oklch(0.700 0.130 75 / .38);
+  --info: oklch(0.760 0.100 250);
+  --info-soft: oklch(0.700 0.120 250 / .18);
+  --chart-1: var(--brand-400);
+  --chart-2: var(--success);
+  --chart-3: var(--warn);
 }

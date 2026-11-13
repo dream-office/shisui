@@ -331,6 +331,12 @@ export function undoLabelI18n(label: string): string {
 }
 
 Object.assign(EN, {
+  外观: 'Appearance',
+  跟随系统: 'System',
+  亮色: 'Light',
+  暗色: 'Dark',
+  '默认跟随系统；也可以固定亮色或暗色。': 'Follow the system by default, or pin light/dark.',
+
   '8 周完成趋势': '8-week completion trend',
   '按每周到期任务统计，跳过不计': 'By due/start time each week; skipped excluded',
   '按任务类型分布': 'Task type distribution',

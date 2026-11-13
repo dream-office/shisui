@@ -34,6 +34,7 @@ export default function App() {
   const tasks = useApp((s) => s.tasks)
   const llmConfig = useApp((s) => s.llmConfig)
   const lang = useApp((s) => s.lang)
+  const theme = useApp((s) => s.theme)
   const [applyUpdate, setApplyUpdate] = useState<(() => void) | null>(null)
   const [armed, setArmed] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('__boom') === '1',
@@ -48,6 +49,20 @@ export default function App() {
   const signatureClicks = useRef<number[]>([])
   const signatureRef = useRef<HTMLButtonElement>(null)
   const signatureCloseRef = useRef<HTMLButtonElement>(null)
+
+  // 外观：跟随系统 / 强制亮暗；PWA theme-color 跟随
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const apply = () => {
+      const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme
+      document.documentElement.dataset.theme = resolved
+      const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      if (meta) meta.content = resolved === 'dark' ? '#1E1A12' : '#FAF5EC'
+    }
+    apply()
+    media.addEventListener('change', apply)
+    return () => media.removeEventListener('change', apply)
+  }, [theme])
 
   // 语言切换：同步 i18n 模块、<html lang> 与标题
   useEffect(() => {

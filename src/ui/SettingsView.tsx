@@ -30,6 +30,8 @@ export default function SettingsView() {
   const imageMode = useApp((s) => s.imageMode)
   const setImageMode = useApp((s) => s.setImageMode)
   const setAppLang = useApp((s) => s.setLang)
+  const theme = useApp((s) => s.theme)
+  const setTheme = useApp((s) => s.setTheme)
   const changeLang = (next: 'zh' | 'en') => {
     setAppLang(next)
     setLang(next)
@@ -151,6 +153,29 @@ export default function SettingsView() {
 
   return (
     <div className="settings">
+      <section className="card" aria-labelledby="appearance-title">
+        <h3 id="appearance-title">{t('外观')}</h3>
+        <p className="muted">{t('默认跟随系统；也可以固定亮色或暗色。')}</p>
+        <div className="language-switch" role="radiogroup" aria-label={t('外观')}>
+          {[
+            ['system', t('跟随系统')],
+            ['light', t('亮色')],
+            ['dark', t('暗色')],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={theme === value}
+              className={`btn btn-sm ${theme === value ? 'btn-primary' : ''}`}
+              onClick={() => setTheme(value as typeof theme)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
       <section className="card" aria-labelledby="language-title">
         <h3 id="language-title">{t('界面语言')}</h3>
         <div className="language-switch">

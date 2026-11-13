@@ -29,6 +29,7 @@ import { t } from '@/i18n'
 
 export type View = 'inbox' | 'plan' | 'calendar' | 'stats' | 'settings'
 export type Lang = 'zh' | 'en'
+export type ThemePref = 'system' | 'light' | 'dark'
 export type ImageMode = 'ask' | 'local' | 'ai' | 'off'
 
 interface AppState {
@@ -57,6 +58,8 @@ interface AppState {
   undo: { label: string; before: StoredTask[]; generatedIds?: string[] } | null
   /** 界面语言 */
   lang: Lang
+  /** 外观：跟随系统 / 亮 / 暗 */
+  theme: ThemePref
   /** 图片识别模式：ask / local / ai / off */
   imageMode: ImageMode
   /** 专注模式 */
@@ -73,6 +76,7 @@ interface AppState {
   /** 结束系列：停止生成、保留历史 */
   endSeries: (id: string) => Promise<void>
   setLang: (lang: Lang) => void
+  setTheme: (theme: ThemePref) => void
   setImageMode: (mode: ImageMode) => void
   /** 图片识别结果直接进入候选 */
   setImageCandidates: (tasks: ParsedTask[]) => void
@@ -197,6 +201,15 @@ export const useApp = create<AppState>((set, get) => ({
       return 'ask' as ImageMode
     }
   })(),
+  theme: (() => {
+    if (typeof window === 'undefined') return 'system' as ThemePref
+    try {
+      const value = window.localStorage.getItem('shisui.theme')
+      return value === 'light' || value === 'dark' ? (value as ThemePref) : ('system' as ThemePref)
+    } catch {
+      return 'system' as ThemePref
+    }
+  })(),
   searchQuery: '',
   selectedIds: [],
   undo: null,
@@ -306,6 +319,15 @@ export const useApp = create<AppState>((set, get) => ({
       // 隐私模式下忽略，仅本次生效
     }
     set({ imageMode: mode })
+  },
+
+  setTheme: (theme) => {
+    try {
+      window.localStorage.setItem('shisui.theme', theme)
+    } catch {
+      // 隐私模式下忽略，仅本次生效
+    }
+    set({ theme })
   },
 
   setImageCandidates: (tasks) => {
