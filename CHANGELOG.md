@@ -41,7 +41,7 @@
 ### 测试
 
 - 412 单测（含 doneAt 迁移、skipped、8 周趋势、类型分布、延期率、dailyFocus、CSV）
-- e2e 新增统计图表/导出/320/pagehide+visibility/English、UI 尺寸/历史返回/弹窗焦点；93 全过
+- e2e 新增统计图表/导出/320/pagehide+visibility/English、UI 尺寸/历史返回/弹窗焦点、真实 Dexie v4→v5 迁移；94 全过
 
 ## [1.4.0] - 2026-11-09
 
