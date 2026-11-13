@@ -53,6 +53,12 @@
 - 弹窗按钮组 gap 8；P3 亮暗 1280/390/320 五屏空态截图 .tmp/v2-p3
 - K e2e：四屏空态 + 月历 compact + 320 不溢出
 
+#### P4 颜色
+- 导出 hex 收口到 `chartPalette` 单一模块；页面/导出同色板（金/绿/琥珀）
+- 产品 CSS 无 rgba；残余仅签名 ×2、PWA meta、Canvas 固定色板、控制台色
+- color-v2 e2e：亮暗 token 对比度、图表 token、签名 #5B57F0
+- 30 张截图与 P3 基线逐像素 diff = 0
+
 - 四档 28/32/36/44：icon-btn/btn-xs 28、btn-sm 32、btn 36、移动 44；输入同档
 - 暗色输入面统一 `--surface-2`（正文/聚焦/禁用/玻璃关闭）；旧截图为修复前状态
 

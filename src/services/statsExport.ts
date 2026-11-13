@@ -1,3 +1,4 @@
+import { CHART_PALETTE as P } from './chartPalette'
 import type { KindCount, Stats, WeekCompletion } from 'shisui-core'
 import type { FocusDay } from './focusLog'
 
@@ -64,13 +65,13 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
   const ctx = canvas.getContext('2d')
   if (!ctx) return
   ctx.scale(2, 2)
-  ctx.fillStyle = '#FCFBFA'
+  ctx.fillStyle = P.paper
   ctx.fillRect(0, 0, width, height)
-  ctx.fillStyle = '#1F1D1A'
+  ctx.fillStyle = P.ink
   ctx.font = '600 36px system-ui, sans-serif'
   ctx.fillText(en ? 'Shisui · Stats' : '拾穗 · 统计', 60, 80)
   ctx.font = '16px system-ui, sans-serif'
-  ctx.fillStyle = '#7D786D'
+  ctx.fillStyle = P.ink3
   ctx.fillText(new Date().toLocaleString(en ? 'en-US' : 'zh-CN', { hour12: false }), 60, 112)
 
   const metrics: [string, string][] = [
@@ -83,30 +84,30 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
   metrics.forEach(([label, value], index) => {
     const x = 60 + (index % 2) * 560
     const y = 190 + Math.floor(index / 2) * 120
-    ctx.fillStyle = '#7D786D'
+    ctx.fillStyle = P.ink3
     ctx.font = '18px system-ui, sans-serif'
     ctx.fillText(label, x, y)
-    ctx.fillStyle = '#1F1D1A'
+    ctx.fillStyle = P.ink
     ctx.font = '600 42px system-ui, sans-serif'
     ctx.fillText(String(value), x, y + 48)
   })
 
   const drawBars = (title: string, values: { label: string; value: number; display: string }[], top: number, color: string) => {
-    ctx.fillStyle = '#1F1D1A'
+    ctx.fillStyle = P.ink
     ctx.font = '600 24px system-ui, sans-serif'
     ctx.fillText(title, 60, top)
     const max = Math.max(1, ...values.map((item) => item.value))
     values.forEach((item, index) => {
       const y = top + 34 + index * 44
       const barWidth = Math.round((item.value / max) * 720)
-      ctx.fillStyle = '#E8E4DA'
+      ctx.fillStyle = P.line
       ctx.fillRect(300, y - 18, 720, 24)
       ctx.fillStyle = color
       ctx.fillRect(300, y - 18, barWidth, 24)
-      ctx.fillStyle = '#6E6A61'
+      ctx.fillStyle = P.ink2
       ctx.font = '16px system-ui, sans-serif'
       ctx.fillText(item.label, 60, y)
-      ctx.fillStyle = '#1F1D1A'
+      ctx.fillStyle = P.ink
       ctx.font = '600 16px system-ui, sans-serif'
       ctx.fillText(item.display, 1040, y)
     })
@@ -120,13 +121,13 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
       display: point.rate === null ? '—' : `${point.rate}%`,
     })),
     en ? 460 : 460,
-    '#B89541',
+    P.gold,
   )
   drawBars(
     en ? 'Task kinds' : '任务类型分布',
     data.kinds.map((item) => ({ label: data.kindLabel(item.kind), value: item.count, display: String(item.count) })),
     940,
-    '#2F8E61',
+    P.green,
   )
   drawBars(
     en ? 'Focus · last 7 days' : '每日专注 · 近 7 天',
@@ -136,7 +137,7 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
       display: `${Math.round(day.totalMs / 60_000)} min`,
     })),
     1280,
-    '#B07A1E',
+    P.amber,
   )
 }
 
