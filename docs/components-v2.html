@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>拾穗 v2.0 · 组件对照页（Review）</title>
+<style>
+  :root{
+    --h:86; --c:.110;
+    --bg:oklch(.985 .008 86); --surface:oklch(.995 .004 86); --surface-2:oklch(.965 .010 86);
+    --line:oklch(.900 .012 86); --t-1:oklch(.220 .018 86); --t-2:oklch(.430 .016 86); --t-3:oklch(.550 .012 86);
+    --brand-700:oklch(.430 .100 var(--h)); --accent:oklch(.470 .100 var(--h)); --accent-soft:oklch(.940 .030 var(--h));
+    --danger:oklch(.500 .190 25); --danger-soft:oklch(.965 .030 25); --ok:oklch(.500 .130 150);
+  }
+  [data-theme="dark"]{
+    --bg:oklch(.160 .012 86); --surface:oklch(.225 .010 86); --surface-2:oklch(.280 .012 86);
+    --line:oklch(1 0 0 / .10); --t-1:oklch(.970 .004 86); --t-2:oklch(.780 .008 86); --t-3:oklch(.640 .010 86);
+    --accent:oklch(.780 .090 86); --accent-soft:oklch(.645 .110 86 / .18);
+    --danger:oklch(.700 .170 25); --danger-soft:oklch(.700 .170 25 / .18);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--t-1);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;font-size:14px;line-height:1.6}
+  .wrap{max-width:1120px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.02em}
+  h2{font-size:16px;margin:28px 0 10px}
+  h3{font-size:13px;margin:0 0 8px;color:var(--t-2)}
+  p{margin:0;color:var(--t-2)}
+  .bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px}
+  .tag{font-size:11px;color:var(--t-3);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+  .grow{flex:1}
+  button{font-family:inherit;cursor:pointer}
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--t-1);font-size:14px;font-weight:600}
+  .btn.primary{background:var(--brand-700);border-color:var(--brand-700);color:#fff}
+  .btn.lg{height:44px;padding:0 16px}
+  .btn.sm{height:32px;padding:0 12px;border-radius:10px;font-size:13px}
+  .btn.xs{height:28px;padding:0 10px;border-radius:8px;font-size:12px}
+  .demo-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid var(--line)}
+  .demo-row:last-child{border-bottom:0}
+  .label{width:78px;flex:none;font-size:12px;color:var(--t-3)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px 24px;box-shadow:0 8px 24px -18px oklch(.3 .02 86 / .25)}
+  .panel{background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .empty{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;gap:12px;align-items:flex-start}
+  .sprig{width:40px;height:40px;flex:none;color:#5b57f0}
+  .error{background:var(--danger-soft);border:1px solid var(--danger);border-radius:20px;padding:24px;color:var(--danger)}
+  .inline{background:var(--danger-soft);border:1px solid var(--danger);border-radius:12px;padding:10px 12px;color:var(--danger);font-size:13px;margin-top:8px}
+  .row{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .grow{flex:1;min-width:0}
+  .icon{width:28px;height:28px;border:0;border-radius:8px;background:transparent;color:var(--t-3);font-size:14px}
+  .field{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .field label{font-size:12px;color:var(--t-2)}
+  .input,.select{height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface-2);color:var(--t-1);padding:0 10px;font-size:14px;width:100%}
+  textarea.input{height:96px;padding:10px;resize:vertical}
+  .modal{max-width:480px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 18px 50px -24px oklch(.2 .02 86 / .4)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .toolbar{display:flex;align-items:center;gap:10px;min-height:56px;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 4px;margin:10px 0}
+  .tools{display:flex;align-items:center;gap:8px;min-height:56px}
+  @media (max-width:860px){body{font-size:15px} .wrap{padding:18px 14px 80px} .btn{height:44px} .input,.select{height:44px} .card,.panel,.empty,.error{padding:16px} .label{width:100%} .demo-row{align-items:flex-start;flex-direction:column} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <h1>拾穗 v2.0 · 组件对照页</h1>
+    <span class="tag">Review only · 非产品入口</span>
+    <span class="grow"></span>
+    <button class="btn sm" type="button" onclick="document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'">切换亮 / 暗</button>
+  </div>
+  <p>用于 P2 组件尺寸复核：四档按钮、输入、卡片、列表、表单、弹窗。真实产品以 <code>docs/P2-COMPONENTS.md</code> 与五屏截图为准。</p>
+
+  <h2>1. 按钮四档</h2>
+  <div class="card">
+    <div class="demo-row"><span class="label">28 · XS</span><button class="btn xs">图标/紧凑</button><button class="btn xs primary">主操作</button></div>
+    <div class="demo-row"><span class="label">32 · S</span><button class="btn sm">工具栏</button><button class="btn sm primary">主操作</button></div>
+    <div class="demo-row"><span class="label">36 · M</span><button class="btn">默认按钮</button><button class="btn primary">开始解析</button><button class="btn sm">small 32</button></div>
+    <div class="demo-row"><span class="label">44 · L</span><button class="btn primary lg">移动主按钮</button><span style="font-size:12px;color:var(--t-3)">≤860 自动 44，本页按钮示例按 44</span></div>
+  </div>
+
+  <h2>2. 输入 / 表单</h2>
+  <div class="card">
+    <div class="grid">
+      <div class="field"><label>文本输入（36）</label><input class="input" style="height:36px" placeholder="示例标题" /></div>
+      <div class="field"><label>下拉（36）</label><select class="select" style="height:36px"><option>任务 / 交付物</option><option>会议</option><option>缴费 / 报销</option></select></div>
+      <div class="field"><label>多行（composer）</label><textarea class="input" placeholder="粘贴群消息…"></textarea></div>
+      <div class="field"><label>行内 alert（12）</label><div class="inline">不是合法的 JSON 文件</div></div>
+    </div>
+    <div class="demo-row" style="margin-top:6px"><span class="label">状态</span><span style="font-size:12px;color:var(--t-3)">hover / focus-visible / disabled / error 均由真实产品组件承担</span></div>
+  </div>
+
+  <h2>3. 卡片 / 面板 / 空态 / 错误</h2>
+  <div class="grid">
+    <div class="card"><h3>card</h3><p>24/16 · 圆角 20</p></div>
+    <div class="panel"><h3>panel</h3><p>24/16 · 圆角 20 · 嵌套面</p></div>
+    <div class="empty"><svg class="sprig" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 36V8" stroke="currentColor" stroke-width="2"/><path d="M20 9 26 15 20 21 14 15Z" fill="currentColor"/></svg><div><h3>empty</h3><p>图形 40 · 一句 + 一个操作</p></div></div>
+    <div class="error"><h3>error-state</h3><p>区块级错误卡 · 24/16 · 圆角 20</p></div>
+  </div>
+
+  <h2>4. 列表 / 工具条</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="row"><span class="grow">示例：本周五 18:00 前交周报</span><span style="font-size:12px;color:var(--t-3)">剩 3 天</span><button class="icon" aria-label="编辑">✎</button><button class="icon" aria-label="跳过">⏭</button></div>
+    <div class="row"><span class="grow">示例：下周一 10:00 项目复盘会</span><span style="font-size:12px;color:var(--t-3)">剩 1 天</span><button class="icon" aria-label="编辑">✎</button><button class="icon" aria-label="删除">✕</button></div>
+  </div>
+  <div class="toolbar"><button class="btn primary">开始解析</button><button class="btn">粘贴分享内容</button><button class="btn">清空</button><span style="font-size:12px;color:var(--t-3)">工具条 56 / 48</span></div>
+
+  <h2>5. 弹窗</h2>
+  <div class="modal">
+    <div class="modal-head"><h3 style="margin:0">选择图片识别方式</h3><button class="icon" aria-label="关闭">✕</button></div>
+    <p>本地 OCR 不上传；AI 识图会把图片发送到你配置的服务。</p>
+    <p style="margin-top:8px"><strong>24/16 · 圆角 20 · 玻璃或实心兜底</strong></p>
+    <div class="tools" style="margin-top:16px"><button class="btn primary">本地 OCR（离线）</button><button class="btn">取消</button></div>
+  </div>
+
+  <h2>6. 尺寸表</h2>
+  <div class="card" style="padding:16px 24px">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left">
+      <tr style="color:var(--t-3)"><th style="padding:8px 0">组件</th><th>桌面</th><th>移动 ≤860</th></tr>
+      <tr><td style="padding:8px 0">按钮</td><td>28 / 32 / 36</td><td>28 / 32 / 44</td></tr>
+      <tr><td style="padding:8px 0">输入</td><td>36</td><td>44</td></tr>
+      <tr><td>卡片 padding</td><td>24</td><td>16</td></tr>
+      <tr><td>卡片圆角</td><td>20</td><td>20</td></tr>
+      <tr><td>列表行</td><td>12 / 24</td><td>10 / 16</td></tr>
+      <tr><td>工具条</td><td>56</td><td>48</td></tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>
