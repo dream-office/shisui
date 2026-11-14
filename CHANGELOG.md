@@ -26,7 +26,8 @@
 - hover/focus 背景 `#453F37` + `accent-ink` 边框，勾选态保持 success。
 - 亮色同步 `#8C7F63` 边框；22px / 位置 / 勾选逻辑不变。
 - dock 专用玻璃 `--dock-glass-bg`（亮 58% / 暗 54% 白/卡底 alpha）+ blur(24px) saturate(1.25)；未选中文字 `--t-2`，选中金底深字。
-- 新增 check-v221 / dock-v221 e2e；亮暗/320/390 截图。
+- 新增 check-v221 / dock-v221 / dock-badge-v221 e2e；亮暗/320/390 截图。
+- dock 消息角标改绝对定位到图标右上（top 3px / 中心+5px），不占 flex 布局；桌面 tab 角标不变。
 
 ## [2.2.0] - 2026-11-14
 
