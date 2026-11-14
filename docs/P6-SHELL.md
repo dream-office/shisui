@@ -15,8 +15,8 @@
 | | standalone | embedded |
 |---|---:|---:|
 | 主 JS raw | 487,687 B | 480,377 B |
-| 主 JS gzip | 161,317 B | 158,867 B |
-| CSS raw/gzip | 57,591 / 11,572 B | 57,591 / 11,572 B |
+| 主 JS gzip | 161,315 B | 158,863 B |
+| CSS raw/gzip | 57,816 / 11,631 B | 57,816 / 11,631 B |
 | manifest / sw | ✅ / ✅ | ❌ / ❌ |
 
 embedded 比 standalone 少约 **7.3 KB raw / 2.5 KB gzip**（PWA、壳/页脚、设置部分被裁）。
@@ -59,4 +59,4 @@ embedded 比 standalone 少约 **7.3 KB raw / 2.5 KB gzip**（PWA、壳/页脚�
 
 ## 6. 测试
 
-`412 × 2` 单测 + `116` e2e（+embedded E1/E2）。
+`412 × 2` 单测 + `121` e2e（+embedded E1/E2）。

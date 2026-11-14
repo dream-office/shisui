@@ -28,7 +28,8 @@
 - favicon / icon-192 / icon-512 / apple-touch-180 / maskable-512 绿底白穗重做；maskable 内容在中心 80% 安全区，apple 不透明。
 - manifest `theme_color=#2F6B3F`、background `#F0F8F1`；theme-color meta 亮 `#F0F8F1` / 暗 `#1B3B23`。
 - 图表/导出色板改绿色相位；PWA 与双外壳架构不变。
-- 新增 `scripts/gen-icons.mjs`、`e2e/green-v21.spec.ts`。
+- 新增 `scripts/gen-icons.mjs`、`e2e/green-v21.spec.ts`、`e2e/export-v21.spec.ts`、`e2e/screens-v21.spec.ts`。
+- 320/360 任务行右栏换行，标题不再逐字换行。
 
 ## [2.0.0] - 2026-11-13
 

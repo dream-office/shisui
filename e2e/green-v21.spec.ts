@@ -30,7 +30,7 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
   })
   expect(tokens.h).toBe('150')
   expect(parseFloat(tokens.c)).toBeCloseTo(0.11, 3)
-  expect(parseFloat(tokens.tint) || 0).toBe(0)
+  expect(tokens.tint).toBe('0')
   expect(tokens.btnFrom).toBe(tokens.accentInk)
   expect(tokens.accent).not.toBe(tokens.accentInk)
 
@@ -49,6 +49,21 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
   const svg = await (await request.get('/icons/icon.svg')).text()
   expect(svg).toContain('#2F6B3F')
   expect(svg.toLowerCase()).toContain('#ffffff')
+
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './icons/icon.svg')
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', './icons/apple-touch-icon.png')
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', './manifest.webmanifest')
+  const sw = await (await request.get('/sw.js')).text()
+  expect(sw).toContain("const CACHE = 'shisui-v2.1.0'")
+
+  const signature = await page.evaluate(() => {
+    const btn = document.querySelector('.signature-btn') as HTMLElement
+    const mark = btn.querySelector('.signature-mark') as HTMLElement
+    const bs = getComputedStyle(btn)
+    const ms = getComputedStyle(mark)
+    return { width: mark.offsetWidth, height: mark.offsetHeight, radius: ms.borderRadius, opacity: bs.opacity, fontSize: bs.fontSize }
+  })
+  expect(signature).toEqual({ width: 10, height: 10, radius: '2px', opacity: '0.55', fontSize: '11.5px' })
 
   const iconChecks = await page.evaluate(async () => {
     const load = async (src: string) => {
