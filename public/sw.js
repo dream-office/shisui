@@ -11,7 +11,7 @@
  *
  * 版本号变化时才换缓存名，activate 时删掉旧缓存（避免无限增长）。
  */
-const CACHE = 'shisui-v2.2.0'
+const CACHE = 'shisui-v2.2.1'
 
 // 资源响应带 Vary: Origin（Vite preview 默认），而预缓存请求与页面请求的 Origin 头不同；
 // 按 Vary 匹配会 miss，所以缓存匹配一律忽略 Vary。

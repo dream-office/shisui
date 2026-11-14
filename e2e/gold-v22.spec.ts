@@ -49,7 +49,7 @@ test('V22 美术金：token / 图标 / PWA 色一致', async ({ page, request })
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', './icons/apple-touch-icon.png')
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', './manifest.webmanifest')
   const sw = await (await request.get('/sw.js')).text()
-  expect(sw).toContain("const CACHE = 'shisui-v2.2.0'")
+  expect(sw).toContain("const CACHE = 'shisui-v2.2.1'")
 
   const signature = await page.evaluate(() => {
     const btn = document.querySelector('.signature-btn') as HTMLElement

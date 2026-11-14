@@ -2825,3 +2825,27 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
 }
 
 :root { --safe-bottom: env(safe-area-inset-bottom, 0px); }
+
+
+/* v2.2.1：任务完成圆圈在暗色下可见（不改变 22px/位置/逻辑） */
+.check {
+  background: var(--surface-solid);
+  border-color: #8C7F63;
+}
+.check:hover {
+  border-color: var(--accent-ink);
+  background: color-mix(in srgb, var(--surface-solid) 82%, #FFFFFF 18%);
+}
+[data-theme="dark"] .check {
+  background: #3A352F;
+  border-color: #8C7F63;
+}
+[data-theme="dark"] .check:hover,
+[data-theme="dark"] .check:focus-visible {
+  background: #453F37;
+  border-color: var(--accent-ink);
+}
+[data-theme="dark"] .check.is-checked {
+  background: var(--success);
+  border-color: var(--success);
+}

@@ -1390,7 +1390,7 @@ test.describe('v1.1.2 B 版空态与关于', () => {
     await nav.getByRole('button', { name: /^设置/ }).click()
     await expect(page.getByRole('heading', { name: '关于拾穗' })).toBeVisible()
     const about = page.locator('.about-signature')
-    await expect(page.getByText('拾穗 v2.2.0 · AGPL-3.0-or-later')).toBeVisible()
+    await expect(page.getByText('拾穗 v2.2.1 · AGPL-3.0-or-later')).toBeVisible()
     await expect(page.getByText('作者：dream-office')).toBeVisible()
     await expect(about).toContainText('dream-office · 把散落的时间，一粒一粒捡起来。')
     await expect(page.getByRole('link', { name: '源码（GitHub）' })).toHaveAttribute(
