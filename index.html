@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="拾穗 · 把群里散落的截止时间捡起来。粘贴群消息，解析成带绝对时间的待办并自动体检冲突。纯前端运行，数据只存在你自己的浏览器里。" />
-    <meta name="theme-color" content="#F0F8F1" />
+    <meta name="theme-color" content="#FAF7F0" />
     <meta name="color-scheme" content="light dark" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
@@ -22,7 +22,7 @@
           document.documentElement.dataset.theme = theme;
           document.documentElement.style.colorScheme = theme;
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', theme === 'dark' ? '#1B3B23' : '#F0F8F1');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#1A1815' : '#FAF7F0');
         } catch (e) {}
       })();
     </script>

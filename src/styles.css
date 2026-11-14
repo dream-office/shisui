@@ -2636,3 +2636,176 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   .task-right { width: 100%; margin-left: 34px; justify-content: flex-end; }
   .task-right .countdown { margin-left: 0; }
 }
+
+
+/* ============================================================
+   v2.2 美术金 · 预览层（只覆盖 token / 壳色；图标与版本后续）
+   亮侧栏默认奶白 #F5EFE3；实心金底用深字 #2D2A26
+   ============================================================ */
+:root {
+  --brand-50: #F7EFD9;
+  --brand-100: #F0E6CC;
+  --brand-200: #E8D9A8;
+  --brand-300: #D9C47A;
+  --brand-400: #D4A93C;
+  --brand-500: #C9A227;
+  --brand-600: #B08D20;
+  --brand-700: #7A5B12;
+  --brand-800: #5A4210;
+  --brand-900: #3B2B0A;
+
+  --bg: #FAF7F0;
+  --surface: #FFFFFF;
+  --surface-solid: #FFFFFF;
+  --surface-2: #F7F1E5;
+  --field-bg: #FFFFFF;
+  --hover-bg: #F5EFE3;
+  --line: #E8E0D0;
+  --line-strong: #D8CDB8;
+
+  --t-1: #2D2A26;
+  --t-2: #6F6A5F;
+  --t-3: #6F6A5F;
+
+  --accent: #C9A227;
+  --accent-ink: #7A5B12;
+  --accent-deco: #C9A227;
+  --accent-soft: #F7EFD9;
+  --on-accent: #2D2A26;
+  --ring: #7A5B12;
+  --btn-from: #C9A227;
+  --btn-to: #B08D20;
+  --btn-ink: #2D2A26;
+  --btn-outline: #7A5B12;
+
+  --sidebar-bg: #F5EFE3;
+  --sidebar-fg: #2D2A26;
+  --sidebar-muted: #6F6A5F;
+  --sidebar-active: #C9A227;
+  --sidebar-active-fg: #2D2A26;
+  --hero-glow: #F7EFD9;
+  --glass: rgba(250, 247, 240, 0.72);
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-brand: rgba(245, 239, 227, 0.86);
+  --toast-bg: #2D2A26;
+  --toast-ink: #FAF7F0;
+
+  --success: #2F7A4B;
+  --success-soft: #E8F2EA;
+  --success-ink: #24633D;
+  --warn: #A85A16;
+  --warn-soft: #F8E8D6;
+  --warn-ink: #8A4A12;
+  --warn-line: rgba(168, 90, 22, 0.28);
+  --danger: #B3261E;
+  --danger-soft: #F8E4E1;
+  --danger-line: rgba(179, 38, 30, 0.3);
+  --info: #2A6C9E;
+  --info-soft: #E7F1F8;
+  --chart-1: var(--accent);
+  --chart-2: var(--success);
+  --chart-3: var(--warn);
+}
+
+[data-theme="dark"] {
+  --brand-50: #3B2B0A;
+  --brand-100: #5A4210;
+  --brand-200: #7A5B12;
+  --brand-300: #E3C164;
+  --brand-400: #D4A93C;
+  --brand-500: #D4A93C;
+  --brand-600: #C39B32;
+  --brand-700: #B08D20;
+  --brand-800: #211E1A;
+  --brand-900: #1A1815;
+
+  --bg: #1A1815;
+  --surface: #262320;
+  --surface-solid: #262320;
+  --surface-2: #2D2A26;
+  --field-bg: #1A1815;
+  --hover-bg: #2D2A26;
+  --line: #3A352E;
+  --line-strong: #4A443A;
+
+  --t-1: #EDE8DE;
+  --t-2: #9A948A;
+  --t-3: #9A948A;
+
+  --accent: #D4A93C;
+  --accent-ink: #E3C164;
+  --accent-deco: #D4A93C;
+  --accent-soft: rgba(212, 169, 60, 0.14);
+  --on-accent: #1A1815;
+  --ring: #E3C164;
+  --btn-from: #D4A93C;
+  --btn-to: #C39B32;
+  --btn-ink: #1A1815;
+  --btn-outline: #E3C164;
+
+  --sidebar-bg: #211E1A;
+  --sidebar-fg: #EDE8DE;
+  --sidebar-muted: #9A948A;
+  --sidebar-active: #D4A93C;
+  --sidebar-active-fg: #1A1815;
+  --hero-glow: rgba(212, 169, 60, 0.08);
+  --glass: rgba(26, 24, 21, 0.72);
+  --glass-bg: rgba(38, 35, 32, 0.78);
+  --glass-brand: rgba(33, 30, 26, 0.86);
+  --toast-bg: #EDE8DE;
+  --toast-ink: #1A1815;
+
+  --success: #6FBF8C;
+  --success-soft: rgba(111, 191, 140, 0.16);
+  --success-ink: #8FD0A7;
+  --warn: #E0A05A;
+  --warn-soft: rgba(224, 160, 90, 0.16);
+  --warn-ink: #E8B77A;
+  --warn-line: rgba(224, 160, 90, 0.32);
+  --danger: #E6756C;
+  --danger-soft: rgba(230, 117, 108, 0.16);
+  --danger-line: rgba(230, 117, 108, 0.34);
+  --info: #7FB6E0;
+  --info-soft: rgba(127, 182, 224, 0.16);
+  --chart-1: var(--accent);
+  --chart-2: var(--success);
+  --chart-3: var(--warn);
+}
+
+/* 壳：奶白侧栏 / 金色选中底 + 深字 */
+.sidebar .sb-item { color: var(--sidebar-muted); }
+.sidebar .sb-item:hover {
+  background: color-mix(in srgb, var(--sidebar-fg) 7%, transparent);
+  color: var(--sidebar-fg);
+}
+.sidebar .sb-item[aria-current="page"] {
+  background: var(--sidebar-active);
+  color: var(--sidebar-active-fg);
+  box-shadow: none;
+}
+.sidebar .sb-mark {
+  background: color-mix(in srgb, var(--sidebar-fg) 8%, transparent);
+  color: var(--sidebar-fg);
+}
+.sidebar .sb-help {
+  background: color-mix(in srgb, var(--sidebar-fg) 6%, transparent);
+  border-color: var(--line-strong);
+  color: var(--accent-ink);
+}
+.sidebar .sb-help:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--sidebar-fg) 12%, transparent);
+}
+.sidebar .sb-foot .engine-pill {
+  border-color: var(--line-strong);
+  color: var(--sidebar-muted);
+}
+.sidebar .sb-foot .engine-pill .dot { background: var(--accent-ink); }
+
+.gradient-line {
+  background: linear-gradient(90deg, var(--brand-400), var(--brand-600) 55%, var(--brand-500));
+}
+
+/* 空态 / 落款：金点 + 深金字 */
+.sprig-mark { color: var(--accent-ink); }
+.signature-mark { background: var(--accent); }
+.signature-btn { color: var(--accent-ink); }
