@@ -5,12 +5,11 @@ function pngSize(buf: Buffer) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) }
 }
 
-test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request }) => {
+test('V22 美术金：token / 图标 / PWA 色一致', async ({ page, request }) => {
   await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/')
 
   const tokens = await page.evaluate(() => {
-    const s = getComputedStyle(document.documentElement)
     const probe = document.createElement('div')
     document.body.appendChild(probe)
     const color = (name: string) => {
@@ -18,21 +17,17 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
       return getComputedStyle(probe).color
     }
     const out = {
-      h: s.getPropertyValue('--h').trim(),
-      c: s.getPropertyValue('--c').trim(),
-      tint: s.getPropertyValue('--l-tint').trim(),
       accent: color('--accent'),
       accentInk: color('--accent-ink'),
       btnFrom: color('--btn-from'),
+      onAccent: color('--on-accent'),
     }
     probe.remove()
     return out
   })
-  expect(tokens.h).toBe('150')
-  expect(parseFloat(tokens.c)).toBeCloseTo(0.11, 3)
-  expect(tokens.tint).toBe('0')
-  expect(tokens.btnFrom).toBe(tokens.accentInk)
   expect(tokens.accent).not.toBe(tokens.accentInk)
+  expect(tokens.btnFrom).toBe(tokens.accent)
+  expect(tokens.onAccent).toBe('rgb(45, 42, 38)')
 
   const iconFiles = [
     ['/icons/icon-192.png', 192],
@@ -47,14 +42,14 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
   }
 
   const svg = await (await request.get('/icons/icon.svg')).text()
-  expect(svg).toContain('#2F6B3F')
-  expect(svg.toLowerCase()).toContain('#ffffff')
+  expect(svg).toContain('#C9A227')
+  expect(svg).toContain('#2D2A26')
 
   await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', './icons/icon.svg')
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', './icons/apple-touch-icon.png')
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', './manifest.webmanifest')
   const sw = await (await request.get('/sw.js')).text()
-  expect(sw).toContain("const CACHE = 'shisui-v2.1.0'")
+  expect(sw).toContain("const CACHE = 'shisui-v2.2.0'")
 
   const signature = await page.evaluate(() => {
     const btn = document.querySelector('.signature-btn') as HTMLElement
@@ -95,7 +90,7 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
     for (let y = 0; y < 512; y++) {
       for (let x = 0; x < 512; x++) {
         const i = (y * 512 + x) * 4
-        if (mask.data[i] > 200 && mask.data[i + 1] > 200 && mask.data[i + 2] > 200) {
+        if (mask.data[i] < 90 && mask.data[i + 1] < 80 && mask.data[i + 2] < 70) {
           maxRadius = Math.max(maxRadius, Math.hypot(x - 255.5, y - 255.5))
           minX = Math.min(minX, x)
           minY = Math.min(minY, y)
@@ -108,9 +103,9 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
   })
   expect(iconChecks.appleMinAlpha).toBe(255)
   for (const bg of [iconChecks.iconBg, iconChecks.icon512Bg, iconChecks.appleBg, iconChecks.maskBg]) {
-    expect(bg[0]).toBeCloseTo(47, 0)
-    expect(bg[1]).toBeCloseTo(107, 0)
-    expect(bg[2]).toBeCloseTo(63, 0)
+    expect(bg[0]).toBeCloseTo(201, 0)
+    expect(bg[1]).toBeCloseTo(162, 0)
+    expect(bg[2]).toBeCloseTo(39, 0)
   }
   // 80% 安全区：中心 410px（51..461）
   expect(iconChecks.mask.minX).toBeGreaterThanOrEqual(51)
@@ -121,12 +116,12 @@ test('V21 麦苗绿：token / 图标 / PWA 色一致', async ({ page, request })
   expect(iconChecks.maxRadius).toBeLessThanOrEqual(204.8)
 
   const manifest = await (await request.get('/manifest.webmanifest')).json()
-  expect(manifest.theme_color).toBe('#2F6B3F')
-  expect(manifest.background_color).toBe('#F0F8F1')
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#F0F8F1')
+  expect(manifest.theme_color).toBe('#C9A227')
+  expect(manifest.background_color).toBe('#FAF7F0')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#FAF7F0')
 
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1B3B23')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1A1815')
 })

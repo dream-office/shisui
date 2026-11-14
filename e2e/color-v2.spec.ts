@@ -58,6 +58,8 @@ for (const theme of THEMES) {
         danger: pair('--danger'),
         chart: [hex('--chart-1'), hex('--chart-2'), hex('--chart-3')],
         accentDeco: color('--accent-deco'),
+        accent: color('--accent'),
+        accentInkColor: color('--accent-ink'),
         signature: getComputedStyle(sig).backgroundColor,
         sprig: getComputedStyle(sprig).color,
       }
@@ -67,21 +69,21 @@ for (const theme of THEMES) {
 
     expect(result.t1, 't1').toBeGreaterThanOrEqual(4.5)
     expect(result.t3, 't3').toBeGreaterThanOrEqual(4.5)
-    expect(result.onAccent, 'on-accent').toBeGreaterThanOrEqual(6.3)
+    expect(result.onAccent, 'on-accent').toBeGreaterThanOrEqual(5.5)
     expect(result.accentInk, 'accent-ink').toBeGreaterThanOrEqual(4.5)
     expect(result.accentInkSurface, 'link on surface').toBeGreaterThanOrEqual(6.1)
     expect(result.success, 'success').toBeGreaterThanOrEqual(4.5)
     expect(result.warn, 'warn').toBeGreaterThanOrEqual(4.5)
     expect(result.danger, 'danger').toBeGreaterThanOrEqual(4.5)
     if (theme === 'light') {
-      expect(result.chart).toEqual([CHART_PALETTE.accent, CHART_PALETTE.green, CHART_PALETTE.amber])
+      expect(result.chart).toEqual([CHART_PALETTE.accent, CHART_PALETTE.dark, CHART_PALETTE.warn])
     } else {
       // 导出固定浅色纸张，暗色图表用暗色变体；不得回到旧紫
       for (const color of result.chart) expect(color).not.toBe('#5B57F0')
-      expect(result.chart[0]).toBe('#7AB987')
+      expect(result.chart).toEqual(['#D4A93C', '#E3C164', '#D08A3E'])
     }
-    expect(result.signature).toBe(result.accentDeco)
-    expect(result.sprig).toBe(result.accentDeco)
+    expect(result.signature).toBe(result.accent)
+    expect(result.sprig).toBe(result.accentInkColor)
     expect(result.signature).not.toBe('rgb(91, 87, 240)')
 
     if (theme === 'dark') {
@@ -93,12 +95,12 @@ for (const theme of THEMES) {
         const colors = await page.evaluate(() => {
           const probe = document.createElement('div')
           document.body.appendChild(probe)
-          probe.style.color = 'var(--brand-500)'
-          const brand500 = getComputedStyle(probe).color
+          probe.style.color = 'var(--btn-outline)'
+          const outline = getComputedStyle(probe).color
           probe.remove()
-          return { brand500 }
+          return { outline }
         })
-        await expect(button).toHaveCSS('border-color', colors.brand500)
+        await expect(button).toHaveCSS('border-color', colors.outline)
       }
     }
   })

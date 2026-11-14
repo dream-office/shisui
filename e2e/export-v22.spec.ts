@@ -1,12 +1,14 @@
 import { expect, test } from '@playwright/test'
 import { mkdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { CHART_PALETTE } from '../src/services/chartPalette'
 
-const OUT = join(process.cwd(), '.tmp', 'v2.1-b2', 'export')
+const OUT = join(process.cwd(), '.tmp', 'v2.2-b2', 'export')
 
 test.beforeAll(() => mkdirSync(OUT, { recursive: true }))
 
-test('V21 统计导出：CSV/PNG 可下载可打开，PNG 为绿色板', async ({ page }) => {
+test('V22 统计导出：CSV/PNG 可下载可打开，PNG 为金色板', async ({ page }) => {
+  expect(CHART_PALETTE).toMatchObject({ accent: '#C9A227', dark: '#7A5B12', warn: '#A85A16' })
   await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
@@ -56,17 +58,23 @@ test('V21 统计导出：CSV/PNG 可下载可打开，PNG 为绿色板', async (
     const near = (r: number, g: number, b: number, tr: number, tg: number, tb: number) =>
       Math.abs(r - tr) <= 5 && Math.abs(g - tg) <= 5 && Math.abs(b - tb) <= 5
     let accent = 0
-    let gold = 0
+    let darkGold = 0
+    let oldGold = 0
+    let green = 0
     let purple = 0
     for (let i = 0; i < data.length; i += 4) {
       const [r, g, b] = [data[i], data[i + 1], data[i + 2]]
-      if (near(r, g, b, 88, 160, 105)) accent++
-      if (near(r, g, b, 184, 149, 65)) gold++
+      if (near(r, g, b, 201, 162, 39)) accent++
+      if (near(r, g, b, 122, 91, 18)) darkGold++
+      if (near(r, g, b, 184, 149, 65)) oldGold++
+      if (near(r, g, b, 19, 119, 56)) green++
       if (near(r, g, b, 91, 87, 240)) purple++
     }
-    return { accent, gold, purple }
+    return { accent, darkGold, oldGold, green, purple }
   }, pngBuf.toString('base64'))
   expect(colorCheck.accent).toBeGreaterThan(1000)
-  expect(colorCheck.gold).toBe(0)
+  expect(colorCheck.darkGold).toBeGreaterThan(1000)
+  expect(colorCheck.oldGold).toBe(0)
+  expect(colorCheck.green).toBe(0)
   expect(colorCheck.purple).toBe(0)
 })

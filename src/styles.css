@@ -30,7 +30,7 @@
   --info: oklch(0.500 0.120 250);
   --info-soft: oklch(0.965 0.020 250);
   --chart-1: var(--brand-500);
-  --chart-2: var(--success);
+  --chart-2: var(--brand-700);
   --chart-3: var(--warn);
   --overlay: oklch(0 0 0 / .42);
   --hero-glow: var(--brand-100);
@@ -372,7 +372,7 @@ em {
 .chip-warn {
   background: var(--warn-soft);
   border-color: var(--warn-line);
-  color: var(--warn);
+  color: var(--warn-ink);
 }
 
 /* ---------- 收件页 ---------- */
@@ -560,7 +560,7 @@ em {
 }
 
 .candidate.conf-medium {
-  border-left-color: var(--warn);
+  border-left-color: var(--warn-ink);
 }
 
 .candidate.conf-low {
@@ -598,7 +598,7 @@ em {
 
 .conf-badge.conf-medium {
   background: var(--warn-soft);
-  color: var(--warn);
+  color: var(--warn-ink);
 }
 
 .conf-badge.conf-low {
@@ -642,7 +642,7 @@ em {
 
 .tone-warn {
   background: var(--warn-soft);
-  color: var(--warn);
+  color: var(--warn-ink);
 }
 
 .tone-danger {
@@ -994,7 +994,7 @@ em {
 }
 
 .conflict.level-warn strong {
-  color: var(--warn);
+  color: var(--warn-ink);
 }
 
 .day-heading {
@@ -1011,7 +1011,7 @@ em {
 }
 
 .day-heading.is-warn {
-  color: var(--warn);
+  color: var(--warn-ink);
   border-bottom-style: dashed;
 }
 
@@ -1445,7 +1445,7 @@ em {
   color: var(--ink-soft);
 }
 .ics-error { margin: 10px 0 0; font-size: 13px; color: var(--danger); }
-.ics-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--warn); line-height: 1.7; }
+.ics-warnings { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--warn-ink); line-height: 1.7; }
 .ics-preview { margin-top: 14px; }
 .ics-summary { margin: 0 0 8px; font-size: 13.5px; }
 .ics-preview ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -1565,7 +1565,7 @@ em {
 .batch-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .batch-time { font-variant-numeric: tabular-nums; flex: none; }
 .batch-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
-.batch-chip.is-warn { background: var(--warn-soft); color: var(--warn); }
+.batch-chip.is-warn { background: var(--warn-soft); color: var(--warn-ink); }
 .batch-footer { margin-top: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 /* ── 二选一 ───────────────────────────────────── */
@@ -1611,7 +1611,7 @@ em {
   border-radius: var(--radius-sm);
   font-size: 12px;
   font-family: var(--mono);
-  color: var(--warn);
+  color: var(--warn-ink);
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 180px;
@@ -1968,7 +1968,7 @@ em {
   --info: oklch(0.760 0.100 250);
   --info-soft: oklch(0.700 0.120 250 / .18);
   --chart-1: var(--brand-400);
-  --chart-2: var(--success);
+  --chart-2: var(--brand-700);
   --chart-3: var(--warn);
 }
 
@@ -2114,21 +2114,22 @@ em {
     font-size: 12.5px;
     font-weight: 600;
   }
-  .main { padding: 16px 14px calc(84px + env(safe-area-inset-bottom)); }
-  .footer { padding-bottom: 8px; margin-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  .main { padding: 16px 14px calc(96px + var(--safe-bottom)); }
+  .footer { padding-bottom: 8px; margin-bottom: calc(84px + var(--safe-bottom)); }
   .page-head h1 { font-size: 22px; }
   .composer-actions { min-height: 48px; align-items: center; }
   .dock {
     display: block;
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 10px;
+    right: 10px;
+    bottom: calc(8px + var(--safe-bottom));
     z-index: 110;
     background: var(--surface-solid);
-    border-top: 1px solid var(--line);
-    box-shadow: 0 -8px 24px -18px oklch(0.3 0.02 86 / .4);
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 0 8px 28px -16px oklch(0.3 0.02 86 / .45);
+    padding: 6px 8px;
   }
   .dock nav { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
   .dock-item {
@@ -2703,7 +2704,7 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   --info: #2A6C9E;
   --info-soft: #E7F1F8;
   --chart-1: var(--accent);
-  --chart-2: var(--success);
+  --chart-2: var(--brand-700);
   --chart-3: var(--warn);
 }
 
@@ -2758,8 +2759,8 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   --success: #6FBF8C;
   --success-soft: rgba(111, 191, 140, 0.16);
   --success-ink: #8FD0A7;
-  --warn: #B3651C;
-  --warn-soft: rgba(179, 101, 28, 0.18);
+  --warn: #D08A3E;
+  --warn-soft: rgba(208, 138, 62, 0.18);
   --warn-ink: #E8B77A;
   --warn-line: rgba(224, 160, 90, 0.32);
   --danger: #E6756C;
@@ -2768,7 +2769,7 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   --info: #7FB6E0;
   --info-soft: rgba(127, 182, 224, 0.16);
   --chart-1: var(--accent);
-  --chart-2: var(--success);
+  --chart-2: var(--brand-700);
   --chart-3: var(--warn);
 }
 
@@ -2809,3 +2810,18 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
 .sprig-mark { color: var(--accent-ink); }
 .signature-mark { background: var(--accent); }
 .signature-btn { color: var(--accent-ink); }
+
+
+/* v2.2 图表：金色板，不用绿/紫 */
+:root {
+  --chart-1: #C9A227;
+  --chart-2: #7A5B12;
+  --chart-3: #A85A16;
+}
+[data-theme="dark"] {
+  --chart-1: #D4A93C;
+  --chart-2: #E3C164;
+  --chart-3: #D08A3E;
+}
+
+:root { --safe-bottom: env(safe-area-inset-bottom, 0px); }

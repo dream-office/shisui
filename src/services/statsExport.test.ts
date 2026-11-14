@@ -1,6 +1,7 @@
 
 import { describe, expect, it } from 'vitest'
-import { buildStatsCsv } from './statsExport'
+import { buildStatsCsv, renderStatsPng } from './statsExport'
+import { CHART_PALETTE } from './chartPalette'
 import type { Stats } from 'shisui-core'
 
 const stats: Stats = {
@@ -25,5 +26,37 @@ describe('v1.6 stats CSV', () => {
     expect(csv).toContain('Task / deliverable')
     expect(csv).toContain('focus minutes')
     expect(csv.split('\r\n').length).toBeGreaterThan(10)
+  })
+})
+
+describe('v2.2 stats PNG palette', () => {
+  it('三组图表都落到金色板（accent/dark/warn）', () => {
+    const fills: string[] = []
+    let current = ''
+    const ctx = new Proxy({}, {
+      get: (_target, prop) => {
+        if (prop === 'fillStyle') return current
+        return () => undefined
+      },
+      set: (_target, prop, value) => {
+        if (prop === 'fillStyle') {
+          current = String(value)
+          fills.push(current)
+        }
+        return true
+      },
+    }) as unknown as CanvasRenderingContext2D
+    const canvas = { width: 0, height: 0, getContext: () => ctx } as unknown as HTMLCanvasElement
+    renderStatsPng(canvas, {
+      stats,
+      trend: [{ weekStart: 0, weekEnd: 1, total: 2, done: 1, rate: 50 }],
+      kinds: [{ kind: 'task', count: 2 }],
+      focus: [{ dayStart: 0, totalMs: 90_000, sessions: 2 }],
+      kindLabel: () => '任务',
+      lang: 'zh',
+    })
+    expect(fills).toContain(CHART_PALETTE.accent)
+    expect(fills).toContain(CHART_PALETTE.dark)
+    expect(fills).toContain(CHART_PALETTE.warn)
   })
 })

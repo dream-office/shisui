@@ -127,7 +127,7 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
     en ? 'Task kinds' : '任务类型分布',
     data.kinds.map((item) => ({ label: data.kindLabel(item.kind), value: item.count, display: String(item.count) })),
     940,
-    P.green,
+    P.dark,
   )
   drawBars(
     en ? 'Focus · last 7 days' : '每日专注 · 近 7 天',
@@ -137,7 +137,7 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
       display: `${Math.round(day.totalMs / 60_000)} min`,
     })),
     1280,
-    P.amber,
+    P.warn,
   )
 }
 

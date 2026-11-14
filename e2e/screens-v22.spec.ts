@@ -2,16 +2,16 @@ import { expect, test } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const OUT = join(process.cwd(), '.tmp', 'v2.1-b2', 'screens')
+const OUT = join(process.cwd(), '.tmp', 'v2.2-b2', 'screens')
 
-test.describe('v2.1 五屏 320/360 亮暗截图', () => {
+test.describe('v2.2 五屏 1280/390/360/320 亮暗截图', () => {
   test.beforeAll(() => mkdirSync(OUT, { recursive: true }))
 
   for (const theme of ['light', 'dark'] as const) {
-    for (const width of [320, 360] as const) {
+    for (const width of [1280, 390, 360, 320] as const) {
       test(`${theme} @${width}`, async ({ page }) => {
         await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' })
-        await page.setViewportSize({ width, height: 800 })
+        await page.setViewportSize({ width, height: width === 1280 ? 900 : 800 })
         await page.goto('/')
         await page.getByRole('button', { name: '更多 ▾' }).click()
         await page.getByRole('menuitem', { name: '工作群示例' }).click()

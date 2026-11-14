@@ -1,14 +1,14 @@
 /**
- * 统计导出固定色板：与页面 --chart-* 同源（light 绿/状态绿/琥珀）。
+ * 统计导出固定色板：与页面 --chart-* 同源（v2.2 美术金）。
  * Canvas 不能读 CSS 变量，因此集中在这里；color-v2 e2e 会校验页面 token 与导出一致。
  */
 export const CHART_PALETTE = {
-  paper: '#FCFBFA',
-  ink: '#1F1D1A',
-  ink2: '#6E6A61',
-  ink3: '#7D786D',
-  line: '#E8E4DA',
-  accent: '#58A069',
-  green: '#137738',
-  amber: '#8A5F18',
+  paper: '#FAF7F0',
+  ink: '#2D2A26',
+  ink2: '#6F6A5F',
+  ink3: '#7A5B12',
+  line: '#E8E0D0',
+  accent: '#C9A227',
+  dark: '#7A5B12',
+  warn: '#A85A16',
 } as const

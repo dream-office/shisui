@@ -20,7 +20,7 @@ const maskable = readFileSync(join(icons, 'icon-maskable.svg'), 'utf8')
 
 const pageHtml = (svg) => `<!doctype html>
 <html><head><style>
-  html, body { margin: 0; width: 100%; height: 100%; background: #2F6B3F; }
+  html, body { margin: 0; width: 100%; height: 100%; background: #C9A227; }
   svg { display: block; width: 100vw; height: 100vh; }
 </style></head><body>${svg}</body></html>`
 

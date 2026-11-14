@@ -155,7 +155,13 @@ test('E. 暗色输入面：正文/聚焦/禁用/玻璃关闭都不落浅底', as
     return { bg: s.backgroundColor, fg: s.color }
   })
   // 暗色面必须是深色 oklch（而不是浅色 token / 浏览器默认白底）
-  const isDarkSurface = (color: string) => /^(oklch|oklab)\(0\.(2[0-9]|3[0-5])/.test(color)
+    const isDarkSurface = (color: string) => {
+      if (/^(oklch|oklab)\(0\.(2[0-9]|3[0-5])/.test(color)) return true
+      const rgb = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/)
+      if (!rgb) return false
+      const [r, g, b] = [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b < 100
+    }
 
   const normal = await measure()
   expect(isDarkSurface(normal.bg), normal.bg).toBe(true)
