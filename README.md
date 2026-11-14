@@ -11,7 +11,7 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
-> **当前版本**：app 2.1.0 · core 1.4.0 · DB v5 · backup schema 5
+> **当前版本**：app 2.2.0 · core 1.4.0 · DB v5 · backup schema 5
 
 ---
 

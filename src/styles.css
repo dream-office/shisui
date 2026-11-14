@@ -2758,8 +2758,8 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   --success: #6FBF8C;
   --success-soft: rgba(111, 191, 140, 0.16);
   --success-ink: #8FD0A7;
-  --warn: #E0A05A;
-  --warn-soft: rgba(224, 160, 90, 0.16);
+  --warn: #B3651C;
+  --warn-soft: rgba(179, 101, 28, 0.18);
   --warn-ink: #E8B77A;
   --warn-line: rgba(224, 160, 90, 0.32);
   --danger: #E6756C;
