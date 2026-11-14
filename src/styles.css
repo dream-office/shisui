@@ -2849,3 +2849,36 @@ html[data-shell="embedded"] body { background: transparent; color: inherit; font
   background: var(--success);
   border-color: var(--success);
 }
+
+
+/* v2.2.1：dock 专用玻璃（更透；不碰输入卡/弹窗） */
+:root {
+  --dock-glass-bg: rgba(255, 255, 255, 0.58);
+  --dock-glass-highlight: rgba(255, 255, 255, 0.65);
+}
+[data-theme="dark"] {
+  --dock-glass-bg: rgba(38, 35, 32, 0.54);
+  --dock-glass-highlight: rgba(255, 255, 255, 0.14);
+}
+.dock {
+  background: var(--dock-glass-bg);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  backdrop-filter: blur(24px) saturate(1.25);
+  border-color: var(--line);
+  box-shadow: 0 8px 28px -16px oklch(0.3 0.02 86 / .45), inset 0 1px 0 var(--dock-glass-highlight);
+}
+.dock-item { color: var(--t-2); }
+.dock-item[aria-current="page"] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .dock {
+    background: var(--surface-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  .dock { background: var(--surface-solid); }
+}
