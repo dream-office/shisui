@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="拾穗 · 把群里散落的截止时间捡起来。粘贴群消息，解析成带绝对时间的待办并自动体检冲突。纯前端运行，数据只存在你自己的浏览器里。" />
+    <meta name="theme-color" content="#FAF7F0" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="拾穗" />
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+    <script data-theme-boot>
+      // 首屏前同步主题，避免暗色系统下先闪亮底
+      (function () {
+        try {
+          var pref = localStorage.getItem('shisui.theme');
+          var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = pref === 'light' || pref === 'dark' ? pref : dark ? 'dark' : 'light';
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', theme === 'dark' ? '#1A1815' : '#FAF7F0');
+        } catch (e) {}
+      })();
+    </script>
+    <title>拾穗 · 群消息变待办 / Shisui — group messages to to-dos</title>
+    <script type="module" crossorigin src="./assets/index-Dn0esJC7.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-dq6VOLwX.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
