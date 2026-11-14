@@ -121,7 +121,7 @@ export function renderStatsPng(canvas: HTMLCanvasElement, data: StatsExportData)
       display: point.rate === null ? '—' : `${point.rate}%`,
     })),
     en ? 460 : 460,
-    P.gold,
+    P.accent,
   )
   drawBars(
     en ? 'Task kinds' : '任务类型分布',

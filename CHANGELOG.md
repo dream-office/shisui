@@ -18,6 +18,18 @@
 - core 新增逾期分桶（含 1/3/7 天边界、startAt 回退）、冲突计数测试，并覆盖完成/跳过不参与逾期与冲突；app 新增 focusLog 汇总窗口与计时生命周期测试。
 - 统计页 e2e 增加逾期分布/冲突体检/近 7 天专注可见性断言，以及有数据时三类卡片 + 320px 不溢出的断言。
 
+## [2.1.0] - 2026-11-14
+
+### 变更（A 麦苗绿 + 清紫 + 图标重做）
+
+- 主题令牌：`--h:150`、`--c:.110`、`--l-tint:0`；accent `#58A069`、brand-600 `#408652`、brand-700 `#2F6B3F`、暗色 accent `#7AB987`。
+- 实心面/主按钮统一 brand-700（白字 6.39）；亮色侧栏 brand-700、暗色侧栏 brand-800；链接/深字 brand-700；选中 chip brand-200 + brand-900。
+- 清掉空态/sprig 与落款残留紫，统一 `var(--accent-deco)`；签名颜色跟主题，形状/字号/透明度不变。
+- favicon / icon-192 / icon-512 / apple-touch-180 / maskable-512 绿底白穗重做；maskable 内容在中心 80% 安全区，apple 不透明。
+- manifest `theme_color=#2F6B3F`、background `#F0F8F1`；theme-color meta 亮 `#F0F8F1` / 暗 `#1B3B23`。
+- 图表/导出色板改绿色相位；PWA 与双外壳架构不变。
+- 新增 `scripts/gen-icons.mjs`、`e2e/green-v21.spec.ts`。
+
 ## [2.0.0] - 2026-11-13
 
 ### 新增（Lumen 全量 UI + 麦穗金 + 暗色）

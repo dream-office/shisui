@@ -107,8 +107,12 @@ textarea {
 
 em {
   font-style: normal;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
+
+/* 暗色实心按钮：brand-700 对暗卡对比不足，用 brand-500 描边保持可辨识；白字对比不变 */
+[data-theme="dark"] .btn-primary,
+[data-theme="dark"] .btn-primary:hover:not(:disabled) { border-color: var(--btn-outline); }
 
 /* ---------- 布局 ---------- */
 
@@ -234,7 +238,7 @@ em {
 }
 
 .engine-pill.is-ai {
-  color: var(--accent);
+  color: var(--accent-ink);
   border-color: var(--brand-200);
   background: var(--accent-soft);
 }
@@ -295,8 +299,8 @@ em {
 }
 
 .btn:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-ink);
+  color: var(--accent-ink);
 }
 
 .btn:active:not(:disabled) {
@@ -435,7 +439,7 @@ em {
 .composer-input:focus {
   outline: none;
   background: var(--surface-solid);
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   box-shadow: 0 0 0 4px var(--accent-glow-soft);
 }
 
@@ -454,7 +458,7 @@ em {
   padding: 10px 14px;
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: 13px;
   font-weight: 550;
 }
@@ -465,7 +469,7 @@ em {
   flex: none;
   border-radius: 50%;
   border: 2px solid var(--accent-deco);
-  border-top-color: var(--accent);
+  border-top-color: var(--accent-ink);
   animation: spin 0.7s linear infinite;
 }
 
@@ -575,7 +579,7 @@ em {
   cursor: pointer;
   padding-right: 10px;
   font-weight: 650;
-  color: var(--accent);
+  color: var(--accent-ink);
   background: var(--accent-soft);
   border-color: var(--brand-200);
 }
@@ -670,7 +674,7 @@ em {
 .candidate-title:focus {
   outline: none;
   background: var(--surface-solid);
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 
@@ -707,7 +711,7 @@ em {
 
 .field input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   background: var(--surface-solid);
   box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
@@ -836,7 +840,7 @@ em {
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-ink);
   margin-bottom: 5px;
 }
 
@@ -1003,7 +1007,7 @@ em {
 }
 
 .day-heading.is-today {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .day-heading.is-warn {
@@ -1076,7 +1080,7 @@ em {
 }
 
 .check:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
 }
 
 .check.is-checked {
@@ -1111,7 +1115,7 @@ em {
 }
 
 .edited-tag {
-  color: var(--accent);
+  color: var(--accent-ink);
   background: var(--accent-soft);
   padding: 0 7px;
   border-radius: 999px;
@@ -1360,7 +1364,7 @@ em {
 }
 .manual .field input:focus,
 .manual .field select:focus {
-  outline: none; border-color: var(--accent); background: var(--surface-solid);
+  outline: none; border-color: var(--accent-ink); background: var(--surface-solid);
   box-shadow: 0 0 0 3px var(--accent-glow-soft);
 }
 .manual-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
@@ -1421,8 +1425,8 @@ em {
 }
 
 .footer-link:hover {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--accent-ink);
+  border-bottom-color: var(--accent-ink);
 }
 
 /* ── ICS 导入 ─────────────────────────────────── */
@@ -1449,7 +1453,7 @@ em {
 .ics-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ics-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; }
 .ics-chip-new { background: var(--ok-soft); color: var(--ok); }
-.ics-chip-update { background: var(--accent-soft); color: var(--accent); }
+.ics-chip-update { background: var(--accent-soft); color: var(--accent-ink); }
 .ics-chip-skip { background: var(--line); color: var(--muted); }
 .ics-actions { margin-top: 12px; display: flex; gap: 10px; }
 .ics-result { margin: 12px 0 0; font-size: 13px; color: var(--ok); }
@@ -1499,10 +1503,10 @@ em {
   cursor: pointer;
   text-align: left;
 }
-.month-cell:hover { border-color: var(--accent); }
+.month-cell:hover { border-color: var(--accent-ink); }
 .month-cell.is-outside { color: var(--muted); background: var(--surface-2); }
-.month-cell.is-today { border-color: var(--accent); border-width: 2px; }
-.month-cell.is-selected { background: var(--accent-soft); border-color: var(--accent); }
+.month-cell.is-today { border-color: var(--accent-ink); border-width: 2px; }
+.month-cell.is-selected { background: var(--accent-soft); border-color: var(--accent-ink); }
 .month-daynum { font-variant-numeric: tabular-nums; line-height: 1.25; font-weight: 600; }
 .month-cell.is-outside .month-daynum { font-weight: 400; }
 .month-dots { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; }
@@ -1555,12 +1559,12 @@ em {
   font-size: 13px;
   flex-wrap: wrap;
 }
-.batch-item.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.batch-item.is-selected { border-color: var(--accent-ink); background: var(--accent-soft); }
 .batch-check { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
-.batch-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.batch-check input { width: 16px; height: 16px; accent-color: var(--accent-ink); }
 .batch-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .batch-time { font-variant-numeric: tabular-nums; flex: none; }
-.batch-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.batch-chip { flex: none; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
 .batch-chip.is-warn { background: var(--warn-soft); color: var(--warn); }
 .batch-footer { margin-top: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
@@ -1628,7 +1632,7 @@ em {
 }
 
 /* ── 重复 / 区间 标记 ─────────────────────────── */
-.series-tag { color: var(--accent); }
+.series-tag { color: var(--accent-ink); }
 .range-tag { color: var(--ink-soft); }
 .skipped-tag { color: var(--muted); text-decoration: line-through; }
 .day-span {
@@ -1637,7 +1641,7 @@ em {
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 
@@ -1666,7 +1670,7 @@ em {
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .tag-remove { border: none; background: none; color: inherit; cursor: pointer; font-size: 12px; padding: 0 2px; }
 .tag-add { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 12px; padding: 0 4px; }
@@ -1674,7 +1678,7 @@ em {
 .tag-editor input { width: 110px; padding: 2px 4px; font-size: 12px; border: 1px solid var(--line); border-radius: 6px; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
 .restore-preview { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
-.import-ok { color: var(--accent); font-size: 13px; }
+.import-ok { color: var(--accent-ink); font-size: 13px; }
 .focus { margin: 12px 0; border: 1px solid var(--accent); }
 .focus-head { display: flex; align-items: baseline; justify-content: space-between; }
 .focus-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -1745,7 +1749,7 @@ em {
   height: 22px;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1783,7 +1787,7 @@ em {
 }
 .signature-btn:hover,
 .signature-btn:focus-visible { opacity: 0.85; }
-.signature-mark { width: 10px; height: 10px; border-radius: 2px; background: #5b57f0; flex: none; }
+.signature-mark { width: 10px; height: 10px; border-radius: 2px; background: var(--accent-deco); flex: none; }
 .signature-line {
   display: flex;
   align-items: center;
@@ -1809,7 +1813,7 @@ em {
   width: 40px;
   height: 40px;
   flex: none;
-  color: #5b57f0;
+  color: var(--accent-deco);
 }
 .empty-state {
   display: flex;
@@ -1846,14 +1850,14 @@ em {
 .task-extra { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 14px; margin-top: 6px; }
 .task-link {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-ink);
   text-decoration: none;
   border-bottom: 1px dashed currentColor;
   white-space: nowrap;
 }
 .task-link:hover { opacity: 0.8; }
 .task-note { font-size: 12px; color: var(--muted); max-width: 100%; }
-.task-note summary { cursor: pointer; color: var(--accent); }
+.task-note summary { cursor: pointer; color: var(--accent-ink); }
 .task-note p { margin: 6px 0 0; line-height: 1.7; white-space: pre-wrap; }
 .cand-note { font-size: 12px; color: var(--muted); }
 .cand-note p { margin: 6px 0 0; line-height: 1.7; white-space: pre-wrap; }
@@ -1951,6 +1955,9 @@ em {
 /* ---------- v2.0 暗色：项目扩展 token ---------- */
 [data-theme="dark"] {
   --accent-deco: var(--brand-400);
+  --btn-from: var(--brand-700);
+  --btn-to: var(--brand-800);
+  --btn-outline: var(--brand-500);
   --toast-bg: oklch(0.240 0.010 86);
   --toast-ink: oklch(0.990 0 0);
   --overlay: oklch(0 0 0 / .64);
@@ -1968,7 +1975,7 @@ em {
 
 /* ── v2.0 P1：深色导航壳 + 收件骨架 ───────────── */
 :root {
-  --sidebar-bg: var(--brand-600);
+  --sidebar-bg: var(--brand-700);
   --sidebar-fg: oklch(0.985 0.010 86);
   --sidebar-muted: oklch(0.985 0.010 86 / .78);
   --sidebar-active: var(--brand-200);
@@ -2492,7 +2499,7 @@ select:disabled {
   box-shadow: var(--sh-1);
   transition: transform 0.26s ease;
 }
-.switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent-ink); }
 .switch[aria-checked="true"]::after { transform: translateX(18px); }
 .switch:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
@@ -2507,7 +2514,7 @@ select:disabled {
 .inline-check.is-error { outline: 1px solid var(--danger); }
 .field select:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--accent-ink);
   box-shadow: 0 0 0 3px var(--accent-glow-soft);
   background: var(--surface-solid);
 }

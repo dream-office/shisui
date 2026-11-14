@@ -39,17 +39,13 @@
   --ds-glass-blur: 22px;       /* 玻璃预算：唯一模糊半径，别在组件里另写 */
 }
 
-/* ---------- 2. 项目层（shisui A 麦穗金） ---------- */
+/* ---------- 2. 项目层（shisui A 麦苗绿） ---------- */
 :root {
-  --h: 86;         /* A 麦穗金 */
+  --h: 150;        /* A 麦苗绿 */
   --c: 0.110;
   --glow: 1;
-  --l-tint: 0.04;  /* 暖色相补偿，只抬 brand-300~500 */
+  --l-tint: 0;     /* 绿色不需要暖色明度补偿 */
 }
-
-/* 暖色相补偿（W1）：只抬 brand-300 ~ brand-500 的亮度，按钮渐变（600/700）不动。
-   用法：<html data-hue="warm">，同时把 --h 设到 55–120。 */
-[data-hue="warm"] { --l-tint: 0.04; }
 
 /* ---------- 品牌色阶：只由 --h / --c 派生 ---------- */
 :root {
@@ -147,11 +143,13 @@
 
 /* ---------- shisui 项目层语义覆盖（亮色；暗色由下方重置） ---------- */
 :root {
-  --accent: var(--brand-600);
+  --accent: var(--brand-500);
   --accent-deco: var(--brand-500);
   --accent-ink: var(--brand-700);
   --on-accent: #ffffff;
   --ring: var(--accent-ink);
+  --btn-from: var(--brand-700);
+  --btn-to: var(--brand-800);
 }
 
 /* ---------- 3b. 语义层 · 暗色 ---------- */

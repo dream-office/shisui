@@ -45,7 +45,7 @@ test.describe('v2.0 暗色主题', () => {
     await page.emulateMedia({ colorScheme: 'dark' })
     await page.goto('/')
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1E1A12')
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1B3B23')
     const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
     expect(bg).not.toBe('rgb(245, 246, 251)')
   })
@@ -57,7 +57,7 @@ test.describe('v2.0 暗色主题', () => {
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
     await page.getByRole('radio', { name: '暗色' }).click()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1E1A12')
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1B3B23')
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
     await page.getByRole('navigation', { name: '主视图' }).getByRole('button', { name: /^设置/ }).click()
@@ -157,7 +157,7 @@ test('P5. 暗色壳：首屏 PWA 色、无亮底、玻璃、固定亮色持久�
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1E1A12')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#1B3B23')
 
   const lightBlocks = await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1
@@ -177,7 +177,7 @@ test('P5. 暗色壳：首屏 PWA 色、无亮底、玻璃、固定亮色持久�
   await page.evaluate(() => localStorage.setItem('shisui.theme', 'light'))
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#FAF5EC')
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#F0F8F1')
   await page.evaluate(() => localStorage.setItem('shisui.theme', 'dark'))
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')

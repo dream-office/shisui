@@ -11,7 +11,7 @@
 > family group — and get a clean to-do list with absolute timestamps plus an automatic clash check.
 > Runs entirely in the browser: no account, no server, no data leaves your device.
 
-> **当前版本**：app 2.0.0 · core 1.4.0 · DB v5 · backup schema 5
+> **当前版本**：app 2.1.0 · core 1.4.0 · DB v5 · backup schema 5
 
 ---
 
@@ -54,9 +54,9 @@
 
 ## 外观（亮 / 暗）
 
-- Lumen v1.3 设计系统 + A 麦穗金（`--h:86 / --c:.110 / --tint:.04`）
+- Lumen v1.3 设计系统 + A 麦苗绿（`--h:150 / --c:.110 / --l-tint:0`）
 - 设置页可选 **跟随系统 / 亮色 / 暗色**，选择记在本地；默认跟随系统
-- PWA `theme-color` 随主题切换；签名落款 `#5B57F0` 不随主题变化
+- PWA `theme-color` 随主题切换；签名落款跟随主题色（浅色 `--accent-deco` / 深色提亮一档），不再固定紫
 - 统计导出与页面同色板；完整口径见 [docs/STATS.md](docs/STATS.md)
 
 ## 统计

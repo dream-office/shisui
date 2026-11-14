@@ -1,6 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="拾穗">
-  <!-- maskable：主体缩到中间 ~70%，避开各平台的圆形/方形裁切 -->
-  <rect width="512" height="512" fill="#4a45d6" />
-  <text x="256" y="330" font-size="220" text-anchor="middle" fill="#ffffff"
-        font-family="'Noto Serif SC','Songti SC','SimSun',serif">穗</text>
+  <rect width="512" height="512" fill="#2F6B3F" />
+  <g transform="translate(256 256) scale(1.15) translate(-256 -256)" fill="#ffffff">
+    <path d="M256 86 284 136 256 186 228 136Z" />
+    <path d="M256 160 256 420" fill="none" stroke="#ffffff" stroke-width="18" stroke-linecap="round" />
+    <ellipse cx="198" cy="196" rx="48" ry="18" transform="rotate(32 198 196)" />
+    <ellipse cx="314" cy="196" rx="48" ry="18" transform="rotate(-32 314 196)" />
+    <ellipse cx="198" cy="268" rx="48" ry="18" transform="rotate(32 198 268)" />
+    <ellipse cx="314" cy="268" rx="48" ry="18" transform="rotate(-32 314 268)" />
+    <ellipse cx="198" cy="340" rx="48" ry="18" transform="rotate(32 198 340)" />
+    <ellipse cx="314" cy="340" rx="48" ry="18" transform="rotate(-32 314 340)" />
+  </g>
 </svg>

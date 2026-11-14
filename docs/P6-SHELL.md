@@ -1,6 +1,6 @@
-# shisui v2.0 · P6 双外壳
+# shisui P6 双外壳（v2.0 架构，v2.1 实测）
 
-> 2026-11-13 · 分支 `feat/v2.0-ui`
+> P6 架构来自 v2.0；体积/测试为 v2.1 当前值（2026-11-14）
 > 同一代码库，两个构建目标；核心/数据/组件共享。
 
 ## 1. 构建命令与产物
@@ -10,13 +10,13 @@
 | standalone | `pnpm build:standalone` / `pnpm build` | `dist/` | manifest + `sw.js` |
 | embedded | `pnpm build:embedded` | `dist/embedded/` | 无 manifest / 无 sw |
 
-实测（v2.0 当前）：
+实测（v2.1 绿主题后重测，2026-11-14；gzip = Python `gzip.compress` 默认，raw 不含 sourcemap）：
 
 | | standalone | embedded |
 |---|---:|---:|
-| 主 JS raw | 487,683 B | 480,373 B |
-| 主 JS gzip | 161,315 B | 158,863 B |
-| CSS raw/gzip | 57,209 / 11,547 B | 57,209 / 11,547 B |
+| 主 JS raw | 487,687 B | 480,377 B |
+| 主 JS gzip | 161,317 B | 158,867 B |
+| CSS raw/gzip | 57,591 / 11,572 B | 57,591 / 11,572 B |
 | manifest / sw | ✅ / ✅ | ❌ / ❌ |
 
 embedded 比 standalone 少约 **7.3 KB raw / 2.5 KB gzip**（PWA、壳/页脚、设置部分被裁）。
@@ -59,4 +59,4 @@ embedded 比 standalone 少约 **7.3 KB raw / 2.5 KB gzip**（PWA、壳/页脚�
 
 ## 6. 测试
 
-`412 × 2` 单测 + `115` e2e（+embedded E1/E2）。
+`412 × 2` 单测 + `116` e2e（+embedded E1/E2）。

@@ -5,7 +5,7 @@ import { CHART_PALETTE } from '../src/services/chartPalette'
 const THEMES = ['light', 'dark'] as const
 
 for (const theme of THEMES) {
-  test(`P4 ${theme}：token 对比度 / 图表同色板 / 签名不换`, async ({ page }) => {
+  test(`P4 ${theme}：token 对比度 / 图表同色板 / 签名跟主题`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: theme })
     await page.goto('/')
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
@@ -52,11 +52,12 @@ for (const theme of THEMES) {
         t3: pair('--t-3'),
         onAccent: ratio(rgb(color('--on-accent')), rgb(color('--btn-from'))),
         accentInk: pair('--accent-ink'),
-        accent: pair('--accent'),
+        accentInkSurface: ratio(rgb(color('--accent-ink')), rgb(color('--surface-solid'))),
         success: pair('--success-ink'),
         warn: pair('--warn-ink'),
         danger: pair('--danger'),
         chart: [hex('--chart-1'), hex('--chart-2'), hex('--chart-3')],
+        accentDeco: color('--accent-deco'),
         signature: getComputedStyle(sig).backgroundColor,
         sprig: getComputedStyle(sprig).color,
       }
@@ -66,20 +67,39 @@ for (const theme of THEMES) {
 
     expect(result.t1, 't1').toBeGreaterThanOrEqual(4.5)
     expect(result.t3, 't3').toBeGreaterThanOrEqual(4.5)
-    expect(result.onAccent, 'on-accent').toBeGreaterThanOrEqual(4.5)
+    expect(result.onAccent, 'on-accent').toBeGreaterThanOrEqual(6.3)
     expect(result.accentInk, 'accent-ink').toBeGreaterThanOrEqual(4.5)
-    expect(result.accent, 'accent').toBeGreaterThanOrEqual(4.5)
+    expect(result.accentInkSurface, 'link on surface').toBeGreaterThanOrEqual(6.1)
     expect(result.success, 'success').toBeGreaterThanOrEqual(4.5)
     expect(result.warn, 'warn').toBeGreaterThanOrEqual(4.5)
     expect(result.danger, 'danger').toBeGreaterThanOrEqual(4.5)
     if (theme === 'light') {
-      expect(result.chart).toEqual([CHART_PALETTE.gold, CHART_PALETTE.green, CHART_PALETTE.amber])
+      expect(result.chart).toEqual([CHART_PALETTE.accent, CHART_PALETTE.green, CHART_PALETTE.amber])
     } else {
-      // 导出固定浅色纸张，暗色图表用暗色变体；都不得回到旧紫
+      // 导出固定浅色纸张，暗色图表用暗色变体；不得回到旧紫
       for (const color of result.chart) expect(color).not.toBe('#5B57F0')
-      expect(result.chart[0]).toMatch(/^#(B89541|D0B06A)$/)
+      expect(result.chart[0]).toBe('#7AB987')
     }
-    expect(result.signature).toBe('rgb(91, 87, 240)')
-    expect(result.sprig).toBe('rgb(91, 87, 240)')
+    expect(result.signature).toBe(result.accentDeco)
+    expect(result.sprig).toBe(result.accentDeco)
+    expect(result.signature).not.toBe('rgb(91, 87, 240)')
+
+    if (theme === 'dark') {
+      const button = page.locator('.btn-primary:not(:disabled)').first()
+      const count = await button.count()
+      expect(count, 'dark primary button').toBeGreaterThan(0)
+      if (count > 0) {
+        await button.hover()
+        const colors = await page.evaluate(() => {
+          const probe = document.createElement('div')
+          document.body.appendChild(probe)
+          probe.style.color = 'var(--brand-500)'
+          const brand500 = getComputedStyle(probe).color
+          probe.remove()
+          return { brand500 }
+        })
+        await expect(button).toHaveCSS('border-color', colors.brand500)
+      }
+    }
   })
 }

@@ -76,7 +76,7 @@ export default function App() {
       const resolved = theme === 'system' ? (media.matches ? 'dark' : 'light') : theme
       document.documentElement.dataset.theme = resolved
       const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-      if (meta) meta.content = resolved === 'dark' ? '#1E1A12' : '#FAF5EC'
+      if (meta) meta.content = resolved === 'dark' ? '#1B3B23' : '#F0F8F1'
     }
     apply()
     media.addEventListener('change', apply)
@@ -167,7 +167,7 @@ export default function App() {
   useEffect(() => {
     if (signatureLogged) return
     signatureLogged = true
-    console.log('%c拾穗 · dream-office · 把散落的时间捡起来', 'color:#906F17;font-weight:600;')
+    console.log('%c拾穗 · dream-office · 把散落的时间捡起来', 'color:#2F6B3F;font-weight:600;')
   }, [])
 
   // 彩蛋打开后：焦点到关闭按钮，Esc 关闭并把焦点还给落款
