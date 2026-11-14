@@ -87,10 +87,16 @@ test('V22 美术金：token / 图标 / PWA 色一致', async ({ page, request })
     let maxX = 0
     let maxY = 0
     let maxRadius = 0
+    let contentPixels = 0
+    const bg = [mask.data[0], mask.data[1], mask.data[2]]
     for (let y = 0; y < 512; y++) {
       for (let x = 0; x < 512; x++) {
         const i = (y * 512 + x) * 4
-        if (mask.data[i] < 90 && mask.data[i + 1] < 80 && mask.data[i + 2] < 70) {
+        // 非底色像素：不依赖具体内容色（白/深/其他），底色 = 左上角
+        const delta =
+          Math.abs(mask.data[i] - bg[0]) + Math.abs(mask.data[i + 1] - bg[1]) + Math.abs(mask.data[i + 2] - bg[2])
+        if (delta > 30) {
+          contentPixels++
           maxRadius = Math.max(maxRadius, Math.hypot(x - 255.5, y - 255.5))
           minX = Math.min(minX, x)
           minY = Math.min(minY, y)
@@ -99,7 +105,7 @@ test('V22 美术金：token / 图标 / PWA 色一致', async ({ page, request })
         }
       }
     }
-    return { appleMinAlpha: minAlpha, maskBg, iconBg, icon512Bg, appleBg, maxRadius, mask: { minX, minY, maxX, maxY } }
+    return { appleMinAlpha: minAlpha, maskBg, iconBg, icon512Bg, appleBg, contentPixels, maxRadius, mask: { minX, minY, maxX, maxY } }
   })
   expect(iconChecks.appleMinAlpha).toBe(255)
   for (const bg of [iconChecks.iconBg, iconChecks.icon512Bg, iconChecks.appleBg, iconChecks.maskBg]) {
@@ -107,6 +113,11 @@ test('V22 美术金：token / 图标 / PWA 色一致', async ({ page, request })
     expect(bg[1]).toBeCloseTo(162, 0)
     expect(bg[2]).toBeCloseTo(39, 0)
   }
+  // 必须有真实内容，避免「检测不到 → 默认 0 也过」的空转
+  expect(iconChecks.contentPixels).toBeGreaterThan(1000)
+  expect(iconChecks.mask.maxX - iconChecks.mask.minX).toBeGreaterThan(200)
+  expect(iconChecks.mask.maxY - iconChecks.mask.minY).toBeGreaterThan(200)
+  expect(iconChecks.maxRadius).toBeGreaterThan(150)
   // 80% 安全区：中心 410px（51..461）
   expect(iconChecks.mask.minX).toBeGreaterThanOrEqual(51)
   expect(iconChecks.mask.minY).toBeGreaterThanOrEqual(51)
